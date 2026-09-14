@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { writeFile } from '../lib/pack'
 import type { EditorFinding } from './findings'
 import { sampleDialogues, sampleQuests } from './fixtures'
 import { createState } from './reducer'
@@ -16,6 +17,7 @@ import {
   findingsForStep,
   isEndingStep,
   outcomeNames,
+  packFiles,
   selectedQuest,
   selectedReward,
   selectedStep,
@@ -95,6 +97,17 @@ describe('derived views', () => {
     const middle = findStep(state, 'ledger', 'talk_ines')
     expect(ending === undefined ? undefined : isEndingStep(ending)).toBe(true)
     expect(middle === undefined ? undefined : isEndingStep(middle)).toBe(false)
+  })
+
+  it('lists the pack file names once each, sorted', () => {
+    expect(packFiles(state)).toEqual([])
+    const quests = sampleQuests()
+    const dialogues = sampleDialogues()
+    quests.quests.push({ ...quests.quests[0], id: 'second', ext: writeFile(undefined, 'side.oqf') })
+    quests.quests.push({ ...quests.quests[0], id: 'third', ext: writeFile(undefined, 'main.oqf') })
+    dialogues.conversations[0].ext = writeFile(undefined, 'side.oqf')
+    dialogues.conversations.push({ ...dialogues.conversations[0], id: 'other', ext: undefined })
+    expect(packFiles(createState(quests, dialogues))).toEqual(['main.oqf', 'side.oqf'])
   })
 
   it('filters findings by what they point at', () => {

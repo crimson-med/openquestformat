@@ -3,9 +3,11 @@
  * removing and reordering happen here so the graph stays about shape.
  */
 import type { Condition, Quest } from '@oqf/core'
+import { clearFile, readFile, writeFile } from '../lib/pack'
 import { useDispatch, useEditorState } from '../store/context'
 import { questPatch } from '../store/patch'
-import { findingsForStep } from '../store/selectors'
+import { findingsForStep, packFiles } from '../store/selectors'
+import { FileField } from './FileField'
 import { FindingList } from './FindingList'
 import {
   CheckField,
@@ -75,6 +77,14 @@ export function QuestForm({ quest }: { quest: Quest }) {
           }))}
           emptyNote="No tags in this file's dictionary yet."
           onChange={(values) => set('tags', values)}
+        />
+        <FileField
+          what="quest"
+          value={readFile(quest.ext)}
+          files={packFiles(state)}
+          onChange={(value) =>
+            set('ext', value === undefined ? clearFile(quest.ext) : writeFile(quest.ext, value))
+          }
         />
       </Section>
 

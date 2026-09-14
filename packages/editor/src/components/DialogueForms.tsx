@@ -5,10 +5,12 @@ import type { Condition } from '@oqf/core'
  * spelling the file uses.
  */
 import type { Choice, Conversation, DialogueNode } from '@oqf/dialogue'
+import { clearFile, readFile, writeFile } from '../lib/pack'
 import { formatEmits, formatFlagSets, parseEmits, parseFlagSets } from '../lib/values'
 import { useDispatch, useEditorState } from '../store/context'
 import { choicePatch, conversationPatch, nodePatch } from '../store/patch'
-import { findingsForNode } from '../store/selectors'
+import { findingsForNode, packFiles } from '../store/selectors'
+import { FileField } from './FileField'
 import { FindingList } from './FindingList'
 import {
   CheckField,
@@ -56,6 +58,19 @@ export function ConversationForm({ conversation }: { conversation: Conversation 
           value={conversation.start}
           options={conversation.nodes.map((node) => ({ value: node.id, label: node.id }))}
           onChange={(value) => set('start', value ?? '')}
+        />
+        <FileField
+          what="conversation"
+          value={readFile(conversation.ext)}
+          files={packFiles(state)}
+          onChange={(value) =>
+            set(
+              'ext',
+              value === undefined
+                ? clearFile(conversation.ext)
+                : writeFile(conversation.ext, value),
+            )
+          }
         />
       </Section>
 
