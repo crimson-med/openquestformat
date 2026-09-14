@@ -215,6 +215,67 @@ describe('steps', () => {
     expect(readPosition(quest(many).steps[1].ext)).toEqual({ x: 100, y: 200 })
   })
 
+  it('links and unlinks steps through their conditions', () => {
+    let state = reducer(start(), { type: 'step/add', quest: 'ledger', id: 'sell' })
+    state = reducer(state, { type: 'step/link', quest: 'ledger', from: 'find_it', to: 'sell' })
+    expect(quest(state).steps[2].unlock).toEqual(parseCondition('step.find_it'))
+
+    state = reducer(state, { type: 'step/link', quest: 'ledger', from: 'talk_ines', to: 'sell' })
+    expect(quest(state).steps[2].unlock).toEqual(parseCondition('step.find_it and step.talk_ines'))
+
+    state = reducer(state, { type: 'step/unlink', quest: 'ledger', from: 'find_it', to: 'sell' })
+    expect(quest(state).steps[2].unlock).toEqual(parseCondition('step.talk_ines'))
+
+    state = reducer(state, { type: 'step/unlink', quest: 'ledger', from: 'talk_ines', to: 'sell' })
+    expect('unlock' in quest(state).steps[2]).toBe(false)
+  })
+
+  it('drops the start flag of a step that gains a link', () => {
+    const state = reducer(start(), {
+      type: 'step/link',
+      quest: 'ledger',
+      from: 'find_it',
+      to: 'talk_ines',
+    })
+    expect('start' in quest(state).steps[0]).toBe(false)
+    expect(quest(state).steps[0].unlock).toEqual(parseCondition('step.find_it'))
+  })
+
+  it('ignores self links, unknown ids and other quests', () => {
+    const before = start()
+    const ignored = [
+      { type: 'step/link', quest: 'ledger', from: 'find_it', to: 'find_it' },
+      { type: 'step/link', quest: 'ledger', from: 'ghost', to: 'find_it' },
+      { type: 'step/link', quest: 'ledger', from: 'find_it', to: 'ghost' },
+      { type: 'step/link', quest: 'other', from: 'talk_ines', to: 'find_it' },
+      { type: 'step/unlink', quest: 'other', from: 'talk_ines', to: 'find_it' },
+    ] as const
+    for (const action of ignored) {
+      expect(reducer(before, action).quests).toBe(before.quests)
+    }
+  })
+
+  it('undoes a link and an unlink', () => {
+    const linked = reducer(start(), {
+      type: 'step/link',
+      quest: 'ledger',
+      from: 'find_it',
+      to: 'talk_ines',
+    })
+    const undone = reducer(linked, { type: 'undo' })
+    expect(quest(undone).steps[0]).toEqual(quest(start()).steps[0])
+
+    const unlinked = reducer(start(), {
+      type: 'step/unlink',
+      quest: 'ledger',
+      from: 'talk_ines',
+      to: 'find_it',
+    })
+    expect('unlock' in quest(unlinked).steps[1]).toBe(false)
+    const restored = reducer(unlinked, { type: 'undo' })
+    expect(quest(restored).steps[1].unlock).toEqual(parseCondition('step.talk_ines'))
+  })
+
   it('edits the outcome of an ending step', () => {
     const state = run(
       start(),

@@ -1,0 +1,37 @@
+/* Drawing and deleting step dependencies on the quest graph. */
+
+/* Handles: quiet at rest, obvious while the node is hovered or a drag is on. */
+.step-node .react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.step-node:hover .react-flow__handle,
+.step-node .react-flow__handle.connectionindicator,
+.step-node .react-flow__handle.connectingfrom,
+.step-node .react-flow__handle.connectingto {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
+/* Edges: a wider hit area, thicker on hover, accent when selected. */
+.react-flow__edge .react-flow__edge-interaction {
+  stroke-width: 24;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 2.5;
+}
+
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge.selected:hover .react-flow__edge-path {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.react-flow__connectionline path {
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
