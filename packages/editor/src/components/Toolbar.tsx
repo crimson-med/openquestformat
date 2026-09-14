@@ -33,6 +33,7 @@ export function Toolbar({
   const dispatch = useDispatch()
   const fileInput = useRef<HTMLInputElement>(null)
   const templateMenu = useRef<HTMLDetailsElement>(null)
+  const moreMenu = useRef<HTMLDetailsElement>(null)
   const [busy, setBusy] = useState(false)
   const counts = countFindings(state.findings)
   const questCount = state.quests.quests.length
@@ -146,99 +147,117 @@ export function Toolbar({
       </div>
 
       <div className="actions">
-        <button
-          type="button"
-          onClick={() => dispatch({ type: 'undo' })}
-          disabled={state.past.length === 0}
-          title="Undo, cmd or ctrl Z"
-        >
-          Undo
-        </button>
-        <button
-          type="button"
-          onClick={() => dispatch({ type: 'redo' })}
-          disabled={state.future.length === 0}
-          title="Redo, shift cmd or ctrl Z"
-        >
-          Redo
-        </button>
-        <span className="divider" />
-        <button type="button" onClick={() => fileInput.current?.click()} disabled={busy}>
-          Open
-        </button>
-        <input
-          ref={fileInput}
-          className="file-input"
-          type="file"
-          accept=".oqf,.oqd,.json,text/plain,application/json"
-          multiple
-          onChange={(event) => {
-            void open(event.target.files)
-          }}
-        />
-        <details className="menu">
-          <summary>Export</summary>
-          <div className="menu-body">
-            <button type="button" onClick={() => exportQuests('oqf')}>
-              Quests as .oqf
-            </button>
-            <button type="button" onClick={() => exportQuests('json')}>
-              Quests as .json
-            </button>
-            <button type="button" onClick={() => exportQuests('md')}>
-              Quests as .md
-            </button>
-            <button type="button" onClick={() => exportDialogues('oqd')}>
-              Dialogue as .oqd
-            </button>
-            <button type="button" onClick={() => exportDialogues('json')}>
-              Dialogue as .json
-            </button>
-          </div>
-        </details>
-        <details className="menu" ref={templateMenu}>
-          <summary>New from template</summary>
-          <div className="menu-body templates">
-            {TEMPLATES.map((template) => (
-              <button key={template.id} type="button" onClick={() => fromTemplate(template)}>
-                <strong>{template.title}</strong>
-                <span className="muted">{template.description}</span>
+        <div className="group">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => dispatch({ type: 'undo' })}
+            disabled={state.past.length === 0}
+            title="Undo, cmd or ctrl Z"
+            aria-label="Undo"
+          >
+            ↶
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => dispatch({ type: 'redo' })}
+            disabled={state.future.length === 0}
+            title="Redo, shift cmd or ctrl Z"
+            aria-label="Redo"
+          >
+            ↷
+          </button>
+        </div>
+
+        <div className="group">
+          <details className="menu primary" ref={templateMenu}>
+            <summary title="New from template">New</summary>
+            <div className="menu-body templates">
+              <span className="menu-label">New from template</span>
+              {TEMPLATES.map((template) => (
+                <button key={template.id} type="button" onClick={() => fromTemplate(template)}>
+                  <strong>{template.title}</strong>
+                  <span className="muted">{template.description}</span>
+                </button>
+              ))}
+            </div>
+          </details>
+          <button type="button" onClick={() => fileInput.current?.click()} disabled={busy}>
+            Open
+          </button>
+          <input
+            ref={fileInput}
+            className="file-input"
+            type="file"
+            accept=".oqf,.oqd,.json,text/plain,application/json"
+            multiple
+            onChange={(event) => {
+              void open(event.target.files)
+            }}
+          />
+          <details className="menu">
+            <summary>Export</summary>
+            <div className="menu-body">
+              <button type="button" onClick={() => exportQuests('oqf')}>
+                Quests as .oqf
               </button>
-            ))}
-          </div>
-        </details>
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              const reference = loadReference()
-              dispatch({
-                type: 'doc/load',
-                quests: reference.quests,
-                dialogues: reference.dialogues,
-                selection: {
-                  kind: 'quest',
-                  quest: reference.quests.quests[0]?.id ?? '',
-                },
-              })
-              onNotice('Loaded the reference quest, The Harbormaster’s Ledger.')
-            } catch (failure) {
-              onNotice(failure instanceof Error ? failure.message : String(failure))
-            }
-          }}
-        >
-          Load reference quest
-        </button>
-        <button
-          type="button"
-          className="danger"
-          onClick={() => {
-            dispatch({ type: 'doc/reset' })
-            onNotice('Cleared. Nothing is loaded.')
-          }}
-        >
-          Reset
-        </button>
+              <button type="button" onClick={() => exportQuests('json')}>
+                Quests as .json
+              </button>
+              <button type="button" onClick={() => exportQuests('md')}>
+                Quests as .md
+              </button>
+              <button type="button" onClick={() => exportDialogues('oqd')}>
+                Dialogue as .oqd
+              </button>
+              <button type="button" onClick={() => exportDialogues('json')}>
+                Dialogue as .json
+              </button>
+            </div>
+          </details>
+          <details className="menu" ref={moreMenu}>
+            <summary title="More" aria-label="More">
+              ⋯
+            </summary>
+            <div className="menu-body">
+              <button
+                type="button"
+                onClick={() => {
+                  if (moreMenu.current !== null) moreMenu.current.open = false
+                  try {
+                    const reference = loadReference()
+                    dispatch({
+                      type: 'doc/load',
+                      quests: reference.quests,
+                      dialogues: reference.dialogues,
+                      selection: {
+                        kind: 'quest',
+                        quest: reference.quests.quests[0]?.id ?? '',
+                      },
+                    })
+                    onNotice('Loaded the reference quest, The Harbormaster’s Ledger.')
+                  } catch (failure) {
+                    onNotice(failure instanceof Error ? failure.message : String(failure))
+                  }
+                }}
+              >
+                Load reference quest
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  if (moreMenu.current !== null) moreMenu.current.open = false
+                  dispatch({ type: 'doc/reset' })
+                  onNotice('Cleared. Nothing is loaded.')
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          </details>
+        </div>
       </div>
     </header>
   )

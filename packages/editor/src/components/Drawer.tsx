@@ -48,7 +48,13 @@ export function Drawer({
             'validation',
             <>
               Validation
-              <span className="pill">{counts.errors + counts.warnings}</span>
+              <span
+                className={
+                  counts.errors > 0 ? 'pill error' : counts.warnings > 0 ? 'pill warning' : 'pill'
+                }
+              >
+                {counts.errors + counts.warnings}
+              </span>
             </>,
           )}
           {tabButton('source', 'Source')}

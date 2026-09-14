@@ -50,6 +50,8 @@ export function QuestGraph({ quest }: { quest: Quest }) {
           ending: step.outcome !== undefined,
           failed: step.outcome?.failed === true,
           optional: step.optional === true,
+          start: step.start === true || step.unlock === undefined,
+          repeat: step.repeat === true,
           level: worstLevel(findingsForStep(state.findings, quest.id, step.id)),
           picked: step.id === selected,
         },
