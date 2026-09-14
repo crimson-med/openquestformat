@@ -1,0 +1,336 @@
+/* Quest playtest: the Play tab panel and the run state overlay on step cards. */
+
+.play-mode {
+  display: inline-flex;
+  margin-bottom: 14px;
+}
+
+.quest-play {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.8fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.quest-play h4 {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.quest-play section > h4:first-child {
+  margin-top: 0;
+}
+
+.quest-play-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.quest-play-status strong {
+  color: var(--text);
+}
+
+.status-tag,
+.state-tag,
+.node-run {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: var(--line-soft);
+  color: var(--muted);
+}
+
+.status-tag.open {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.status-tag.closed {
+  background: color-mix(in oklch, var(--role-start) 18%, var(--panel));
+  color: var(--role-start);
+}
+
+/* Suggested events */
+
+.suggestion-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.suggestion-groups > li {
+  padding: 8px 10px;
+  background: var(--field);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+.suggestion-groups > li.run-active {
+  border-color: var(--accent);
+}
+
+.suggestion-groups > li.run-done,
+.suggestion-groups > li.run-skipped,
+.suggestion-groups > li.run-failed {
+  opacity: 0.6;
+}
+
+.suggestion-step {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.suggestion-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.suggestion.fail {
+  border-color: var(--error-soft);
+  color: var(--error);
+}
+
+.suggestion-fail {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0 6px;
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+.event-form,
+.add-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.event-form .input,
+.add-form .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Flags and game variables */
+
+.quest-play .flag-list label .muted {
+  margin-left: auto;
+}
+
+.var-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.var-table td {
+  padding: 2px 4px 2px 0;
+  vertical-align: middle;
+}
+
+.var-table td:first-child {
+  white-space: nowrap;
+}
+
+.var-table .input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Step board */
+
+.step-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.step-board li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-board .state-tag {
+  min-width: 78px;
+  text-align: center;
+}
+
+.step-counts {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* Transcript */
+
+.quest-transcript {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.quest-transcript li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quest-transcript .kind {
+  color: var(--muted);
+  min-width: 56px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quest-transcript li.input .kind {
+  color: var(--accent);
+}
+
+.quest-transcript li.outcome .text {
+  font-weight: 700;
+  color: var(--role-start);
+}
+
+.quest-transcript li.reward .text {
+  color: var(--role-repeat);
+}
+
+.quest-transcript .detail {
+  color: var(--muted);
+}
+
+/* Run states: shared by the step board, the suggestion groups and the graph. */
+
+.run-locked .state-tag,
+.node.run-locked .node-run {
+  background: var(--line-soft);
+  color: var(--muted);
+}
+
+.run-available .state-tag,
+.node.run-available .node-run {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.run-active .state-tag,
+.node.run-active .node-run {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.run-done .state-tag,
+.node.run-done .node-run {
+  background: color-mix(in oklch, var(--role-start) 18%, var(--panel));
+  color: var(--role-start);
+}
+
+.run-failed .state-tag,
+.node.run-failed .node-run {
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+.run-skipped .state-tag,
+.node.run-skipped .node-run {
+  background: var(--panel-2);
+  color: var(--role-optional);
+  text-decoration: line-through;
+}
+
+/* Step cards on the graph */
+
+.node-run {
+  margin-left: auto;
+}
+
+.node.run-locked {
+  opacity: 0.55;
+}
+
+.node.run-available {
+  outline: 2px solid var(--warning);
+  outline-offset: 2px;
+}
+
+.node.run-active {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  animation: playtest-pulse 1.6s ease-in-out infinite;
+}
+
+.node.run-done {
+  background: color-mix(in oklch, var(--role-start) 16%, var(--panel));
+  border-color: var(--role-start);
+}
+
+.node.run-done .node-run::before {
+  content: "✓ ";
+}
+
+.node.run-failed {
+  background: color-mix(in oklch, var(--error) 14%, var(--panel));
+  border-color: var(--error);
+}
+
+.node.run-skipped {
+  opacity: 0.7;
+}
+
+.node.run-skipped .node-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+@keyframes playtest-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 45%, transparent), var(--shadow);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in oklch, var(--accent) 0%, transparent), var(--shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node.run-active {
+    animation: none;
+  }
+}

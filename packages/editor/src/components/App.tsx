@@ -19,6 +19,7 @@ import { DialogueGraph } from './DialogueGraph'
 import { Drawer, type DrawerTab } from './Drawer'
 import { EmptyState } from './EmptyState'
 import { Inspector } from './Inspector'
+import { PlaytestProvider } from './PlaytestContext'
 import { QuestGraph } from './QuestGraph'
 import { StringsProvider } from './StringsContext'
 import { type Tab, Toolbar } from './Toolbar'
@@ -244,11 +245,16 @@ function AppContent() {
   )
 }
 
-/** The panes, inside the language tables the Strings tab and the graphs share. */
+/**
+ * The panes, inside the language tables the Strings tab and the graphs share
+ * and the playtest session the Play tab and the quest graph share.
+ */
 export function App() {
   return (
     <StringsProvider>
-      <AppContent />
+      <PlaytestProvider>
+        <AppContent />
+      </PlaytestProvider>
     </StringsProvider>
   )
 }

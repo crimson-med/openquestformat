@@ -3,6 +3,7 @@
  * handful of flags worth seeing without opening the inspector.
  */
 import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
+import '../styles/playtest.css'
 
 export interface StepNodeData extends Record<string, unknown> {
   stepId: string
@@ -17,6 +18,8 @@ export interface StepNodeData extends Record<string, unknown> {
   level?: 'error' | 'warning'
   picked: boolean
   direction: 'TB' | 'LR'
+  /** Where the step stands in the running playtest, when one exists. */
+  runState?: 'locked' | 'available' | 'active' | 'done' | 'failed' | 'skipped'
 }
 
 export type StepFlowNode = Node<StepNodeData, 'step'>
@@ -47,6 +50,7 @@ export function StepNode({ data }: NodeProps<StepFlowNode>) {
   const classes = ['node', 'step-node', role]
   if (data.picked) classes.push('picked')
   if (data.level !== undefined) classes.push(data.level)
+  if (data.runState !== undefined) classes.push(`run-${data.runState}`)
   const badges = data.badges.filter((badge) => badge !== role)
   const across = data.direction === 'LR'
 
@@ -56,6 +60,7 @@ export function StepNode({ data }: NodeProps<StepFlowNode>) {
       <div className="node-role">
         <span aria-hidden="true">{ROLE_GLYPHS[role]}</span>
         {role}
+        {data.runState === undefined ? null : <span className="node-run">{data.runState}</span>}
       </div>
       <div className="node-title">{data.title}</div>
       <div className="node-id mono">{data.stepId}</div>

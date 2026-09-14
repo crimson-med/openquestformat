@@ -19,13 +19,14 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
 } from '@xyflow/react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Direction } from '../lib/direction'
 import { layoutQuest, questPositions } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForStep, worstLevel } from '../store/selectors'
 import '../styles/connections.css'
 import { DirectionToggle } from './DirectionToggle'
+import { usePlaytest } from './PlaytestContext'
 import { type StepFlowNode, StepNode } from './StepNode'
 import { useStringResolver } from './StringsContext'
 
@@ -44,6 +45,13 @@ export function QuestGraph({
   const dispatch = useDispatch()
   const resolve = useStringResolver()
   const selected = state.selection.kind === 'step' ? state.selection.step : undefined
+  const playtest = usePlaytest()
+  // The session mutates in place; its version says when to read it again.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version drives the reread
+  const runState = useMemo(
+    () => playtest.session?.stepStates(quest.id),
+    [playtest.session, playtest.version, quest.id],
+  )
 
   const relayout = (next: Direction) =>
     dispatch({
@@ -80,10 +88,11 @@ export function QuestGraph({
           level: worstLevel(findingsForStep(state.findings, quest.id, step.id)),
           picked: step.id === selected,
           direction,
+          runState: runState?.[step.id],
         },
       }
     })
-  }, [quest, state.findings, selected, direction, resolve])
+  }, [quest, state.findings, selected, direction, resolve, runState])
 
   const [nodes, setNodes] = useState<StepFlowNode[]>(build)
   useEffect(() => {

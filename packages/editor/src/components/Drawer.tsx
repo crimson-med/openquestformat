@@ -2,15 +2,18 @@
  * The bottom drawer: what is wrong, what the file looks like, and a place to
  * play a conversation. Collapsible, because the canvas wants the room.
  */
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useEditorState } from '../store/context'
 import { countFindings } from '../store/findings'
 import { FindingList } from './FindingList'
 import { PlayPanel } from './PlayPanel'
+import { QuestPlayPanel } from './QuestPlayPanel'
 import { SourcePanel } from './SourcePanel'
 import { StringsPanel } from './StringsPanel'
 
 export type DrawerTab = 'validation' | 'source' | 'play' | 'strings'
+
+type PlayMode = 'quest' | 'dialogue'
 
 export function Drawer({
   tab,
@@ -27,6 +30,26 @@ export function Drawer({
 }) {
   const state = useEditorState()
   const counts = countFindings(state.findings)
+  const [playMode, setPlayMode] = useState<PlayMode>('quest')
+
+  const playSwitch = (
+    <div className="segmented play-mode" role="tablist" aria-label="Play mode">
+      <button
+        type="button"
+        className={playMode === 'quest' ? 'on' : ''}
+        onClick={() => setPlayMode('quest')}
+      >
+        Quest
+      </button>
+      <button
+        type="button"
+        className={playMode === 'dialogue' ? 'on' : ''}
+        onClick={() => setPlayMode('dialogue')}
+      >
+        Dialogue
+      </button>
+    </div>
+  )
 
   const tabButton = (value: DrawerTab, label: ReactNode) => (
     <button
@@ -70,7 +93,16 @@ export function Drawer({
         <div className="drawer-body">
           {tab === 'validation' ? <FindingList findings={state.findings} /> : null}
           {tab === 'source' ? <SourcePanel /> : null}
-          {tab === 'play' ? <PlayPanel conversation={conversation} /> : null}
+          {tab === 'play' ? (
+            <>
+              {playSwitch}
+              {playMode === 'quest' ? (
+                <QuestPlayPanel />
+              ) : (
+                <PlayPanel conversation={conversation} />
+              )}
+            </>
+          ) : null}
           {tab === 'strings' ? <StringsPanel /> : null}
         </div>
       ) : null}
