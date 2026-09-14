@@ -35,6 +35,12 @@ importers:
       '@oqf/core':
         specifier: workspace:*
         version: link:../core
+      '@oqf/dialogue':
+        specifier: workspace:*
+        version: link:../dialogue
+      '@oqf/i18n':
+        specifier: workspace:*
+        version: link:../i18n
     devDependencies:
       '@types/node':
         specifier: ^22.10.5

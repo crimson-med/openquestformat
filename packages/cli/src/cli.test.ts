@@ -1,6 +1,17 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { basename } from 'node:path'
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseDialogueJson, parseOqd } from '@oqf/dialogue'
 import { describe, expect, it } from 'vitest'
 import { run } from './cli.js'
 import type { FileFinding } from './format.js'
@@ -8,6 +19,7 @@ import type { Io } from './load.js'
 
 const QUESTS = fileURLToPath(new URL('../../examples/quests/', import.meta.url))
 const HARBOR_OQF = `${QUESTS}harbormasters-ledger.oqf`
+const HARBOR_OQD = `${QUESTS}harbormasters-ledger.oqd`
 const BROKEN = `${QUESTS}broken`
 const MANIFEST = fileURLToPath(new URL('../package.json', import.meta.url))
 
@@ -47,6 +59,76 @@ function createIo() {
   }
 }
 
+/** An io that really touches the disk, for the commands that rewrite sources. */
+function createDiskIo() {
+  const out: string[] = []
+  const err: string[] = []
+
+  const io: Io = {
+    stdout: (text) => {
+      out.push(text)
+    },
+    stderr: (text) => {
+      err.push(text)
+    },
+    readFile: (path) => readFileSync(path, 'utf8'),
+    writeFile: (path, text) => {
+      writeFileSync(path, text)
+    },
+    readDir: (path) => readdirSync(path),
+    stat: (path) => ({ isDirectory: statSync(path).isDirectory() }),
+  }
+
+  return {
+    io,
+    get out() {
+      return out.join('')
+    },
+    get err() {
+      return err.join('')
+    },
+  }
+}
+
+/**
+ * Run a body against copies of the fixtures in a fresh temporary directory.
+ * packages/examples is owned elsewhere and is never written to.
+ */
+async function withCopies(
+  names: string[],
+  body: (directory: string, copies: string[]) => Promise<void>,
+): Promise<void> {
+  const directory = mkdtempSync(join(tmpdir(), 'oqf-cli-'))
+  try {
+    const copies = names.map((name) => {
+      const copy = join(directory, name)
+      copyFileSync(`${QUESTS}${name}`, copy)
+      return copy
+    })
+    await body(directory, copies)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+/** The same, for files written from scratch rather than copied from the fixtures. */
+async function withFiles(
+  files: Record<string, string>,
+  body: (directory: string, paths: string[]) => Promise<void>,
+): Promise<void> {
+  const directory = mkdtempSync(join(tmpdir(), 'oqf-cli-'))
+  try {
+    const paths = Object.entries(files).map(([name, text]) => {
+      const path = join(directory, name)
+      writeFileSync(path, text)
+      return path
+    })
+    await body(directory, paths)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+}
+
 interface Report {
   findings: FileFinding[]
   ok: boolean
@@ -69,6 +151,70 @@ describe('validate', () => {
   it('accepts the reference quest in strict mode', async () => {
     const capture = createIo()
     expect(await run(['validate', HARBOR_OQF, '--strict'], capture.io)).toBe(0)
+  })
+
+  it('accepts the whole examples directory, quests and dialogue together', async () => {
+    const capture = createIo()
+    const code = await run(['validate', QUESTS], capture.io)
+    expect(code).toBe(0)
+    expect(capture.out.trimEnd()).toBe('0 errors, 0 warnings')
+  })
+
+  it('leaves the broken subdirectory out, because expansion does not recurse', async () => {
+    const capture = createIo()
+    await run(['validate', QUESTS, '--json'], capture.io)
+    const report = JSON.parse(capture.out) as Report
+    expect(report.findings).toEqual([])
+    // The fixtures that would have failed are one level down and never read.
+    expect(readdirSync(BROKEN).length).toBeGreaterThan(0)
+    const nested = createIo()
+    expect(await run(['validate', BROKEN], nested.io)).toBe(1)
+  })
+
+  it('reports a dialogue parse error the way it reports a quest one', async () => {
+    await withFiles({ 'torn.oqd': 'nope\n' }, async (_directory, [path]) => {
+      const capture = createDiskIo()
+      expect(await run(['validate', path, '--json'], capture.io)).toBe(1)
+      const report = JSON.parse(capture.out) as Report
+      expect(report.findings).toHaveLength(1)
+      expect(report.findings[0].code).toBe('parse-error')
+      expect(report.findings[0].file).toBe(path)
+      expect(report.findings[0].path).toBe('line 1')
+    })
+  })
+
+  it('reports what the dialogue validator finds, in a sniffed JSON file', async () => {
+    const dialogue = JSON.stringify({
+      oqd: 1,
+      speakers: [],
+      conversations: [
+        { id: 'talk', start: 'start', nodes: [{ id: 'start', text: 'Hello', next: 'nowhere' }] },
+      ],
+    })
+    await withFiles({ 'dangling.json': dialogue }, async (_directory, [path]) => {
+      const capture = createDiskIo()
+      expect(await run(['validate', path, '--json'], capture.io)).toBe(1)
+      const report = JSON.parse(capture.out) as Report
+      expect(report.findings.map((finding) => finding.code)).toContain('unknown-next')
+      expect(report.findings.every((finding) => finding.file === path)).toBe(true)
+    })
+  })
+
+  it('does not ask for dialogue a quest only pack was never given', async () => {
+    const capture = createIo()
+    // The reference quest binds six conversations. On its own that is silence,
+    // not six warnings about conversations the CLI was never shown.
+    expect(await run(['validate', HARBOR_OQF, '--json'], capture.io)).toBe(0)
+    const report = JSON.parse(capture.out) as Report
+    expect(report.findings).toEqual([])
+  })
+
+  it('cross checks a quest against the dialogue it binds', async () => {
+    const capture = createIo()
+    const code = await run(['validate', HARBOR_OQF, HARBOR_OQD, '--json'], capture.io)
+    expect(code).toBe(0)
+    const report = JSON.parse(capture.out) as Report
+    expect(report.findings).toEqual([])
   })
 
   it('reports one line per finding and a summary', async () => {
@@ -172,15 +318,254 @@ describe('convert', () => {
     expect(capture.out).toContain("# The Harbormaster's Ledger")
   })
 
+  it('round trips the compact dialogue form to JSON and back, byte for byte', async () => {
+    const first = createIo()
+    expect(
+      await run(
+        ['convert', HARBOR_OQD, '--to', 'json', '--out', '/virtual/harbor.dialogue.json'],
+        first.io,
+      ),
+    ).toBe(0)
+    expect(first.written.get('/virtual/harbor.dialogue.json')).toBe(
+      readFileSync(`${QUESTS}harbormasters-ledger.dialogue.json`, 'utf8'),
+    )
+
+    const second = createIo()
+    second.written.set(
+      '/virtual/harbor.dialogue.json',
+      first.written.get('/virtual/harbor.dialogue.json') ?? '',
+    )
+    expect(await run(['convert', '/virtual/harbor.dialogue.json', '--to', 'oqd'], second.io)).toBe(
+      0,
+    )
+    expect(second.out).toBe(readFileSync(HARBOR_OQD, 'utf8'))
+  })
+
+  it('writes Ink', async () => {
+    const capture = createIo()
+    expect(await run(['convert', HARBOR_OQD, '--to', 'ink'], capture.io)).toBe(0)
+    expect(capture.out).toContain('=== ines_intro')
+  })
+
+  it('writes Yarn Spinner', async () => {
+    const capture = createIo()
+    expect(await run(['convert', HARBOR_OQD, '--to', 'yarn'], capture.io)).toBe(0)
+    expect(capture.out).toContain('title:')
+    expect(capture.out).toContain('===')
+  })
+
   it('rejects an unknown target', async () => {
     const capture = createIo()
     expect(await run(['convert', HARBOR_OQF, '--to', 'yaml'], capture.io)).toBe(2)
     expect(capture.err).toContain('unknown target: yaml')
   })
 
+  it('refuses a target the file does not have', async () => {
+    const quest = createIo()
+    expect(await run(['convert', HARBOR_OQF, '--to', 'ink'], quest.io)).toBe(2)
+    expect(quest.err).toContain('cannot convert quests to ink, expected oqf, json or md')
+
+    const dialogue = createIo()
+    expect(await run(['convert', HARBOR_OQD, '--to', 'md'], dialogue.io)).toBe(2)
+    expect(dialogue.err).toContain('cannot convert dialogue to md, expected oqd, json, ink or yarn')
+  })
+
   it('needs a target', async () => {
     const capture = createIo()
     expect(await run(['convert', HARBOR_OQF], capture.io)).toBe(2)
+  })
+})
+
+/**
+ * Ink and Yarn Spinner are the two round trips that leave the model, so both are
+ * driven end to end: convert out, import back, compare against the fixture the
+ * export started from.
+ */
+describe('import', () => {
+  for (const [target, extension] of [
+    ['ink', 'ink'],
+    ['yarn', 'yarn'],
+  ] as const) {
+    it(`round trips the reference dialogue through ${target}`, async () => {
+      const exported = createIo()
+      const file = `/virtual/harbor.${extension}`
+      expect(await run(['convert', HARBOR_OQD, '--to', target, '--out', file], exported.io)).toBe(0)
+
+      const imported = createIo()
+      imported.written.set(file, exported.written.get(file) ?? '')
+      expect(await run(['import', file, '--to', 'json'], imported.io)).toBe(0)
+      expect(imported.err).toBe('')
+      expect(parseDialogueJson(imported.out)).toEqual(parseOqd(readFileSync(HARBOR_OQD, 'utf8')))
+    })
+  }
+
+  it('writes the compact form to a file', async () => {
+    const exported = createIo()
+    expect(
+      await run(['convert', HARBOR_OQD, '--to', 'ink', '--out', '/virtual/h.ink'], exported.io),
+    ).toBe(0)
+
+    const imported = createIo()
+    imported.written.set('/virtual/h.ink', exported.written.get('/virtual/h.ink') ?? '')
+    expect(
+      await run(
+        ['import', '/virtual/h.ink', '--to', 'oqd', '--out', '/virtual/h.oqd'],
+        imported.io,
+      ),
+    ).toBe(0)
+    expect(imported.written.get('/virtual/h.oqd')).toBe(readFileSync(HARBOR_OQD, 'utf8'))
+  })
+
+  it('prints a warning per construct it could not carry over', async () => {
+    const capture = createIo()
+    const source = '=== talk ===\nTODO: rewrite this\nCONST answer = 42\nHello.\n-> END\n'
+    capture.written.set('/virtual/odd.ink', source)
+    expect(await run(['import', '/virtual/odd.ink', '--to', 'json'], capture.io)).toBe(0)
+    const lines = capture.err.trimEnd().split('\n')
+    expect(lines.length).toBeGreaterThan(0)
+    for (const line of lines) {
+      expect(line).toMatch(/^\/virtual\/odd\.ink:\d+: [^:]+: .+$/)
+    }
+    expect(capture.err).toContain('/virtual/odd.ink:2: todo:')
+    // The document is still written: an import is a starting point to review.
+    expect(capture.out).toContain('"oqd"')
+  })
+
+  it('rejects an extension it cannot import', async () => {
+    const capture = createIo()
+    expect(await run(['import', HARBOR_OQD, '--to', 'json'], capture.io)).toBe(2)
+    expect(capture.err).toContain('expected .ink or .yarn')
+  })
+
+  it('rejects an unknown target', async () => {
+    const capture = createIo()
+    capture.written.set('/virtual/a.ink', '')
+    expect(await run(['import', '/virtual/a.ink', '--to', 'oqf'], capture.io)).toBe(2)
+  })
+
+  it('needs a path and a target', async () => {
+    expect(await run(['import'], createIo().io)).toBe(2)
+    expect(await run(['import', '/virtual/a.ink'], createIo().io)).toBe(2)
+  })
+})
+
+describe('extract and inject', () => {
+  const FIXTURES = ['harbormasters-ledger.oqf', 'harbormasters-ledger.oqd']
+
+  it('extracts quests and dialogue into one table and leaves the sources alone', async () => {
+    await withCopies(FIXTURES, async (directory, copies) => {
+      const table = join(directory, 'strings.json')
+      const capture = createDiskIo()
+      expect(await run(['extract', ...copies, '--out', table], capture.io)).toBe(0)
+
+      const strings = JSON.parse(readFileSync(table, 'utf8')) as Record<string, string>
+      const keys = Object.keys(strings)
+      // Quest keys are `<questId>.…`, dialogue keys `<conversationId>.…`.
+      const questKeys = keys.filter((key) => key.startsWith('harbormasters_ledger.'))
+      expect(questKeys).toHaveLength(15)
+      expect(keys.length).toBeGreaterThan(questKeys.length)
+      expect(keys.some((key) => key.startsWith('ines_intro.'))).toBe(true)
+      expect(strings['harbormasters_ledger.title']).toBe("The Harbormaster's Ledger")
+
+      // Without --write the sources are untouched.
+      for (const [index, copy] of copies.entries()) {
+        expect(readFileSync(copy, 'utf8')).toBe(readFileSync(`${QUESTS}${FIXTURES[index]}`, 'utf8'))
+      }
+    })
+  })
+
+  it('rewrites the sources with --write and restores them with inject', async () => {
+    await withCopies(FIXTURES, async (directory, copies) => {
+      const table = join(directory, 'strings.json')
+      const originals = FIXTURES.map((name) => readFileSync(`${QUESTS}${name}`, 'utf8'))
+
+      const extract = createDiskIo()
+      expect(await run(['extract', ...copies, '--out', table, '--write'], extract.io)).toBe(0)
+      // The quest file gets quest keys, the dialogue file conversation keys.
+      const prefixes = ['@harbormasters_ledger.', '@ines_intro.']
+      for (const [index, copy] of copies.entries()) {
+        const text = readFileSync(copy, 'utf8')
+        expect(text).not.toBe(originals[index])
+        expect(text).toContain(prefixes[index])
+      }
+
+      const inject = createDiskIo()
+      expect(await run(['inject', ...copies, '--table', table], inject.io)).toBe(0)
+      for (const [index, copy] of copies.entries()) {
+        expect(readFileSync(copy, 'utf8')).toBe(originals[index])
+      }
+    })
+  })
+
+  it('takes a directory and writes every table form', async () => {
+    await withCopies(FIXTURES, async (directory) => {
+      // The table goes outside the pack, so the next run does not read it back
+      // in as a source. A directory with no known extension is skipped.
+      const out = join(directory, 'tables')
+      mkdirSync(out)
+      for (const extension of ['json', 'csv', 'po', 'xliff']) {
+        const table = join(out, `strings.${extension}`)
+        const capture = createDiskIo()
+        expect(await run(['extract', directory, '--out', table], capture.io)).toBe(0)
+        expect(readFileSync(table, 'utf8').length).toBeGreaterThan(0)
+      }
+    })
+  })
+
+  it('round trips through every table form', async () => {
+    await withCopies(FIXTURES, async (directory, copies) => {
+      const originals = FIXTURES.map((name) => readFileSync(`${QUESTS}${name}`, 'utf8'))
+      for (const extension of ['json', 'csv', 'po', 'xliff']) {
+        const table = join(directory, `strings.${extension}`)
+        expect(
+          await run(['extract', ...copies, '--out', table, '--write'], createDiskIo().io),
+        ).toBe(0)
+        expect(await run(['inject', ...copies, '--table', table], createDiskIo().io)).toBe(0)
+        for (const [index, copy] of copies.entries()) {
+          expect(readFileSync(copy, 'utf8'), extension).toBe(originals[index])
+        }
+      }
+    })
+  })
+
+  it('honours --missing empty', async () => {
+    await withCopies(['harbormasters-ledger.oqf'], async (directory, copies) => {
+      const table = join(directory, 'strings.json')
+      expect(await run(['extract', ...copies, '--out', table, '--write'], createDiskIo().io)).toBe(
+        0,
+      )
+      writeFileSync(table, '{}\n')
+      expect(
+        await run(['inject', ...copies, '--table', table, '--missing', 'empty'], createDiskIo().io),
+      ).toBe(0)
+      expect(readFileSync(copies[0], 'utf8')).not.toContain('@harbormasters_ledger.')
+    })
+  })
+
+  it('rejects a table extension it does not know', async () => {
+    const capture = createIo()
+    expect(await run(['extract', HARBOR_OQF, '--out', 'strings.yaml'], capture.io)).toBe(2)
+    expect(capture.err).toContain('unsupported table extension')
+  })
+
+  it('rejects a bad missing strategy', async () => {
+    const capture = createIo()
+    const code = await run(
+      ['inject', HARBOR_OQF, '--table', 't.json', '--missing', 'loud'],
+      capture.io,
+    )
+    expect(code).toBe(2)
+    expect(capture.err).toContain('unknown missing strategy: loud')
+  })
+
+  it('needs a path, an --out and a --table', async () => {
+    expect(await run(['extract'], createIo().io)).toBe(2)
+    expect(await run(['extract', HARBOR_OQF], createIo().io)).toBe(2)
+    expect(await run(['extract', HARBOR_OQF, '--out'], createIo().io)).toBe(2)
+    expect(await run(['inject'], createIo().io)).toBe(2)
+    expect(await run(['inject', HARBOR_OQF], createIo().io)).toBe(2)
+    expect(await run(['extract', HARBOR_OQF, '--out', 't.json', '--loud'], createIo().io)).toBe(2)
+    expect(await run(['inject', HARBOR_OQF, '--table', 't.json', '--loud'], createIo().io)).toBe(2)
   })
 })
 
@@ -222,9 +607,28 @@ describe('schema', () => {
     expect(typeof schema.title).toBe('string')
   })
 
+  it('prints the dialogue schema with --dialogue', async () => {
+    const capture = createIo()
+    expect(await run(['schema', '--dialogue'], capture.io)).toBe(0)
+    const schema = JSON.parse(capture.out) as {
+      $schema?: string
+      title?: string
+      $defs?: Record<string, unknown>
+    }
+    expect(typeof schema.$schema).toBe('string')
+    expect(typeof schema.title).toBe('string')
+    expect(Object.keys(schema.$defs ?? {}).length).toBeGreaterThan(0)
+  })
+
   it('takes no arguments', async () => {
     const capture = createIo()
     expect(await run(['schema', 'extra'], capture.io)).toBe(2)
+  })
+
+  it('rejects an unknown option', async () => {
+    const capture = createIo()
+    expect(await run(['schema', '--quests'], capture.io)).toBe(2)
+    expect(capture.err).toContain('unknown option for schema: --quests')
   })
 })
 
@@ -233,10 +637,34 @@ describe('help and version', () => {
     const capture = createIo()
     expect(await run(['--help'], capture.io)).toBe(0)
     expect(capture.out).toContain('oqf <command> [options]')
-    expect(capture.out).toContain('validate')
-    expect(capture.out).toContain('convert')
-    expect(capture.out).toContain('graph')
-    expect(capture.out).toContain('schema')
+    for (const command of [
+      'validate',
+      'convert',
+      'import',
+      'graph',
+      'extract',
+      'inject',
+      'schema',
+    ]) {
+      expect(capture.out, command).toContain(command)
+    }
+  })
+
+  it('prints the usage of every command', async () => {
+    for (const command of [
+      'validate',
+      'convert',
+      'import',
+      'graph',
+      'extract',
+      'inject',
+      'schema',
+    ]) {
+      const capture = createIo()
+      expect(await run([command, '--help'], capture.io)).toBe(0)
+      expect(capture.out, command).toContain(`oqf ${command}`)
+      expect(capture.err, command).toBe('')
+    }
   })
 
   it('prints the usage of one command', async () => {
@@ -282,5 +710,17 @@ describe('bad usage', () => {
     const capture = createIo()
     expect(await run(['validate', `${QUESTS}nope.oqf`], capture.io)).toBe(2)
     expect(capture.err).toContain('no such file or directory')
+  })
+
+  it('exits 2 on an extension no command reads', async () => {
+    const capture = createIo()
+    expect(await run(['validate', `${QUESTS}../README.md`], capture.io)).toBe(2)
+    expect(capture.err).toContain('unsupported extension')
+  })
+
+  it('exits 2 when graph is pointed at dialogue', async () => {
+    const capture = createIo()
+    expect(await run(['graph', HARBOR_OQD], capture.io)).toBe(2)
+    expect(capture.err).toContain('holds dialogue, expected quests')
   })
 })

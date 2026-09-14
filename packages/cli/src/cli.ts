@@ -5,7 +5,10 @@
  */
 import { fileURLToPath } from 'node:url'
 import { CONVERT_HELP, convertCommand } from './commands/convert.js'
+import { EXTRACT_HELP, extractCommand } from './commands/extract.js'
 import { GRAPH_HELP, graphCommand } from './commands/graph.js'
+import { IMPORT_HELP, importCommand } from './commands/import.js'
+import { INJECT_HELP, injectCommand } from './commands/inject.js'
 import { SCHEMA_HELP, schemaCommand } from './commands/schema.js'
 import { VALIDATE_HELP, validateCommand } from './commands/validate.js'
 import { type Io, UsageError } from './load.js'
@@ -16,9 +19,12 @@ const USAGE = `oqf <command> [options]
 
 Commands:
   validate <paths...>   Parse a pack and report what the validator finds
-  convert <path>        Convert between the compact form, JSON and Markdown
+  convert <path>        Convert quests and dialogue between their forms
+  import <path>         Read an Ink or Yarn Spinner file as dialogue
   graph <path>          Print a mermaid flowchart of the step graph
-  schema                Print the OQF JSON Schema
+  extract <paths...>    Pull every literal string of a pack into a table
+  inject <paths...>     Write a translated table back into a pack
+  schema                Print the OQF or dialogue JSON Schema
 
 Options:
   --help                Print this text
@@ -32,7 +38,10 @@ type Command = (argv: string[], io: Io) => number
 const COMMANDS = new Map<string, { run: Command; help: string }>([
   ['validate', { run: validateCommand, help: VALIDATE_HELP }],
   ['convert', { run: convertCommand, help: CONVERT_HELP }],
+  ['import', { run: importCommand, help: IMPORT_HELP }],
   ['graph', { run: graphCommand, help: GRAPH_HELP }],
+  ['extract', { run: extractCommand, help: EXTRACT_HELP }],
+  ['inject', { run: injectCommand, help: INJECT_HELP }],
   ['schema', { run: schemaCommand, help: SCHEMA_HELP }],
 ])
 

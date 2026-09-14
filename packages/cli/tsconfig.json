@@ -4,7 +4,9 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "@oqf/core": ["../core/src/index.ts"]
+      "@oqf/core": ["../core/src/index.ts"],
+      "@oqf/dialogue": ["../dialogue/src/index.ts"],
+      "@oqf/i18n": ["../i18n/src/index.ts"]
     }
   },
   "include": ["src"]

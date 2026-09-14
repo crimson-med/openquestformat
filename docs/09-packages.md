@@ -8,7 +8,7 @@ A pnpm workspace with one canonical model in `core` and thin packages around it,
 | `@oqf/dialogue` | The dialogue model and its compact and JSON forms. The bridge interface. The built-in oqf-dialogue provider. Ink and Yarn Spinner export and import. Adapters that wrap `inkjs` and a Yarn runtime as providers, behind optional peer dependencies. | core |
 | `@oqf/runtime` | The state machine. Loads a pack, accepts events, evaluates conditions, transitions steps, grants rewards, emits events, reads and writes state documents, reconciles state against a newer quest version. Engine-agnostic: no DOM, no Node APIs, works in a browser, Electron renderer, Node, or Deno. | core, dialogue (bridge only) |
 | `@oqf/i18n` | `extract` and `inject` over a pack. Table adapters: JSON, CSV, PO, XLIFF. A minimal runtime resolver. | core |
-| `@oqf/cli` | `oqf validate`, `oqf convert`, `oqf graph`, `oqf diff`, `oqf extract`, `oqf inject`, `oqf export ink|yarn`. Thin wrapper over the packages above. | all |
+| `@oqf/cli` | `oqf validate`, `oqf convert` (oqf, json, md, oqd, ink, yarn), `oqf import` (ink, yarn), `oqf graph`, `oqf schema`, `oqf extract`, `oqf inject`. Thin wrapper over the packages above. | all |
 | `@oqf/editor` | Web editor. Graph view of steps, form view of fields, dialogue editor, live validation, import and export in every format. Authors compact natively. Ships as a static site and as a component others can embed. | core, dialogue, i18n |
 | `@oqf/examples` | Reference quests in compact and JSON, including the Cozy Coast quest from [11-reference-quest.md](11-reference-quest.md). Used by tests in every other package. | none |
 

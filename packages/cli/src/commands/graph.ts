@@ -6,7 +6,7 @@
  * a dashed border.
  */
 import { type Quest, type Step, stepGraph } from '@oqf/core'
-import { type Io, UsageError, loadDocument } from '../load.js'
+import { type Io, UsageError, loadQuest } from '../load.js'
 
 export const GRAPH_HELP = `oqf graph <path> [--quest <id>]
 
@@ -77,7 +77,7 @@ function questFlowchart(quest: Quest): string {
 
 export function graphCommand(argv: string[], io: Io): number {
   const options = parseArgs(argv)
-  const { document } = loadDocument(options.path, io)
+  const { document } = loadQuest(options.path, io)
   const quests =
     options.quest === undefined
       ? document.quests

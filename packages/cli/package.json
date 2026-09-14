@@ -28,7 +28,9 @@
     "prepack": "tsup"
   },
   "dependencies": {
-    "@oqf/core": "workspace:*"
+    "@oqf/core": "workspace:*",
+    "@oqf/dialogue": "workspace:*",
+    "@oqf/i18n": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.5",
