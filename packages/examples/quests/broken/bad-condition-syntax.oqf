@@ -1,0 +1,5 @@
+# Expected error: malformed condition expression. The unlock cell "step.greet and" ends on the "and" operator with no right operand.
+OQF1
+Q	bad_condition_syntax	1				Bad Condition Syntax
+S	greet	s										Greet the innkeeper
+S	leave		step.greet and				finished					Leave the inn

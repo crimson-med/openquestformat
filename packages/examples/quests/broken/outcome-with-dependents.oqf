@@ -1,0 +1,6 @@
+# Expected error: outcome on a step that has outgoing dependents. Step "return_ledger" carries outcome "returned", but step "brag" unlocks from it, so the ending is not terminal.
+OQF1
+Q	outcome_with_dependents	1				Outcome With Dependents
+S	find_ledger	s										Find the ledger
+S	return_ledger		step.find_ledger				returned					Return the ledger
+S	brag		step.return_ledger									Brag about it at the tavern

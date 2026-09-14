@@ -1,0 +1,4 @@
+# Expected error: bad magic. Line 1 must be exactly "OQF1"; this file says "OQF2".
+OQF2
+Q	wrong_magic	1				Wrong Magic
+S	only_step	s					finished					Finish the only step

@@ -1,0 +1,26 @@
+OQF1
+A	harbormaster|Harbormaster Ines	gull_feeder|The Gull Feeder	otter|Old Salt Otter	smuggler|Cove Smuggler
+L	harbor|Harbor pier	otter_den|Otter's den under the boardwalk	smuggler_cove|Smuggler's cove
+I	fish.rare|Silver koi	lure.golden|Golden lure	ledger|Harbor ledger
+T	main	harbor
+Q	harbormasters_ledger	1		0,1		The Harbormaster's Ledger	Harbormaster Ines has lost the harbor ledger. Find it, then decide whether to return it or sell it.
+X	editor	pos	x=120;y=40
+R	coins_hint	currency	coins	10
+R	xp_trade	xp	xp	50
+R	rep_returned	reputation	harbor	10	returned
+R	lure_returned	item	lure.golden		returned
+R	event_restored	event	cozycoast.ledger.restored		returned	feature=catch_log;achievement=ledger_restored
+R	coins_sold	currency	coins	200	sold
+R	rep_sold	reputation	harbor	-10	sold
+R	flag_vendor	flag	smuggler_vendor_open		sold
+R	rep_confiscated	reputation	harbor	-5	confiscated
+S	talk_ines	s			talk harbormaster ines_intro				oqf:ines_intro	0	0	Speak with Harbormaster Ines	Ines has lost the harbor ledger. Without it the pier cannot log catches and the season's records are at risk.
+S	ask_gulls	o	step.talk_ines		talk gull_feeder gulls_hint			0	oqf:gulls_hint	0	1	Ask around the pier
+S	find_otter		step.talk_ines		reach otter_den					1		Find who has the ledger
+X	cozycoast	marker	boardwalk_den
+S	trade		step.find_otter		collect fish.rare 5 and flag.otter_agreed			1	oqf:otter_trade	1	2	Trade five silver koi for the ledger
+S	steal		step.find_otter		interact ledger_chest and var.time.isNight	event guard.caught				1		Take the ledger from the den at night
+S	have_ledger		step.trade or step.steal									Decide what to do with the ledger
+S	return_ledger		step.have_ledger		talk harbormaster ines_return		returned|Ledger returned		oqf:ines_return	0	0	Return the ledger to Ines
+S	sell_ledger		step.have_ledger		talk smuggler smuggler_deal		sold|Ledger sold		oqf:smuggler_deal	2	3	Sell the ledger to the smuggler
+S	caught		step.steal == "failed"				!confiscated|Ledger confiscated			1		Caught in the den

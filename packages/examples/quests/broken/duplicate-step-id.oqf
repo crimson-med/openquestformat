@@ -1,0 +1,5 @@
+# Expected error: duplicate step id. The id "greet" is declared twice in quest "duplicate_step_id".
+OQF1
+Q	duplicate_step_id	1				Duplicate Step Id
+S	greet	s										Greet the innkeeper
+S	greet		step.greet				finished					Greet the innkeeper again

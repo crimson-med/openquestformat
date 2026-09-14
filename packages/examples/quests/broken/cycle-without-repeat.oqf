@@ -1,0 +1,7 @@
+# Expected error: cycle without repeat. Steps "ferry_out" and "ferry_back" unlock from each other and neither carries the "r" repeat flag.
+OQF1
+Q	cycle_without_repeat	1				Cycle Without Repeat
+S	board_ferry	s										Board the ferry
+S	ferry_out		step.board_ferry or step.ferry_back									Sail out to the island
+S	ferry_back		step.ferry_out									Sail back to the harbor
+S	go_ashore		step.ferry_out				finished					Step ashore for good

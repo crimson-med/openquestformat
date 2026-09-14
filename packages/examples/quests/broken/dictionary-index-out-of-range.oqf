@@ -1,0 +1,5 @@
+# Expected error: dictionary index out of range. The step location cell names L index 2, but the locations dictionary holds one entry (index 0).
+OQF1
+L	harbor|Harbor pier
+Q	dictionary_index_out_of_range	1				Dictionary Index Out Of Range
+S	only_step	s					finished			2		Finish the only step

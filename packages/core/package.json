@@ -1,0 +1,29 @@
+{
+  "name": "@oqf/core",
+  "version": "0.1.0",
+  "description": "Open Quest Format canonical model, compact and JSON parsers and serializers, condition language, validator.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
+  "license": "Apache-2.0",
+  "engines": { "node": ">=24" },
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepack": "tsup"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}

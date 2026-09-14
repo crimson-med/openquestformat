@@ -1,0 +1,4 @@
+# Expected error: unknown objective kind "gather". The complete cell must open with kill, collect, reach, talk, interact, event or custom.
+OQF1
+Q	unknown_objective_kind	1				Unknown Objective Kind
+S	only_step	s			gather fish.rare 5		finished					Gather five silver koi

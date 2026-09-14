@@ -1,0 +1,26 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [],
+    "locations": [],
+    "items": [],
+    "tags": []
+  },
+  "quests": [
+    {
+      "id": "minimal",
+      "version": 1,
+      "title": "Minimal Quest",
+      "steps": [
+        {
+          "id": "only_step",
+          "title": "Finish the only step",
+          "start": true,
+          "outcome": {
+            "name": "finished"
+          }
+        }
+      ]
+    }
+  ]
+}

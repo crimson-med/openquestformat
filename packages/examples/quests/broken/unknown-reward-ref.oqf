@@ -1,0 +1,5 @@
+# Expected error: unknown reward reference. The step rewardRefs cell names index 1, but the quest defines a single R line (index 0).
+OQF1
+Q	unknown_reward_ref	1				Unknown Reward Ref
+R	coins_tip	currency	coins	10
+S	only_step	s					finished	1				Finish the only step

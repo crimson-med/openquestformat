@@ -1,0 +1,6 @@
+# Expected warning, not an error: unreachable step. The unlock on "forgotten_errand" asks the same step to be done and failed at once, so no assignment of quest state ever satisfies it. Flags alone would not make a step unreachable, since the game may set any flag. The file is valid OQF and the validator exits zero unless strict mode is on.
+OQF1
+Q	unreachable_step	1				Unreachable Step
+S	greet	s										Greet the innkeeper
+S	forgotten_errand		step.greet and step.greet == "failed"									Run an errand nobody asked for
+S	leave		step.greet				finished					Leave the inn

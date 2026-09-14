@@ -1,0 +1,5 @@
+# Expected error: extension key not namespaced. The X line carries an empty namespace cell, so its key would be "x-.marker".
+OQF1
+Q	ext_without_namespace	1				Ext Without Namespace
+S	only_step	s					finished					Finish the only step
+X		marker	pier_02

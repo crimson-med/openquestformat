@@ -1,0 +1,376 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "harbormaster",
+        "name": "Harbormaster Ines"
+      },
+      {
+        "id": "gull_feeder",
+        "name": "The Gull Feeder"
+      },
+      {
+        "id": "otter",
+        "name": "Old Salt Otter"
+      },
+      {
+        "id": "smuggler",
+        "name": "Cove Smuggler"
+      }
+    ],
+    "locations": [
+      {
+        "id": "harbor",
+        "name": "Harbor pier"
+      },
+      {
+        "id": "otter_den",
+        "name": "Otter's den under the boardwalk"
+      },
+      {
+        "id": "smuggler_cove",
+        "name": "Smuggler's cove"
+      }
+    ],
+    "items": [
+      {
+        "id": "fish.rare",
+        "name": "Silver koi"
+      },
+      {
+        "id": "lure.golden",
+        "name": "Golden lure"
+      },
+      {
+        "id": "ledger",
+        "name": "Harbor ledger"
+      }
+    ],
+    "tags": [
+      {
+        "id": "main"
+      },
+      {
+        "id": "harbor"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "harbormasters_ledger",
+      "version": 1,
+      "title": "The Harbormaster's Ledger",
+      "summary": "Harbormaster Ines has lost the harbor ledger. Find it, then decide whether to return it or sell it.",
+      "tags": [
+        "main",
+        "harbor"
+      ],
+      "steps": [
+        {
+          "id": "talk_ines",
+          "title": "Speak with Harbormaster Ines",
+          "journal": "Ines has lost the harbor ledger. Without it the pier cannot log catches and the season's records are at risk.",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "harbormaster",
+            "dialogue": "ines_intro"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "ines_intro"
+          },
+          "location": "harbor",
+          "actors": [
+            "harbormaster"
+          ]
+        },
+        {
+          "id": "ask_gulls",
+          "title": "Ask around the pier",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.talk_ines"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "gull_feeder",
+            "dialogue": "gulls_hint"
+          },
+          "optional": true,
+          "rewards": [
+            "coins_hint"
+          ],
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "gulls_hint"
+          },
+          "location": "harbor",
+          "actors": [
+            "gull_feeder"
+          ]
+        },
+        {
+          "id": "find_otter",
+          "title": "Find who has the ledger",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.talk_ines"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "reach",
+            "location": "otter_den"
+          },
+          "location": "otter_den",
+          "ext": {
+            "x-cozycoast.marker": "boardwalk_den"
+          }
+        },
+        {
+          "id": "trade",
+          "title": "Trade five silver koi for the ledger",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.find_otter"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "fish.rare",
+            "count": 5
+          },
+          "complete": {
+            "==": [
+              {
+                "var": "flag.otter_agreed"
+              },
+              true
+            ]
+          },
+          "rewards": [
+            "xp_trade"
+          ],
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "otter_trade"
+          },
+          "location": "otter_den",
+          "actors": [
+            "otter"
+          ]
+        },
+        {
+          "id": "steal",
+          "title": "Take the ledger from the den at night",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.find_otter"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "interact",
+            "object": "ledger_chest"
+          },
+          "complete": {
+            "==": [
+              {
+                "var": "var.time.isNight"
+              },
+              true
+            ]
+          },
+          "failObjective": {
+            "kind": "event",
+            "event": "guard.caught"
+          },
+          "location": "otter_den"
+        },
+        {
+          "id": "have_ledger",
+          "title": "Decide what to do with the ledger",
+          "unlock": {
+            "or": [
+              {
+                "==": [
+                  {
+                    "var": "step.trade"
+                  },
+                  "done"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "step.steal"
+                  },
+                  "done"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "return_ledger",
+          "title": "Return the ledger to Ines",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.have_ledger"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "harbormaster",
+            "dialogue": "ines_return"
+          },
+          "outcome": {
+            "name": "returned",
+            "title": "Ledger returned"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "ines_return"
+          },
+          "location": "harbor",
+          "actors": [
+            "harbormaster"
+          ]
+        },
+        {
+          "id": "sell_ledger",
+          "title": "Sell the ledger to the smuggler",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.have_ledger"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "smuggler",
+            "dialogue": "smuggler_deal"
+          },
+          "outcome": {
+            "name": "sold",
+            "title": "Ledger sold"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "smuggler_deal"
+          },
+          "location": "smuggler_cove",
+          "actors": [
+            "smuggler"
+          ]
+        },
+        {
+          "id": "caught",
+          "title": "Caught in the den",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.steal"
+              },
+              "failed"
+            ]
+          },
+          "outcome": {
+            "name": "confiscated",
+            "failed": true,
+            "title": "Ledger confiscated"
+          },
+          "location": "otter_den"
+        }
+      ],
+      "rewards": [
+        {
+          "id": "coins_hint",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 10
+        },
+        {
+          "id": "xp_trade",
+          "kind": "xp",
+          "ref": "xp",
+          "amount": 50
+        },
+        {
+          "id": "rep_returned",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": 10,
+          "outcome": "returned"
+        },
+        {
+          "id": "lure_returned",
+          "kind": "item",
+          "ref": "lure.golden",
+          "outcome": "returned"
+        },
+        {
+          "id": "event_restored",
+          "kind": "event",
+          "ref": "cozycoast.ledger.restored",
+          "outcome": "returned",
+          "payload": {
+            "feature": "catch_log",
+            "achievement": "ledger_restored"
+          }
+        },
+        {
+          "id": "coins_sold",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 200,
+          "outcome": "sold"
+        },
+        {
+          "id": "rep_sold",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": -10,
+          "outcome": "sold"
+        },
+        {
+          "id": "flag_vendor",
+          "kind": "flag",
+          "ref": "smuggler_vendor_open",
+          "outcome": "sold"
+        },
+        {
+          "id": "rep_confiscated",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": -5,
+          "outcome": "confiscated"
+        }
+      ],
+      "ext": {
+        "x-editor.pos": {
+          "x": 120,
+          "y": 40
+        }
+      }
+    }
+  ]
+}
