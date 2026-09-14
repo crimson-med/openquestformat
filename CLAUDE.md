@@ -10,7 +10,7 @@ OQF is an open, engine-neutral quest format: a spec, a canonical TypeScript mode
 | `@oqf/dialogue` | Dialogue model (`.oqd`), bridge interface, built-in provider, Ink and Yarn Spinner export and import. |
 | `@oqf/runtime` | Engine-agnostic state machine: events in, quest state and events out. Runs in browsers and Node. |
 | `@oqf/i18n` | Extract inline strings to a table and inject them back. |
-| `@oqf/cli` | `oqf validate`, `convert`, `graph`, `schema` and friends. |
+| `@oqf/cli` | `oqf validate`, `convert`, `import`, `graph`, `schema`, `extract`, `inject`. |
 | `@oqf/editor` | Web editor, Vite and React. |
 | `@oqf/examples` | Reference quest fixtures used by every package's tests. |
 

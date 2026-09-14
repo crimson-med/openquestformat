@@ -4,7 +4,7 @@
 
 Define a quest once. Take it anywhere.
 
-> Status: early. The core model, compact and JSON formats, validator, runtime and CLI exist and pass their tests. Dialogue, i18n, the editor and engine exporters are not started. Plan and decisions live in [docs/](docs/README.md).
+> Status: early. Core model, compact and JSON formats, validator, runtime, dialogue with Ink and Yarn Spinner interop, i18n, CLI and the web editor exist and pass their tests. Not yet integrated into a shipping game; engine exporters are not started. Plan and decisions live in [docs/](docs/README.md).
 
 ## You don't own your quest data
 

@@ -34,14 +34,14 @@ Done when the reference quest round-trips through every format byte-stable and t
 
 Done when a player can complete the reference quest in Cozy Coast by every route and every outcome, and the state survives a save and load.
 
-## Phase 4: dialogue
+## Phase 4: dialogue. Done.
 
 - `@oqf/dialogue`: model, bridge, oqf-dialogue provider, Ink and Yarn export and import, `inkjs` and Yarn adapters.
 - Cozy Coast switches the reference quest's conversations to the oqf-dialogue provider.
 
 Done when the reference dialogue exports to Ink and Yarn, both re-import with no warnings, and Cozy Coast runs it.
 
-## Phase 5: i18n and editor
+## Phase 5: i18n and editor. Packages done; public spec release pending.
 
 - `@oqf/i18n`: extract, inject, adapters.
 - `@oqf/editor`: graph and form views, dialogue editor, live validation, import and export.
