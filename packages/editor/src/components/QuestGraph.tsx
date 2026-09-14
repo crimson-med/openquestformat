@@ -22,6 +22,7 @@ import { layoutQuest, questPositions } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForStep, worstLevel } from '../store/selectors'
 import { DirectionToggle } from './DirectionToggle'
+import { usePlaytest } from './PlaytestContext'
 import { type StepFlowNode, StepNode } from './StepNode'
 
 const NODE_TYPES = { step: StepNode }
@@ -38,6 +39,13 @@ export function QuestGraph({
   const state = useEditorState()
   const dispatch = useDispatch()
   const selected = state.selection.kind === 'step' ? state.selection.step : undefined
+  const playtest = usePlaytest()
+  // The session mutates in place; its version says when to read it again.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version drives the reread
+  const runState = useMemo(
+    () => playtest.session?.stepStates(quest.id),
+    [playtest.session, playtest.version, quest.id],
+  )
 
   const relayout = (next: Direction) =>
     dispatch({
@@ -72,10 +80,11 @@ export function QuestGraph({
           level: worstLevel(findingsForStep(state.findings, quest.id, step.id)),
           picked: step.id === selected,
           direction,
+          runState: runState?.[step.id],
         },
       }
     })
-  }, [quest, state.findings, selected, direction])
+  }, [quest, state.findings, selected, direction, runState])
 
   const [nodes, setNodes] = useState<StepFlowNode[]>(build)
   useEffect(() => {

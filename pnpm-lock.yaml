@@ -91,6 +91,9 @@ importers:
       '@oqf/dialogue':
         specifier: workspace:*
         version: link:../dialogue
+      '@oqf/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@xyflow/react':
         specifier: ^12.11.6
         version: 12.11.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

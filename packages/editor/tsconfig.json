@@ -10,7 +10,8 @@
     "declarationMap": false,
     "paths": {
       "@oqf/core": ["../core/src/index.ts"],
-      "@oqf/dialogue": ["../dialogue/src/index.ts"]
+      "@oqf/dialogue": ["../dialogue/src/index.ts"],
+      "@oqf/runtime": ["../runtime/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

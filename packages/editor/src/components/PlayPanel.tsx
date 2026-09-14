@@ -15,6 +15,7 @@ import {
 } from '@oqf/dialogue'
 import { useCallback, useRef, useState } from 'react'
 import { useEditorState } from '../store/context'
+import { usePlaytest } from './PlaytestContext'
 
 interface TranscriptEntry {
   kind: 'line' | 'choice' | 'event'
@@ -38,6 +39,10 @@ export function PlayPanel({ conversation }: { conversation: string | undefined }
   const [error, setError] = useState<string | undefined>(undefined)
   const flagsRef = useRef(flags)
   flagsRef.current = flags
+  /** A running quest playtest hears every event this conversation emits. */
+  const playtest = usePlaytest()
+  const playtestRef = useRef(playtest)
+  playtestRef.current = playtest
 
   const push = useCallback((entry: TranscriptEntry) => {
     setTranscript((current) => [...current, entry])
@@ -62,6 +67,7 @@ export function PlayPanel({ conversation }: { conversation: string | undefined }
         },
         emit: (event: DialogueEvent) => {
           push({ kind: 'event', text: event.name, detail: payloadText(event.payload) })
+          playtestRef.current.feed(event.name, event.payload ?? {})
         },
         once: {
           has: (key: string) => taken.has(key),

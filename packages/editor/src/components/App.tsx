@@ -19,6 +19,7 @@ import { DialogueGraph } from './DialogueGraph'
 import { Drawer, type DrawerTab } from './Drawer'
 import { EmptyState } from './EmptyState'
 import { Inspector } from './Inspector'
+import { PlaytestProvider } from './PlaytestContext'
 import { QuestGraph } from './QuestGraph'
 import { type Tab, Toolbar } from './Toolbar'
 
@@ -29,7 +30,16 @@ function editingText(target: EventTarget | null): boolean {
   return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable
 }
 
+/** The editor with a playtest session available to the graph and the drawer. */
 export function App() {
+  return (
+    <PlaytestProvider>
+      <AppContent />
+    </PlaytestProvider>
+  )
+}
+
+function AppContent() {
   const state = useEditorState()
   const dispatch = useDispatch()
   const [tab, setTab] = useState<Tab>('quests')
