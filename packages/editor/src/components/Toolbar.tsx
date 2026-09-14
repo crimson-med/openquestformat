@@ -9,10 +9,10 @@ import {
   MIME_TYPES,
   type QuestFormat,
   downloadName,
-  openFile,
   serializeDialogues,
   serializeQuests,
 } from '../lib/files'
+import { mergePack, packFileName, packMime, splitPack } from '../lib/pack'
 import { loadReference } from '../lib/reference'
 import { type QuestTemplate, TEMPLATES, loadTemplate } from '../lib/templates'
 import { useDispatch, useEditorState } from '../store/context'
@@ -32,6 +32,7 @@ export function Toolbar({
   const state = useEditorState()
   const dispatch = useDispatch()
   const fileInput = useRef<HTMLInputElement>(null)
+  const folderInput = useRef<HTMLInputElement>(null)
   const templateMenu = useRef<HTMLDetailsElement>(null)
   const moreMenu = useRef<HTMLDetailsElement>(null)
   const [busy, setBusy] = useState(false)
@@ -44,22 +45,51 @@ export function Toolbar({
     if (files === null || files.length === 0) return
     setBusy(true)
     try {
-      let quests = state.quests
-      let dialogues = state.dialogues
-      const names: string[] = []
-      for (const file of Array.from(files)) {
-        const opened = openFile(file.name, await file.text())
-        if (opened.quests !== undefined) quests = opened.quests
-        if (opened.dialogues !== undefined) dialogues = opened.dialogues
-        names.push(file.name)
+      const entries = await Promise.all(
+        Array.from(files).map(async (file) => ({
+          name: file.webkitRelativePath || file.name,
+          text: await file.text(),
+        })),
+      )
+      const pack = mergePack(entries)
+      const names = entries
+        .map((entry) => packFileName(entry.name))
+        .filter((name) => name !== undefined)
+      const hasQuests = pack.quests.quests.length > 0
+      const hasDialogues = pack.dialogues.conversations.length > 0
+      if (!hasQuests && !hasDialogues) {
+        onNotice(['Nothing to open.', ...pack.notices].join(' '))
+        return
       }
-      dispatch({ type: 'doc/load', quests, dialogues })
-      onNotice(`Opened ${names.join(', ')}`)
+      dispatch({
+        type: 'doc/load',
+        quests: hasQuests ? pack.quests : state.quests,
+        dialogues: hasDialogues ? pack.dialogues : state.dialogues,
+      })
+      const opened =
+        names.length > 4 ? `Opened ${names.length} files.` : `Opened ${names.join(', ')}`
+      onNotice([opened, ...pack.notices].join(' '))
     } catch (failure) {
       onNotice(failure instanceof Error ? failure.message : String(failure))
     } finally {
       setBusy(false)
       if (fileInput.current !== null) fileInput.current.value = ''
+      if (folderInput.current !== null) folderInput.current.value = ''
+    }
+  }
+
+  const exportPack = () => {
+    try {
+      const files = splitPack(state.quests, state.dialogues)
+      if (files.length === 0) {
+        onNotice('Nothing to export.')
+        return
+      }
+      for (const file of files) downloadText(file.name, file.text, packMime(file.name))
+      dispatch({ type: 'doc/markSaved' })
+      onNotice(`Exported ${files.map((file) => file.name).join(', ')}`)
+    } catch (failure) {
+      onNotice(failure instanceof Error ? failure.message : String(failure))
     }
   }
 
@@ -196,9 +226,28 @@ export function Toolbar({
               void open(event.target.files)
             }}
           />
+          <button type="button" onClick={() => folderInput.current?.click()} disabled={busy}>
+            Open folder
+          </button>
+          <input
+            ref={(node) => {
+              folderInput.current = node
+              // The React types do not know the attribute; the browser does.
+              node?.setAttribute('webkitdirectory', '')
+            }}
+            className="file-input"
+            type="file"
+            multiple
+            onChange={(event) => {
+              void open(event.target.files)
+            }}
+          />
           <details className="menu">
             <summary>Export</summary>
             <div className="menu-body">
+              <button type="button" onClick={exportPack}>
+                Pack as files
+              </button>
               <button type="button" onClick={() => exportQuests('oqf')}>
                 Quests as .oqf
               </button>

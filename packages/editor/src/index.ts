@@ -16,6 +16,8 @@ export {
   layoutQuest,
   questPositions,
 } from './lib/layout'
+export { FILE_KEY, mergePack, splitPack } from './lib/pack'
+export type { MergedPack, PackFile } from './lib/pack'
 export { POSITION_KEY, readPosition, writePosition } from './lib/position'
 export { loadReference } from './lib/reference'
 export { dialogueSource, questSource } from './lib/source'

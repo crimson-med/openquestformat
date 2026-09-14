@@ -5,6 +5,7 @@
  */
 import type { Quest, Reward, Step } from '@oqf/core'
 import type { Choice, Conversation, DialogueNode } from '@oqf/dialogue'
+import { readFile } from '../lib/pack'
 import type { EditorFinding } from './findings'
 import type { EditorState } from './types'
 
@@ -132,4 +133,18 @@ export function conversationIds(state: EditorState): string[] {
 /** True when the step ends the quest. */
 export function isEndingStep(step: Step): boolean {
   return step.outcome !== undefined
+}
+
+/** The file names in use across quests and conversations, distinct and sorted. */
+export function packFiles(state: EditorState): string[] {
+  const names = new Set<string>()
+  for (const quest of state.quests.quests) {
+    const name = readFile(quest.ext)
+    if (name !== undefined) names.add(name)
+  }
+  for (const conversation of state.dialogues.conversations) {
+    const name = readFile(conversation.ext)
+    if (name !== undefined) names.add(name)
+  }
+  return [...names].sort()
 }
