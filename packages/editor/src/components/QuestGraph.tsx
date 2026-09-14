@@ -23,6 +23,7 @@ import { useDispatch, useEditorState } from '../store/context'
 import { findingsForStep, worstLevel } from '../store/selectors'
 import { DirectionToggle } from './DirectionToggle'
 import { type StepFlowNode, StepNode } from './StepNode'
+import { useStringResolver } from './StringsContext'
 
 const NODE_TYPES = { step: StepNode }
 
@@ -37,6 +38,7 @@ export function QuestGraph({
 }) {
   const state = useEditorState()
   const dispatch = useDispatch()
+  const resolve = useStringResolver()
   const selected = state.selection.kind === 'step' ? state.selection.step : undefined
 
   const relayout = (next: Direction) =>
@@ -61,7 +63,7 @@ export function QuestGraph({
         position: positions[step.id] ?? { x: 0, y: 0 },
         data: {
           stepId: step.id,
-          title: String(step.title),
+          title: resolve(String(step.title)),
           objective: objective === '' ? undefined : objective,
           badges,
           ending: step.outcome !== undefined,
@@ -75,7 +77,7 @@ export function QuestGraph({
         },
       }
     })
-  }, [quest, state.findings, selected, direction])
+  }, [quest, state.findings, selected, direction, resolve])
 
   const [nodes, setNodes] = useState<StepFlowNode[]>(build)
   useEffect(() => {

@@ -20,6 +20,7 @@ import { Drawer, type DrawerTab } from './Drawer'
 import { EmptyState } from './EmptyState'
 import { Inspector } from './Inspector'
 import { QuestGraph } from './QuestGraph'
+import { StringsProvider } from './StringsContext'
 import { type Tab, Toolbar } from './Toolbar'
 
 /** True when a keystroke belongs to a field rather than to the canvas. */
@@ -29,7 +30,7 @@ function editingText(target: EventTarget | null): boolean {
   return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable
 }
 
-export function App() {
+function AppContent() {
   const state = useEditorState()
   const dispatch = useDispatch()
   const [tab, setTab] = useState<Tab>('quests')
@@ -240,5 +241,14 @@ export function App() {
         conversation={conversationId}
       />
     </div>
+  )
+}
+
+/** The panes, inside the language tables the Strings tab and the graphs share. */
+export function App() {
+  return (
+    <StringsProvider>
+      <AppContent />
+    </StringsProvider>
   )
 }

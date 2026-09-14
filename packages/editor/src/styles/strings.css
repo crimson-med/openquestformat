@@ -1,0 +1,161 @@
+/* Strings tab: the localization toolbar, the warnings strip and the table. */
+
+.strings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.strings-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.strings-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.strings-group > label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.strings-bar .picker-select {
+  width: auto;
+  padding: 6px 10px;
+}
+
+.strings-bar .input.code {
+  width: 88px;
+  padding: 6px 10px;
+  font-family: var(--mono);
+}
+
+.strings-spacer {
+  flex: 1;
+}
+
+.strings-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.strings-preview input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.strings-warn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  font-size: 13px;
+}
+
+.strings-warn.has-missing {
+  border-color: var(--warning);
+  background: var(--warning-soft);
+}
+
+.strings-warn .strings-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.strings-warn .strings-filter input {
+  accent-color: var(--accent);
+}
+
+.strings-table-wrap {
+  overflow: auto;
+  max-height: 60vh;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--field);
+}
+
+.strings-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.strings-table th,
+.strings-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+
+.strings-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.strings-table col.path {
+  width: 22%;
+}
+
+.strings-table col.key {
+  width: 22%;
+}
+
+.strings-table td.path {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.strings-table td.key {
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.strings-table td.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.strings-table td.text .muted {
+  font-style: italic;
+}
+
+.strings-table tr.missing td {
+  background: var(--warning-soft);
+}
+
+.strings-table tr.orphan td {
+  background: var(--error-soft);
+}
+
+.strings-table .input {
+  padding: 6px 8px;
+}
+
+.strings-empty {
+  padding: 24px 12px;
+  text-align: center;
+}

@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       '@oqf/core': fileURLToPath(new URL('../core/src/index.ts', import.meta.url)),
       '@oqf/dialogue': fileURLToPath(new URL('../dialogue/src/index.ts', import.meta.url)),
+      '@oqf/i18n': fileURLToPath(new URL('../i18n/src/index.ts', import.meta.url)),
     },
   },
   server: {

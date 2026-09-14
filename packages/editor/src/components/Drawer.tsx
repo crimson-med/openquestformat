@@ -8,8 +8,9 @@ import { countFindings } from '../store/findings'
 import { FindingList } from './FindingList'
 import { PlayPanel } from './PlayPanel'
 import { SourcePanel } from './SourcePanel'
+import { StringsPanel } from './StringsPanel'
 
-export type DrawerTab = 'validation' | 'source' | 'play'
+export type DrawerTab = 'validation' | 'source' | 'play' | 'strings'
 
 export function Drawer({
   tab,
@@ -59,6 +60,7 @@ export function Drawer({
           )}
           {tabButton('source', 'Source')}
           {tabButton('play', 'Play')}
+          {tabButton('strings', 'Strings')}
         </nav>
         <button type="button" className="ghost" onClick={() => onOpen(!open)}>
           {open ? 'Hide' : 'Show'}
@@ -69,6 +71,7 @@ export function Drawer({
           {tab === 'validation' ? <FindingList findings={state.findings} /> : null}
           {tab === 'source' ? <SourcePanel /> : null}
           {tab === 'play' ? <PlayPanel conversation={conversation} /> : null}
+          {tab === 'strings' ? <StringsPanel /> : null}
         </div>
       ) : null}
     </section>

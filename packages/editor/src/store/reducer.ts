@@ -149,6 +149,12 @@ function applyEdit(state: EditorState, action: Action): Documents {
     selection: state.selection,
   }
   switch (action.type) {
+    case 'doc/replace':
+      return {
+        ...docs,
+        quests: action.quests ?? docs.quests,
+        dialogues: action.dialogues ?? docs.dialogues,
+      }
     case 'dict/set': {
       const kind: DictionaryKind = action.kind
       return {
