@@ -1,0 +1,41 @@
+OQD1
+A	harbormaster|Harbormaster Ines	gull_feeder|The Gull Feeder	otter|Old Salt Otter	smuggler|Cove Smuggler
+C	ines_intro	0	greet	Ines asks for help
+X	editor	pos	x=40;y=40
+N	greet						The ledger is gone. Sixty years of catches, and it walks off the pier in a single night. Will you help me find it?
+O	lighthouse					Tell me about the old lighthouse.
+O	pier_history					How old is this pier?
+O	why_ledger					Why does one book matter so much?
+O	promise					I will find it.
+N	lighthouse		l	greet			Dark since the storm of the ninth. The lamp is still up there, waiting for someone stubborn enough to climb.
+N	pier_history		l	greet			Older than the town. The first planks went down when my grandmother was a girl, and half of them are still under your boots.
+N	why_ledger		l	greet			Every catch, every debt, every share of every boat. Without it the whole season is a rumor.
+N	promise						Thank you. Ask around the pier first, someone always sees more than they let on.
+C	gulls_hint	1	ask	The Gull Feeder points the way
+N	ask						Careful where you step. They remember faces, these birds.
+O	tell					Has anyone come past with a big leather book?
+O	gulls					You feed them every morning?
+O						Never mind.
+N	tell				knows_otter		Old Salt Otter took it, down in the den under the boardwalk. He reads it like a bedtime story.
+N	gulls		l				Every morning since the lighthouse went dark. Better company than most of this pier, and they never ask for change.
+C	otter_trade	2	offer	The otter names his price
+N	offer						The ledger? Fine reading. Five silver koi and it is yours, and no haggling.
+O	handover	count.trade >= 5	od	otter_agreed;otter_traded		Here. Five silver koi, fresh off the line.
+X	cozycoast	sfx	coins
+O	curiosity					What does an otter want with a harbor ledger?
+O	come_back					I do not have the fish yet.
+N	handover					cozycoast.ledger.handed:from=otter	A deal is a deal. Mind the salt stains, those are mine.
+N	curiosity			offer			Names of every boat that ever stiffed me, in one tidy column. I call that a library.
+N	come_back						Then go fish. The tide is patient and so am I.
+C	ines_return	0	thanks	Ines takes the ledger back
+N	thanks			farewell			You found it. Salt stained, dog eared, and every page still here.
+N	farewell						The season is safe. Go on, the pier owes you a quiet evening.
+C	smuggler_deal	3	offer	The smuggler makes an offer
+N	offer						Two hundred coins, and the harbor never hears your name from me. Well?
+X	cozycoast	camera	cove_wide
+O	curiosity					What do you want with it?
+O	accept				cozycoast.smuggler.deal:price=200	Deal.
+O	walk_away					Not today.
+N	curiosity			offer			Every debt on this coast, written down and signed. A book like that pays for itself twice.
+N	accept						Pleasure. Come back when you have something else nobody should be missing.
+N	walk_away						Suit yourself. The offer keeps, and so do I.
