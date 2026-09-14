@@ -99,7 +99,7 @@ export function DialogueGraph({ conversation }: { conversation: Conversation }) 
         })
       }
       fitView
-      colorMode="system"
+      colorMode="light"
       minZoom={0.2}
     >
       <Background gap={24} size={1} />

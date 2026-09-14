@@ -103,7 +103,7 @@ export function QuestGraph({ quest }: { quest: Quest }) {
         dispatch({ type: 'select', selection: { kind: 'quest', quest: quest.id } })
       }
       fitView
-      colorMode="system"
+      colorMode="light"
       proOptions={{ hideAttribution: false }}
       minZoom={0.2}
     >
