@@ -41,6 +41,7 @@ import {
   ORPHANED_KEY,
   type QuestState,
   STATE_VERSION,
+  type StepRuntime,
   cloneQuestState,
   newQuestState,
   newStepRuntime,
@@ -78,6 +79,22 @@ function text(payload: Payload, key: string): string | undefined {
 function counter(payload: Payload): number {
   const amount = payload.amount
   return typeof amount === 'number' ? amount : 1
+}
+
+/**
+ * Does a `dialogue.ended` payload satisfy a `talk` objective's dialogue binding?
+ * The binding is either `conversationId`, which pins the conversation only, or
+ * `conversationId#nodeId`, which also pins the node the conversation ended on.
+ * The payload carries the conversation in `node` and that end node in `at`.
+ */
+function spokeTo(payload: Payload, dialogue: string | undefined): boolean {
+  if (dialogue === undefined) return true
+  const hash = dialogue.indexOf('#')
+  if (hash === -1) return text(payload, 'node') === dialogue
+  return (
+    text(payload, 'node') === dialogue.slice(0, hash) &&
+    text(payload, 'at') === dialogue.slice(hash + 1)
+  )
 }
 
 function counting(): () => number {
@@ -215,15 +232,20 @@ export class QuestRuntime {
   /**
    * Read a condition variable. Every namespace in docs/02-conditions.md is
    * served from loaded state except `var.*`, which the engine resolver owns.
-   * `count.*` and unqualified `step.*` read the quest being evaluated.
+   *
+   * `count.*` and `step.*` accept both the unqualified `<stepId>` and the
+   * qualified `<questId>#<stepId>` form. An unqualified path reads the quest
+   * under evaluation first and otherwise searches every loaded quest that is
+   * not `unseen`, in load order, for a step with that id. That is what lets a
+   * dialogue provider wire its resolver straight to this method.
    */
   resolve(path: string): unknown {
     const dot = path.indexOf('.')
     const namespace = dot === -1 ? path : path.slice(0, dot)
     const rest = dot === -1 ? '' : path.slice(dot + 1)
     if (namespace === 'flag') return this.flag(rest)
-    if (namespace === 'count') return this.count(rest)
-    if (namespace === 'step') return this.stepState(rest)
+    if (namespace === 'count') return this.locate(rest)?.count
+    if (namespace === 'step') return this.locate(rest)?.state
     if (namespace === 'outcome') return this.reached.has(path)
     if (namespace === 'quest') return this.states.get(rest)?.status
     if (namespace === 'var') return this.resolveVar(path)
@@ -247,17 +269,24 @@ export class QuestRuntime {
     return false
   }
 
-  private count(stepId: string): number | undefined {
-    if (this.scope === null) return undefined
-    return this.states.get(this.scope)?.steps[stepId]?.count
-  }
-
-  private stepState(ref: string): StepState | undefined {
+  /**
+   * Find the step record a `count.*` or `step.*` path names. `<questId>#<stepId>`
+   * is exact. A bare step id reads the quest under evaluation first, then every
+   * loaded quest the player has at least been offered, in load order.
+   */
+  private locate(ref: string): StepRuntime | undefined {
     const hash = ref.indexOf('#')
-    const questId = hash === -1 ? this.scope : ref.slice(0, hash)
-    const stepId = hash === -1 ? ref : ref.slice(hash + 1)
-    if (questId === null) return undefined
-    return this.states.get(questId)?.steps[stepId]?.state
+    if (hash !== -1) return this.states.get(ref.slice(0, hash))?.steps[ref.slice(hash + 1)]
+    if (this.scope !== null) {
+      const scoped = this.states.get(this.scope)?.steps[ref]
+      if (scoped !== undefined) return scoped
+    }
+    for (const state of this.states.values()) {
+      if (state.status === 'unseen') continue
+      const step = state.steps[ref]
+      if (step !== undefined) return step
+    }
+    return undefined
   }
 
   private test(condition: Condition, questId: string): boolean {
@@ -382,8 +411,7 @@ export class QuestRuntime {
     if (objective.kind === 'talk') {
       if (event.name !== EVENT_DIALOGUE_ENDED || text(payload, 'actor') !== objective.actor)
         return 0
-      if (objective.dialogue !== undefined && text(payload, 'node') !== objective.dialogue) return 0
-      return 1
+      return spokeTo(payload, objective.dialogue) ? 1 : 0
     }
     if (objective.kind === 'interact') {
       return event.name === EVENT_OBJECT_INTERACTED && text(payload, 'object') === objective.object

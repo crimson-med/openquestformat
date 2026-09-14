@@ -1,4 +1,5 @@
-import type { OqfDocument, Payload } from '@oqf/core'
+import type { OqfDocument, Payload, Quest, Step } from '@oqf/core'
+import { emptyDictionaries, parseCondition, parseObjective } from '@oqf/core'
 import { describe, expect, it } from 'vitest'
 import type { OqfEvent } from './events.js'
 import {
@@ -48,6 +49,40 @@ function harness(options: Options = {}) {
 }
 
 type Harness = ReturnType<typeof harness>
+
+function inline(quests: Quest[]): OqfDocument {
+  return { dictionaries: emptyDictionaries(), quests }
+}
+
+function only(id: string, step: Partial<Step> & { id: string }): Quest {
+  return {
+    id,
+    version: 1,
+    title: id,
+    tags: [],
+    steps: [{ title: step.id, rewards: [], actors: [], ...step }],
+    rewards: [],
+  }
+}
+
+/** Two quests that both own a step called `errand`, to pin path resolution. */
+function twinDocument(): OqfDocument {
+  return inline([
+    only('first', { id: 'errand', start: true, objective: parseObjective('event tick 5') }),
+    only('second', { id: 'errand', start: true, complete: parseCondition('count.errand >= 2') }),
+  ])
+}
+
+/** A step that only ends on one node of one conversation. */
+function nodeBoundDocument(): OqfDocument {
+  return inline([
+    only('deal', {
+      id: 'handshake',
+      start: true,
+      objective: parseObjective('talk otter otter_trade#handover'),
+    }),
+  ])
+}
 
 function takeQuest(harness: Harness): void {
   harness.runtime.offer(LEDGER)
@@ -584,11 +619,47 @@ describe('resolve', () => {
     expect(runtime.resolve('flag.otter_traded')).toBe(true)
   })
 
-  it('reads counters and bare step paths only while a quest is being evaluated', () => {
+  it('serves counters and bare step paths outside an evaluation', () => {
     const h = harness()
     reachTheDen(h)
-    expect(h.runtime.resolve('count.trade')).toBeUndefined()
-    expect(h.runtime.resolve('step.trade')).toBeUndefined()
+    h.runtime.emit('item.collected', { item: 'fish.rare', amount: 3 })
+    expect(h.runtime.resolve('count.trade')).toBe(3)
+    expect(h.runtime.resolve('step.trade')).toBe('active')
+    expect(h.runtime.resolve('count.nothing')).toBeUndefined()
+  })
+
+  it('accepts the qualified form of both step paths', () => {
+    const h = harness()
+    reachTheDen(h)
+    h.runtime.emit('item.collected', { item: 'fish.rare', amount: 3 })
+    expect(h.runtime.resolve(`count.${LEDGER}#trade`)).toBe(3)
+    expect(h.runtime.resolve(`step.${LEDGER}#trade`)).toBe('active')
+    expect(h.runtime.resolve('count.nobody#trade')).toBeUndefined()
+    expect(h.runtime.resolve(`count.${LEDGER}#nothing`)).toBeUndefined()
+  })
+
+  it('searches quests the player has seen, in load order', () => {
+    const h = harness({ documents: [twinDocument()] })
+    h.runtime.accept('second')
+    expect(h.runtime.getState('first').status).toBe('unseen')
+    expect(h.runtime.resolve('step.errand')).toBe('active')
+    expect(h.runtime.resolve('step.first#errand')).toBe('locked')
+
+    h.runtime.offer('first')
+    expect(h.runtime.resolve('step.errand')).toBe('locked')
+  })
+
+  it('reads the quest under evaluation before the search', () => {
+    const h = harness({ documents: [twinDocument()] })
+    h.runtime.accept('first')
+    h.runtime.accept('second')
+    h.runtime.emit('tick')
+    h.runtime.emit('tick')
+
+    expect(h.runtime.resolve('count.first#errand')).toBe(2)
+    expect(h.runtime.resolve('count.second#errand')).toBe(0)
+    expect(h.runtime.resolve('count.errand')).toBe(2)
+    expect(h.runtime.getState('second').steps.errand.state).toBe('active')
   })
 
   it('counts an item.collected payload without an amount as one', () => {
@@ -598,6 +669,37 @@ describe('resolve', () => {
     h.runtime.emit({ name: 'item.collected', payload })
     h.runtime.emit('item.collected', { item: 'other.fish', amount: 9 })
     expect(h.runtime.getState(LEDGER).steps.trade.count).toBe(1)
+  })
+})
+
+describe('talk objectives', () => {
+  it('matches a bare dialogue binding on the conversation alone', () => {
+    const h = harness()
+    takeQuest(h)
+    h.runtime.emit('dialogue.ended', { actor: 'harbormaster', node: 'ines_intro' })
+    h.reset()
+    h.runtime.emit('dialogue.ended', {
+      actor: 'gull_feeder',
+      node: 'gulls_hint',
+      at: 'the_gulls_know',
+    })
+    expect(h.names()).toEqual([ev('ask_gulls', 'done'), 'reward.granted'])
+  })
+
+  it('matches a conversation#node binding on both halves', () => {
+    const h = harness({ documents: [nodeBoundDocument()] })
+    h.runtime.accept('deal')
+    h.reset()
+
+    h.runtime.emit('dialogue.ended', { actor: 'otter', node: 'otter_trade', at: 'walk_away' })
+    h.runtime.emit('dialogue.ended', { actor: 'otter', node: 'otter_trade' })
+    h.runtime.emit('dialogue.ended', { actor: 'otter', node: 'gulls_hint', at: 'handover' })
+    h.runtime.emit('dialogue.ended', { actor: 'smuggler', node: 'otter_trade', at: 'handover' })
+    expect(h.names()).toEqual([])
+    expect(h.runtime.getState('deal').steps.handshake.count).toBe(0)
+
+    h.runtime.emit('dialogue.ended', { actor: 'otter', node: 'otter_trade', at: 'handover' })
+    expect(h.names()).toEqual(['quest.deal.step.handshake.done'])
   })
 })
 

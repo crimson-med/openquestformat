@@ -25,6 +25,7 @@
     "@oqf/core": "workspace:*"
   },
   "devDependencies": {
+    "@oqf/dialogue": "workspace:*",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3"
   }
