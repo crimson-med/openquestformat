@@ -283,6 +283,19 @@ button.primary {
   padding: 7px 11px;
 }
 
+.toolbar button.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--head-muted);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.toolbar button.ghost:hover:not(:disabled) {
+  border-color: var(--head-line);
+  color: var(--head-text);
+}
+
 .toolbar .menu.primary > summary {
   background: var(--accent);
   border-color: var(--accent);
@@ -388,6 +401,95 @@ button.primary {
   font-size: 14px;
 }
 
+/* Command palette */
+
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 16px;
+  background: oklch(0.3 0.1 27.5 / 0.35);
+}
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: 70vh;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.palette-input {
+  font: inherit;
+  color: var(--text);
+  background: var(--field);
+  border: none;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 14px 16px;
+  outline: none;
+}
+
+.palette-input::placeholder {
+  color: var(--role-optional);
+}
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.palette-group {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 8px 12px 4px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.04em;
+}
+
+.palette-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.palette-row[aria-selected="true"] {
+  background: var(--accent-soft);
+}
+
+.palette-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-key {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.palette-empty {
+  padding: 10px 12px;
+  color: var(--muted);
+}
+
 /* Panes */
 
 .panes {
@@ -403,6 +505,7 @@ button.primary {
   flex-direction: column;
   min-width: 0;
   background: var(--bg);
+  container-type: inline-size;
 }
 
 .canvas-head {
@@ -1151,6 +1254,20 @@ textarea.input {
 .react-flow__minimap {
   border: 1px solid var(--line);
   border-radius: var(--radius);
+}
+
+/* The minimap yields to the graph when the canvas is narrow. */
+@container (max-width: 899px) {
+  .react-flow__minimap {
+    display: none;
+  }
+}
+
+@container (min-width: 900px) and (max-width: 1199px) {
+  .react-flow__minimap {
+    transform: scale(0.6);
+    transform-origin: bottom right;
+  }
 }
 
 .react-flow__controls {

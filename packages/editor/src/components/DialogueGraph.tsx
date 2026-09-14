@@ -119,6 +119,8 @@ export function DialogueGraph({
         })
       }
       fitView
+      fitViewOptions={{ minZoom: 0.55, maxZoom: 1 }}
+      panOnScroll
       colorMode="light"
       minZoom={0.2}
     >
@@ -128,6 +130,7 @@ export function DialogueGraph({
       <Panel position="top-left" className="canvas-actions">
         <button
           type="button"
+          title="Add node (N)"
           onClick={() => dispatch({ type: 'node/add', conversation: conversation.id })}
         >
           Add node

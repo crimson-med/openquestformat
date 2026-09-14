@@ -172,6 +172,8 @@ export function QuestGraph({
         dispatch({ type: 'select', selection: { kind: 'quest', quest: quest.id } })
       }
       fitView
+      fitViewOptions={{ minZoom: 0.55, maxZoom: 1 }}
+      panOnScroll
       colorMode="light"
       proOptions={{ hideAttribution: false }}
       minZoom={0.2}
@@ -180,7 +182,11 @@ export function QuestGraph({
       <Controls showInteractive={false} />
       <MiniMap pannable zoomable />
       <Panel position="top-left" className="canvas-actions">
-        <button type="button" onClick={() => dispatch({ type: 'step/add', quest: quest.id })}>
+        <button
+          type="button"
+          title="Add step (N)"
+          onClick={() => dispatch({ type: 'step/add', quest: quest.id })}
+        >
           Add step
         </button>
         <button type="button" onClick={() => relayout(direction)}>

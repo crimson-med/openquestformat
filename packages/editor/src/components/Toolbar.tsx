@@ -2,139 +2,33 @@
  * The header: what is loaded, what is wrong with it, and every way in and out
  * of a file.
  */
-import { useRef, useState } from 'react'
-import { downloadText } from '../lib/download'
-import {
-  type DialogueFormat,
-  MIME_TYPES,
-  type QuestFormat,
-  downloadName,
-  serializeDialogues,
-  serializeQuests,
-} from '../lib/files'
-import { mergePack, packFileName, packMime, splitPack } from '../lib/pack'
-import { loadReference } from '../lib/reference'
-import { type QuestTemplate, TEMPLATES, loadTemplate } from '../lib/templates'
+import { useRef } from 'react'
+import { TEMPLATES } from '../lib/templates'
 import { useDispatch, useEditorState } from '../store/context'
 import { countFindings } from '../store/findings'
+import type { FileActions } from './useFileActions'
 
 export type Tab = 'quests' | 'dialogue'
 
 export function Toolbar({
   tab,
   onTab,
-  onNotice,
+  files,
+  onCommands,
 }: {
   tab: Tab
   onTab: (tab: Tab) => void
-  onNotice: (message: string | undefined) => void
+  files: FileActions
+  onCommands: () => void
 }) {
   const state = useEditorState()
   const dispatch = useDispatch()
-  const fileInput = useRef<HTMLInputElement>(null)
-  const folderInput = useRef<HTMLInputElement>(null)
   const templateMenu = useRef<HTMLDetailsElement>(null)
   const moreMenu = useRef<HTMLDetailsElement>(null)
-  const [busy, setBusy] = useState(false)
   const counts = countFindings(state.findings)
   const questCount = state.quests.quests.length
   const conversationCount = state.dialogues.conversations.length
-  const base = state.quests.quests[0]?.id ?? 'quests'
-
-  const open = async (files: FileList | null) => {
-    if (files === null || files.length === 0) return
-    setBusy(true)
-    try {
-      const entries = await Promise.all(
-        Array.from(files).map(async (file) => ({
-          name: file.webkitRelativePath || file.name,
-          text: await file.text(),
-        })),
-      )
-      const pack = mergePack(entries)
-      const names = entries
-        .map((entry) => packFileName(entry.name))
-        .filter((name) => name !== undefined)
-      const hasQuests = pack.quests.quests.length > 0
-      const hasDialogues = pack.dialogues.conversations.length > 0
-      if (!hasQuests && !hasDialogues) {
-        onNotice(['Nothing to open.', ...pack.notices].join(' '))
-        return
-      }
-      dispatch({
-        type: 'doc/load',
-        quests: hasQuests ? pack.quests : state.quests,
-        dialogues: hasDialogues ? pack.dialogues : state.dialogues,
-      })
-      const opened =
-        names.length > 4 ? `Opened ${names.length} files.` : `Opened ${names.join(', ')}`
-      onNotice([opened, ...pack.notices].join(' '))
-    } catch (failure) {
-      onNotice(failure instanceof Error ? failure.message : String(failure))
-    } finally {
-      setBusy(false)
-      if (fileInput.current !== null) fileInput.current.value = ''
-      if (folderInput.current !== null) folderInput.current.value = ''
-    }
-  }
-
-  const exportPack = () => {
-    try {
-      const files = splitPack(state.quests, state.dialogues)
-      if (files.length === 0) {
-        onNotice('Nothing to export.')
-        return
-      }
-      for (const file of files) downloadText(file.name, file.text, packMime(file.name))
-      dispatch({ type: 'doc/markSaved' })
-      onNotice(`Exported ${files.map((file) => file.name).join(', ')}`)
-    } catch (failure) {
-      onNotice(failure instanceof Error ? failure.message : String(failure))
-    }
-  }
-
-  const fromTemplate = (template: QuestTemplate) => {
-    if (templateMenu.current !== null) templateMenu.current.open = false
-    try {
-      const loaded = loadTemplate(template)
-      dispatch({
-        type: 'doc/load',
-        quests: loaded.quests,
-        dialogues: loaded.dialogues,
-        selection: { kind: 'quest', quest: loaded.quests.quests[0]?.id ?? '' },
-      })
-      onNotice(`Created from the template ${template.title}.`)
-    } catch (failure) {
-      onNotice(failure instanceof Error ? failure.message : String(failure))
-    }
-  }
-
-  const exportQuests = (format: QuestFormat) => {
-    try {
-      downloadText(
-        downloadName(base, format),
-        serializeQuests(state.quests, format),
-        MIME_TYPES[format],
-      )
-      dispatch({ type: 'doc/markSaved' })
-      onNotice(`Exported ${downloadName(base, format)}`)
-    } catch (failure) {
-      onNotice(failure instanceof Error ? failure.message : String(failure))
-    }
-  }
-
-  const exportDialogues = (format: DialogueFormat) => {
-    try {
-      downloadText(
-        downloadName(base, format),
-        serializeDialogues(state.dialogues, format),
-        MIME_TYPES[format],
-      )
-      onNotice(`Exported ${downloadName(base, format)}`)
-    } catch (failure) {
-      onNotice(failure instanceof Error ? failure.message : String(failure))
-    }
-  }
+  const { fileInput, folderInput, busy } = files
 
   return (
     <header className="toolbar">
@@ -198,6 +92,15 @@ export function Toolbar({
           >
             ↷
           </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={onCommands}
+            title="Commands, cmd or ctrl K"
+            aria-label="Commands"
+          >
+            ⌘K
+          </button>
         </div>
 
         <div className="group">
@@ -206,7 +109,14 @@ export function Toolbar({
             <div className="menu-body templates">
               <span className="menu-label">New from template</span>
               {TEMPLATES.map((template) => (
-                <button key={template.id} type="button" onClick={() => fromTemplate(template)}>
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => {
+                    if (templateMenu.current !== null) templateMenu.current.open = false
+                    files.fromTemplate(template)
+                  }}
+                >
                   <strong>{template.title}</strong>
                   <span className="muted">{template.description}</span>
                 </button>
@@ -223,7 +133,7 @@ export function Toolbar({
             accept=".oqf,.oqd,.json,text/plain,application/json"
             multiple
             onChange={(event) => {
-              void open(event.target.files)
+              void files.open(event.target.files)
             }}
           />
           <button type="button" onClick={() => folderInput.current?.click()} disabled={busy}>
@@ -239,28 +149,28 @@ export function Toolbar({
             type="file"
             multiple
             onChange={(event) => {
-              void open(event.target.files)
+              void files.open(event.target.files)
             }}
           />
           <details className="menu">
             <summary>Export</summary>
             <div className="menu-body">
-              <button type="button" onClick={exportPack}>
+              <button type="button" onClick={files.exportPack}>
                 Pack as files
               </button>
-              <button type="button" onClick={() => exportQuests('oqf')}>
+              <button type="button" onClick={() => files.exportQuests('oqf')}>
                 Quests as .oqf
               </button>
-              <button type="button" onClick={() => exportQuests('json')}>
+              <button type="button" onClick={() => files.exportQuests('json')}>
                 Quests as .json
               </button>
-              <button type="button" onClick={() => exportQuests('md')}>
+              <button type="button" onClick={() => files.exportQuests('md')}>
                 Quests as .md
               </button>
-              <button type="button" onClick={() => exportDialogues('oqd')}>
+              <button type="button" onClick={() => files.exportDialogues('oqd')}>
                 Dialogue as .oqd
               </button>
-              <button type="button" onClick={() => exportDialogues('json')}>
+              <button type="button" onClick={() => files.exportDialogues('json')}>
                 Dialogue as .json
               </button>
             </div>
@@ -274,21 +184,7 @@ export function Toolbar({
                 type="button"
                 onClick={() => {
                   if (moreMenu.current !== null) moreMenu.current.open = false
-                  try {
-                    const reference = loadReference()
-                    dispatch({
-                      type: 'doc/load',
-                      quests: reference.quests,
-                      dialogues: reference.dialogues,
-                      selection: {
-                        kind: 'quest',
-                        quest: reference.quests.quests[0]?.id ?? '',
-                      },
-                    })
-                    onNotice('Loaded the reference quest, The Harbormaster’s Ledger.')
-                  } catch (failure) {
-                    onNotice(failure instanceof Error ? failure.message : String(failure))
-                  }
+                  files.loadReferenceQuest()
                 }}
               >
                 Load reference quest
@@ -298,8 +194,7 @@ export function Toolbar({
                 className="danger"
                 onClick={() => {
                   if (moreMenu.current !== null) moreMenu.current.open = false
-                  dispatch({ type: 'doc/reset' })
-                  onNotice('Cleared. Nothing is loaded.')
+                  files.reset()
                 }}
               >
                 Reset
