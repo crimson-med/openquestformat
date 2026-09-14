@@ -267,6 +267,19 @@ button.danger:hover:not(:disabled) {
   background: var(--panel-2);
 }
 
+.menu-body.templates {
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.menu-body.templates button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .notice {
   flex: none;
   width: 100%;

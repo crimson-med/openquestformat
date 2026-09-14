@@ -14,6 +14,7 @@ import {
   serializeQuests,
 } from '../lib/files'
 import { loadReference } from '../lib/reference'
+import { type QuestTemplate, TEMPLATES, loadTemplate } from '../lib/templates'
 import { useDispatch, useEditorState } from '../store/context'
 import { countFindings } from '../store/findings'
 
@@ -31,6 +32,7 @@ export function Toolbar({
   const state = useEditorState()
   const dispatch = useDispatch()
   const fileInput = useRef<HTMLInputElement>(null)
+  const templateMenu = useRef<HTMLDetailsElement>(null)
   const [busy, setBusy] = useState(false)
   const counts = countFindings(state.findings)
   const questCount = state.quests.quests.length
@@ -57,6 +59,22 @@ export function Toolbar({
     } finally {
       setBusy(false)
       if (fileInput.current !== null) fileInput.current.value = ''
+    }
+  }
+
+  const fromTemplate = (template: QuestTemplate) => {
+    if (templateMenu.current !== null) templateMenu.current.open = false
+    try {
+      const loaded = loadTemplate(template)
+      dispatch({
+        type: 'doc/load',
+        quests: loaded.quests,
+        dialogues: loaded.dialogues,
+        selection: { kind: 'quest', quest: loaded.quests.quests[0]?.id ?? '' },
+      })
+      onNotice(`Created from the template ${template.title}.`)
+    } catch (failure) {
+      onNotice(failure instanceof Error ? failure.message : String(failure))
     }
   }
 
@@ -176,6 +194,17 @@ export function Toolbar({
             <button type="button" onClick={() => exportDialogues('json')}>
               Dialogue as .json
             </button>
+          </div>
+        </details>
+        <details className="menu" ref={templateMenu}>
+          <summary>New from template</summary>
+          <div className="menu-body templates">
+            {TEMPLATES.map((template) => (
+              <button key={template.id} type="button" onClick={() => fromTemplate(template)}>
+                <strong>{template.title}</strong>
+                <span className="muted">{template.description}</span>
+              </button>
+            ))}
           </div>
         </details>
         <button
