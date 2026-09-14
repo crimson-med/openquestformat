@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@oqf/core": ["../core/src/index.ts"],
+      "@oqf/dialogue": ["../dialogue/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}
