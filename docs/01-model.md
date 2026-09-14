@@ -68,7 +68,7 @@ Several steps may be `active` at once.
 | `kill <actor> [n]` | count `actor.killed` where `actor == ref`, complete at `n` (default 1) |
 | `collect <item> [n]` | count `item.collected` where `item == ref`, complete at `n` |
 | `reach <location>` | first `location.entered` where `location == ref` |
-| `talk <actor> [dialogue]` | first `dialogue.ended` where `actor == ref` (and `node == ref` if given) |
+| `talk <actor> [dialogue]` | first `dialogue.ended` where `actor == ref`. `dialogue` may be a conversation id (matches `node`) or `conversation#node` (also requires `at` to equal the node, so only one exit of the conversation counts) |
 | `interact <object>` | first `object.interacted` where `object == ref` |
 | `event <name> [n]` | count any event `name`, complete at `n` |
 | `custom <kind> ...` | passed through untouched; engine decides |

@@ -92,6 +92,14 @@ See [12-compact-spec.md](12-compact-spec.md). Columns may only be appended.
 
 `Step.failObjective` mirrors `Step.objective`. The compact `fail` cell uses the same `<objective> [and <condition>]` grammar as `complete`. Needed so "the guard catches you" can be an event, not a flag the game has to set by hand.
 
+## D20. A `talk` objective can bind to one exit of a conversation
+
+`dialogue.ended` carries `at`, the node the conversation ended on. A `talk` objective's dialogue ref may be `conversation#node`, in which case only that exit completes the step. Found by the integration test: with conversation-level matching, backing out of the smuggler deal sold the ledger.
+
+## D21. `runtime.resolve` works outside an evaluation
+
+Dialogue providers call the runtime's resolver from outside a quest evaluation. Unqualified `count.<step>` and `step.<step>` search every loaded quest; the qualified `quest#step` form is accepted everywhere.
+
 ## Open items
 
 - **One objective per step.** The reference quest wants `trade` to require both "collect five koi" and "talk to the otter". v0.1 holds one objective per step; the talk half rides on the dialogue binding and a flag. A list of objectives is a candidate for v0.2 once the runtime has shipped in Cozy Coast and the need is confirmed.

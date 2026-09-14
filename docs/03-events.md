@@ -16,7 +16,7 @@ The runtime accepts any event. A step reacts only if its objective or a conditio
 | `actor.killed` | `actor` | `kill` |
 | `item.collected` | `item`, `amount` (default 1) | `collect` |
 | `location.entered` | `location` | `reach` |
-| `dialogue.ended` | `actor`, `node` | `talk` |
+| `dialogue.ended` | `actor`, `node` (conversation id), `at` (node id the conversation ended on) | `talk` |
 | `object.interacted` | `object` | `interact` |
 | `flag.set` | `flag`, `value` | any condition reading `flag.*` |
 
