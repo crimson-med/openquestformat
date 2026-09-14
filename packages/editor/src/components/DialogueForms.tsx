@@ -5,10 +5,11 @@ import type { Condition } from '@oqf/core'
  * spelling the file uses.
  */
 import type { Choice, Conversation, DialogueNode } from '@oqf/dialogue'
+import { buildVocabulary, suggest } from '../lib/suggest'
 import { formatEmits, formatFlagSets, parseEmits, parseFlagSets } from '../lib/values'
 import { useDispatch, useEditorState } from '../store/context'
 import { choicePatch, conversationPatch, nodePatch } from '../store/patch'
-import { findingsForNode } from '../store/selectors'
+import { activeQuestId, findingsForNode } from '../store/selectors'
 import { FindingList } from './FindingList'
 import {
   CheckField,
@@ -324,9 +325,11 @@ export function ChoiceForm({
   index: number
   choice: Choice
 }) {
+  const state = useEditorState()
   const dispatch = useDispatch()
   const set = <K extends keyof Choice>(field: K, value: Choice[K]) =>
     dispatch(choicePatch(conversation.id, node.id, index, field, value))
+  const vocabulary = buildVocabulary(state, activeQuestId(state))
 
   return (
     <div className="form">
@@ -349,6 +352,7 @@ export function ChoiceForm({
           value={choice.condition}
           hint="Hidden when false, unless shown disabled."
           onChange={(value: Condition | undefined) => set('condition', value)}
+          suggest={(text, caret) => suggest(text, caret, vocabulary, 'condition')}
         />
         <SelectField
           label="When the condition fails"
