@@ -36,7 +36,7 @@ Notes:
 
 Why this stays readable: steps are flat and reference each other by ID, conditions are one cell of infix text, and everything repeated is interned. A quest with ten steps is about fifteen lines.
 
-The dialogue model has its own compact form with the same conventions (`C` conversation, `N` node, `O` choice, `X` extension). It lives in the same file or a separate one; the spec allows both.
+The dialogue model has its own compact form with the same conventions (`C` conversation, `N` node, `O` choice, `X` extension), in a separate `.oqd` file. See [13-dialogue-spec.md](13-dialogue-spec.md). A later minor version may allow both in one file.
 
 ## JSON
 

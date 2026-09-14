@@ -17,3 +17,4 @@ These documents describe what Open Quest Format is, how it is modelled, and how 
 | [10-roadmap.md](10-roadmap.md) | Phases, v1 scope, v1.5 and v2, non-goals. |
 | [11-reference-quest.md](11-reference-quest.md) | The reference quest in prose. Every feature of v1 appears in it once. |
 | [12-compact-spec.md](12-compact-spec.md) | The compact format, column order frozen for v0.1. |
+| [13-dialogue-spec.md](13-dialogue-spec.md) | The dialogue compact (`.oqd`) and JSON forms, frozen for v0.1. |
