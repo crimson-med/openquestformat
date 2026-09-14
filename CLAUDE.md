@@ -16,6 +16,14 @@ OQF is an open, engine-neutral quest format: a spec, a canonical TypeScript mode
 
 Every package converts to or from the model in `core`, never around it.
 
+## State
+
+Core, dialogue (with Ink and Yarn Spinner interop), runtime, i18n, CLI and editor are built and tested. Not started: engine exporters (Godot, Unity, Unreal), MCP server, tabletop. Not yet integrated into a shipping game; Cozy Coast (`~/Personal/taskbar-fishing`, Phaser 4 + Electron) is the first target. Open design items live at the bottom of `docs/00-decisions.md`.
+
+## Fixtures
+
+`packages/examples/quests/` holds the Harbormaster's Ledger in every form: `harbormasters-ledger.oqf` and `.json` (quest), `.oqd` and `.dialogue.json` (dialogue), `minimal.oqf` and `.json`, and `broken/` (one defect per file, leading comment names the expected finding). The `.oqf`/`.json` and `.oqd`/`.dialogue.json` pairs describe identical models and must stay byte-stable through every serializer. `packages/runtime/src/integration.test.ts` drives the quest through the dialogue provider on every route; if a model change breaks a route, that test says where.
+
 ## Conventions
 
 - pnpm workspace, TypeScript strict, ESM only, Node 24. Build with tsup, test with vitest from the repo root, lint and format with Biome (single quotes, no semicolons, 2 spaces, width 100).
@@ -45,5 +53,11 @@ pnpm test
 pnpm typecheck
 pnpm lint
 pnpm build
-pnpm cli validate packages/examples/quests/harbormasters-ledger.oqf
+pnpm cli validate packages/examples/quests
+pnpm cli convert packages/examples/quests/harbormasters-ledger.oqd --to ink
+pnpm editor
 ```
+
+## Editor
+
+`pnpm editor` starts Vite on the printed port (the `.claude/launch.json` entry `editor` pins 5179 for the browser tools). Load a quest with "Load reference quest", or "Open" a `.oqf`, `.json` or `.oqd`; open a `.oqd` after a `.oqf` to attach dialogue. The store is pure TypeScript under `packages/editor/src/store` with DOM-free tests; keep new editor logic there and leave components thin. Step positions persist in step ext `x-editor.pos`.
