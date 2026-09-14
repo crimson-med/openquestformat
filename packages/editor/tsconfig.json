@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "paths": {
+      "@oqf/core": ["../core/src/index.ts"],
+      "@oqf/dialogue": ["../dialogue/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}
