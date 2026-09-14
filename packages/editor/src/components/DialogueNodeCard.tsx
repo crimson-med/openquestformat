@@ -14,6 +14,7 @@ export interface DialogueNodeData extends Record<string, unknown> {
   ends: boolean
   level?: 'error' | 'warning'
   picked: boolean
+  direction: 'TB' | 'LR'
 }
 
 export type DialogueFlowNode = Node<DialogueNodeData, 'dialogue'>
@@ -25,10 +26,11 @@ export function DialogueNodeCard({ data }: NodeProps<DialogueFlowNode>) {
   if (data.ends) classes.push('ends')
   if (data.picked) classes.push('picked')
   if (data.level !== undefined) classes.push(data.level)
+  const across = data.direction === 'LR'
 
   return (
     <div className={classes.join(' ')}>
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={across ? Position.Left : Position.Top} />
       <div className="node-head">
         <span className="node-id mono">{data.nodeId}</span>
         {data.speaker === undefined ? null : <span className="node-speaker">{data.speaker}</span>}
@@ -41,7 +43,7 @@ export function DialogueNodeCard({ data }: NodeProps<DialogueFlowNode>) {
           ))}
         </ul>
       )}
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={across ? Position.Right : Position.Bottom} />
     </div>
   )
 }

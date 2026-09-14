@@ -14,22 +14,39 @@ import {
   applyNodeChanges,
 } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Direction } from '../lib/direction'
 import { conversationPositions, dialogueEdges, layoutConversation } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForNode, worstLevel } from '../store/selectors'
 import { type DialogueFlowNode, DialogueNodeCard } from './DialogueNodeCard'
+import { DirectionToggle } from './DirectionToggle'
 
 const NODE_TYPES = { dialogue: DialogueNodeCard }
 
-export function DialogueGraph({ conversation }: { conversation: Conversation }) {
+export function DialogueGraph({
+  conversation,
+  direction,
+  onDirection,
+}: {
+  conversation: Conversation
+  direction: Direction
+  onDirection: (direction: Direction) => void
+}) {
   const state = useEditorState()
   const dispatch = useDispatch()
   const selection = state.selection
   const selected =
     selection.kind === 'node' || selection.kind === 'choice' ? selection.node : undefined
 
+  const relayout = (next: Direction) =>
+    dispatch({
+      type: 'node/positions',
+      conversation: conversation.id,
+      positions: layoutConversation(conversation, { direction: next }),
+    })
+
   const build = useCallback((): DialogueFlowNode[] => {
-    const positions = conversationPositions(conversation)
+    const positions = conversationPositions(conversation, { direction })
     return conversation.nodes.map((node) => {
       const choices = node.choices ?? []
       return {
@@ -46,10 +63,11 @@ export function DialogueGraph({ conversation }: { conversation: Conversation }) 
           ends: choices.length === 0 && node.next === undefined,
           level: worstLevel(findingsForNode(state.findings, conversation.id, node.id)),
           picked: node.id === selected,
+          direction,
         },
       }
     })
-  }, [conversation, state.findings, selected])
+  }, [conversation, state.findings, selected, direction])
 
   const [nodes, setNodes] = useState<DialogueFlowNode[]>(build)
   useEffect(() => {
@@ -112,18 +130,16 @@ export function DialogueGraph({ conversation }: { conversation: Conversation }) 
         >
           Add node
         </button>
-        <button
-          type="button"
-          onClick={() =>
-            dispatch({
-              type: 'node/positions',
-              conversation: conversation.id,
-              positions: layoutConversation(conversation),
-            })
-          }
-        >
+        <button type="button" onClick={() => relayout(direction)}>
           Auto layout
         </button>
+        <DirectionToggle
+          direction={direction}
+          onChange={(next) => {
+            relayout(next)
+            onDirection(next)
+          }}
+        />
       </Panel>
     </ReactFlow>
   )

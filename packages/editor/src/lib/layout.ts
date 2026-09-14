@@ -11,10 +11,10 @@ import { type Quest, stepGraph } from '@oqf/core'
 import type { Conversation } from '@oqf/dialogue'
 import { type Position, readPosition } from './position'
 
-export const NODE_WIDTH = 230
-export const NODE_HEIGHT = 96
-export const DIALOGUE_NODE_WIDTH = 260
-export const DIALOGUE_NODE_HEIGHT = 120
+export const NODE_WIDTH = 250
+export const NODE_HEIGHT = 130
+export const DIALOGUE_NODE_WIDTH = 280
+export const DIALOGUE_NODE_HEIGHT = 150
 
 export interface LayoutOptions {
   width?: number
@@ -39,8 +39,8 @@ export function layoutGraph(
   const graph = new Graph({ directed: true, multigraph: true, compound: false })
   graph.setGraph({
     rankdir: options.direction ?? 'TB',
-    ranksep: options.rankSeparation ?? 90,
-    nodesep: options.nodeSeparation ?? 60,
+    ranksep: options.rankSeparation ?? 110,
+    nodesep: options.nodeSeparation ?? 70,
     marginx: 40,
     marginy: 40,
   })

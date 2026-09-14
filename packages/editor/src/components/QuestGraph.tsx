@@ -17,20 +17,37 @@ import {
   applyNodeChanges,
 } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Direction } from '../lib/direction'
 import { layoutQuest, questPositions } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForStep, worstLevel } from '../store/selectors'
+import { DirectionToggle } from './DirectionToggle'
 import { type StepFlowNode, StepNode } from './StepNode'
 
 const NODE_TYPES = { step: StepNode }
 
-export function QuestGraph({ quest }: { quest: Quest }) {
+export function QuestGraph({
+  quest,
+  direction,
+  onDirection,
+}: {
+  quest: Quest
+  direction: Direction
+  onDirection: (direction: Direction) => void
+}) {
   const state = useEditorState()
   const dispatch = useDispatch()
   const selected = state.selection.kind === 'step' ? state.selection.step : undefined
 
+  const relayout = (next: Direction) =>
+    dispatch({
+      type: 'step/positions',
+      quest: quest.id,
+      positions: layoutQuest(quest, { direction: next }),
+    })
+
   const build = useCallback((): StepFlowNode[] => {
-    const positions = questPositions(quest)
+    const positions = questPositions(quest, { direction })
     return quest.steps.map((step) => {
       const badges: string[] = []
       if (step.start === true || step.unlock === undefined) badges.push('start')
@@ -54,10 +71,11 @@ export function QuestGraph({ quest }: { quest: Quest }) {
           repeat: step.repeat === true,
           level: worstLevel(findingsForStep(state.findings, quest.id, step.id)),
           picked: step.id === selected,
+          direction,
         },
       }
     })
-  }, [quest, state.findings, selected])
+  }, [quest, state.findings, selected, direction])
 
   const [nodes, setNodes] = useState<StepFlowNode[]>(build)
   useEffect(() => {
@@ -114,18 +132,16 @@ export function QuestGraph({ quest }: { quest: Quest }) {
         <button type="button" onClick={() => dispatch({ type: 'step/add', quest: quest.id })}>
           Add step
         </button>
-        <button
-          type="button"
-          onClick={() =>
-            dispatch({
-              type: 'step/positions',
-              quest: quest.id,
-              positions: layoutQuest(quest),
-            })
-          }
-        >
+        <button type="button" onClick={() => relayout(direction)}>
           Auto layout
         </button>
+        <DirectionToggle
+          direction={direction}
+          onChange={(next) => {
+            relayout(next)
+            onDirection(next)
+          }}
+        />
       </Panel>
     </ReactFlow>
   )

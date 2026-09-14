@@ -4,6 +4,7 @@
  */
 import { ReactFlowProvider } from '@xyflow/react'
 import { useEffect, useState } from 'react'
+import { type Direction, browserStore, readDirection, writeDirection } from '../lib/direction'
 import { downloadText } from '../lib/download'
 import { MIME_TYPES, downloadName, serializeQuests } from '../lib/files'
 import { loadReference } from '../lib/reference'
@@ -35,6 +36,11 @@ export function App() {
   const [drawerTab, setDrawerTab] = useState<DrawerTab>('validation')
   const [drawerOpen, setDrawerOpen] = useState(true)
   const [notice, setNotice] = useState<string | undefined>(undefined)
+  const [direction, setDirection] = useState<Direction>(() => readDirection(browserStore()))
+  const changeDirection = (next: Direction) => {
+    setDirection(next)
+    writeDirection(browserStore(), next)
+  }
 
   const questId = activeQuestId(state)
   const quest = findQuest(state, questId)
@@ -193,7 +199,12 @@ export function App() {
               />
             ) : (
               <ReactFlowProvider>
-                <QuestGraph key={quest.id} quest={quest} />
+                <QuestGraph
+                  key={`${quest.id}-${direction}`}
+                  quest={quest}
+                  direction={direction}
+                  onDirection={changeDirection}
+                />
               </ReactFlowProvider>
             )
           ) : conversation === undefined ? (
@@ -208,7 +219,12 @@ export function App() {
             />
           ) : (
             <ReactFlowProvider>
-              <DialogueGraph key={conversation.id} conversation={conversation} />
+              <DialogueGraph
+                key={`${conversation.id}-${direction}`}
+                conversation={conversation}
+                direction={direction}
+                onDirection={changeDirection}
+              />
             </ReactFlowProvider>
           )}
         </section>

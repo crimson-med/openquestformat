@@ -16,6 +16,7 @@ export interface StepNodeData extends Record<string, unknown> {
   repeat: boolean
   level?: 'error' | 'warning'
   picked: boolean
+  direction: 'TB' | 'LR'
 }
 
 export type StepFlowNode = Node<StepNodeData, 'step'>
@@ -47,10 +48,11 @@ export function StepNode({ data }: NodeProps<StepFlowNode>) {
   if (data.picked) classes.push('picked')
   if (data.level !== undefined) classes.push(data.level)
   const badges = data.badges.filter((badge) => badge !== role)
+  const across = data.direction === 'LR'
 
   return (
     <div className={classes.join(' ')}>
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={across ? Position.Left : Position.Top} />
       <div className="node-role">
         <span aria-hidden="true">{ROLE_GLYPHS[role]}</span>
         {role}
@@ -69,7 +71,7 @@ export function StepNode({ data }: NodeProps<StepFlowNode>) {
           ))}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={across ? Position.Right : Position.Bottom} />
     </div>
   )
 }
