@@ -1,0 +1,230 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "organizer",
+        "name": "Festival organizer Pim"
+      },
+      {
+        "id": "bandleader",
+        "name": "Bandleader Suli"
+      }
+    ],
+    "locations": [
+      {
+        "id": "square",
+        "name": "Market square"
+      }
+    ],
+    "items": [
+      {
+        "id": "lantern",
+        "name": "Paper lantern"
+      },
+      {
+        "id": "pie",
+        "name": "Fish pie"
+      }
+    ],
+    "tags": [
+      {
+        "id": "parallel"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "festival",
+      "version": 1,
+      "title": "Festival Preparations",
+      "summary": "Get the square ready: lanterns, bunting and a band, in any order. Pies are a bonus.",
+      "tags": [
+        "parallel"
+      ],
+      "steps": [
+        {
+          "id": "meet_organizer",
+          "title": "Ask Pim what the festival needs",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "organizer"
+          },
+          "location": "square",
+          "actors": [
+            "organizer"
+          ]
+        },
+        {
+          "id": "gather_lanterns",
+          "title": "Gather four paper lanterns",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.meet_organizer"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "lantern",
+            "count": 4
+          },
+          "location": "square"
+        },
+        {
+          "id": "lanterns_halfway",
+          "title": "Halfway through the lanterns",
+          "journal": "Unlocks from another step's counter, before that step is done.",
+          "unlock": {
+            ">=": [
+              {
+                "var": "count.gather_lanterns"
+              },
+              2
+            ]
+          },
+          "optional": true,
+          "rewards": [
+            "halfway_xp"
+          ]
+        },
+        {
+          "id": "hang_bunting",
+          "title": "Hang the bunting",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.meet_organizer"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "interact",
+            "object": "bunting_post"
+          },
+          "rewards": [
+            "bunting_coins"
+          ],
+          "location": "square"
+        },
+        {
+          "id": "hire_band",
+          "title": "Hire Suli's band",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.meet_organizer"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "bandleader"
+          },
+          "location": "square",
+          "actors": [
+            "bandleader"
+          ]
+        },
+        {
+          "id": "bake_pies",
+          "title": "Bake six fish pies (bonus)",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.meet_organizer"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "pie",
+            "count": 6
+          },
+          "optional": true,
+          "rewards": [
+            "pie_coins"
+          ],
+          "location": "square"
+        },
+        {
+          "id": "open_festival",
+          "title": "Tell Pim the square is ready",
+          "unlock": {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "step.gather_lanterns"
+                  },
+                  "done"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "step.hang_bunting"
+                  },
+                  "done"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "step.hire_band"
+                  },
+                  "done"
+                ]
+              }
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "organizer"
+          },
+          "outcome": {
+            "name": "opened",
+            "title": "The festival opens"
+          },
+          "location": "square",
+          "actors": [
+            "organizer"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "halfway_xp",
+          "kind": "xp",
+          "ref": "xp",
+          "amount": 10
+        },
+        {
+          "id": "bunting_coins",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 5
+        },
+        {
+          "id": "pie_coins",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 30
+        },
+        {
+          "id": "festival_rep",
+          "kind": "reputation",
+          "ref": "town",
+          "amount": 15,
+          "outcome": "opened"
+        }
+      ]
+    }
+  ]
+}

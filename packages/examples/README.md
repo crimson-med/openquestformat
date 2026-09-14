@@ -10,6 +10,21 @@ report. These files are the shared truth for every package: a parser must produc
 the compact and the JSON form, and a serializer must reproduce the compact bytes exactly after
 normalization. Nothing here is generated, so edits are deliberate and reviewable.
 
+`quests/templates/` holds small quests that each isolate one pattern the model supports, valid and
+warning free, in `.oqf` and `.json` pairs. The editor offers them under "New from template".
+
+| Template | Pattern |
+|----------|---------|
+| `linear` | One step after another, a step reward and a quest-level reward. |
+| `branching` | A decision tree with four endings, one failed. Choices are dialogue exits (`talk actor conversation#node`), with `branching.oqd` holding the conversations. |
+| `repeatable` | A quest flagged `r`, gated by a quest `unlock`, retaken after every outcome. |
+| `loop` | Two `repeat` steps that unlock each other: a failed cast sends the player to mend the line, and the loop exits when the cast succeeds. |
+| `recurring-step` | One `repeat` step with no cycle, re-armed whenever its flag goes false and true again. |
+| `parallel` | Several steps active at once, an `and` join, an optional bonus, and a step unlocked by another step's counter. |
+| `failure` | An `activate` gate, fail objectives on the road and on a timer, and three failed outcomes. |
+| `chain` | Three quests in one file: unlocked by another quest's outcome, by its status, and a step reading a step of another quest. |
+| `engine-hooks` | What the engine owns: `var.*` reads, a `custom` objective, `unlock`, `flag`, `event` and `custom` rewards, payloads and extension keys. |
+
 To add a fixture, write the file into `quests/` (or `quests/broken/` for an invalid one), then add an
 entry to `EXAMPLES` in `src/index.ts` so tests can reach it by name. Use real TAB characters between
 cells, LF line endings, and a trailing newline. Follow the normalization rules: dictionary entries in

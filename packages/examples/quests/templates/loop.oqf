@@ -1,0 +1,13 @@
+OQF1
+A	angler|Old Angler Wen
+L	deep_pier|End of the deep pier
+I	fish.legend|Leviathan eel	twine|Waxed twine
+T	loop
+Q	leviathan	1		0		The Leviathan Eel	The eel snaps every line. Cast, and when the line breaks, mend it and cast again until the eel is landed.
+R	mend_xp	xp	xp	5
+R	landed_trophy	item	trophy.eel		landed
+R	landed_coins	currency	coins	300	landed
+S	meet_angler	s			talk angler					0	0	Hear the angler's tale
+S	cast_line	r	step.meet_angler and step.mend_line != "active"		collect fish.legend	event line.snapped				0		Cast for the leviathan eel	Every snapped line sends you back to mend it. The loop ends when the eel is landed.
+S	mend_line	r	step.cast_line == "failed"		collect twine 2			0		0		Mend the snapped line with two lengths of twine
+S	land_eel		step.cast_line		talk angler		landed|The eel is landed			0	0	Show the eel to the angler

@@ -1,0 +1,233 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "merchant",
+        "name": "Merchant Tobin"
+      },
+      {
+        "id": "buyer",
+        "name": "Buyer Lysa"
+      }
+    ],
+    "locations": [
+      {
+        "id": "gate",
+        "name": "Town gate"
+      },
+      {
+        "id": "market",
+        "name": "Night market"
+      }
+    ],
+    "items": [],
+    "tags": [
+      {
+        "id": "failure"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "escort_merchant",
+      "version": 1,
+      "title": "Escort the Merchant",
+      "summary": "Walk Tobin to the night market and close the sale before nightfall. He can die on the road, the buyer can leave, or you can turn the job down.",
+      "tags": [
+        "failure"
+      ],
+      "steps": [
+        {
+          "id": "meet_merchant",
+          "title": "Meet Tobin at the town gate",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "merchant"
+          },
+          "location": "gate",
+          "actors": [
+            "merchant"
+          ]
+        },
+        {
+          "id": "escort",
+          "title": "Escort Tobin to the night market",
+          "journal": "Stays available until the job is accepted. Fails if Tobin dies on the road.",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.meet_merchant"
+              },
+              "done"
+            ]
+          },
+          "activate": {
+            "==": [
+              {
+                "var": "flag.escort_accepted"
+              },
+              true
+            ]
+          },
+          "objective": {
+            "kind": "reach",
+            "location": "market"
+          },
+          "failObjective": {
+            "kind": "kill",
+            "actor": "merchant"
+          },
+          "rewards": [
+            "escort_pay"
+          ],
+          "location": "market",
+          "actors": [
+            "merchant"
+          ]
+        },
+        {
+          "id": "declined",
+          "title": "Turn the job down",
+          "unlock": {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "step.meet_merchant"
+                  },
+                  "done"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "flag.escort_declined"
+                  },
+                  true
+                ]
+              }
+            ]
+          },
+          "outcome": {
+            "name": "declined",
+            "failed": true,
+            "title": "Job refused"
+          },
+          "location": "gate",
+          "actors": [
+            "merchant"
+          ]
+        },
+        {
+          "id": "merchant_lost",
+          "title": "Tobin is gone",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.escort"
+              },
+              "failed"
+            ]
+          },
+          "outcome": {
+            "name": "merchant_lost",
+            "failed": true,
+            "title": "Tobin fell on the road"
+          },
+          "actors": [
+            "merchant"
+          ]
+        },
+        {
+          "id": "close_sale",
+          "title": "Close the sale before nightfall",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.escort"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "buyer"
+          },
+          "failObjective": {
+            "kind": "event",
+            "event": "world.nightfall"
+          },
+          "location": "market",
+          "actors": [
+            "buyer"
+          ]
+        },
+        {
+          "id": "too_late",
+          "title": "The buyer has gone home",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.close_sale"
+              },
+              "failed"
+            ]
+          },
+          "outcome": {
+            "name": "too_late",
+            "failed": true,
+            "title": "The buyer left"
+          },
+          "location": "market",
+          "actors": [
+            "buyer"
+          ]
+        },
+        {
+          "id": "paid",
+          "title": "Collect your share",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.close_sale"
+              },
+              "done"
+            ]
+          },
+          "outcome": {
+            "name": "paid",
+            "title": "Sale closed"
+          },
+          "location": "market",
+          "actors": [
+            "merchant"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "escort_pay",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 40
+        },
+        {
+          "id": "paid_rep",
+          "kind": "reputation",
+          "ref": "merchants",
+          "amount": 10,
+          "outcome": "paid"
+        },
+        {
+          "id": "lost_rep",
+          "kind": "reputation",
+          "ref": "merchants",
+          "amount": -10,
+          "outcome": "merchant_lost"
+        }
+      ]
+    }
+  ]
+}

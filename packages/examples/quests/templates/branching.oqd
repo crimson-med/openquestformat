@@ -1,0 +1,14 @@
+OQD1
+A	keeper|Keeper Aldo	smuggler|Cove Smuggler
+C	crate_found	0	look	The keeper eyes the crate
+N	look						That crate came off a smuggler's skiff. What will you do with it?
+O	report					I will take it to the harbor office.
+O	keep					Finders keepers.
+N	report						Wise. The office is up the hill.
+N	keep						Your call. Do not say I did not warn you.
+C	contraband_offer	1	offer	The smuggler wants the goods
+N	offer						I hear you found something of mine. I pay well for things that stay quiet.
+O	sell					It is yours, for a price.
+O	refuse					This goes back to its owner.
+N	sell						Pleasure doing business.
+N	refuse						You will regret that.

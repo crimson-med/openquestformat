@@ -4,7 +4,19 @@ import { parseJson } from '../json/index.js'
 import { parseCompact } from './parse.js'
 import { toCompact } from './serialize.js'
 
-const FIXTURES = ['harbormasters-ledger', 'minimal'] as const
+const FIXTURES = [
+  'harbormasters-ledger',
+  'minimal',
+  'templates/linear',
+  'templates/branching',
+  'templates/repeatable',
+  'templates/loop',
+  'templates/recurring-step',
+  'templates/parallel',
+  'templates/failure',
+  'templates/chain',
+  'templates/engine-hooks',
+] as const
 
 function read(name: string): string {
   return readFileSync(new URL(`../../../examples/quests/${name}`, import.meta.url), 'utf8')

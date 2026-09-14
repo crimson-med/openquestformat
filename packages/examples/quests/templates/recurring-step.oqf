@@ -1,0 +1,9 @@
+OQF1
+A	harbormaster|Harbormaster Ines
+L	harbor|Harbor pier	bell_tower|Bell tower
+T	recurring
+Q	harbor_bell	1		0		The Harbor Bell	Whenever the storm bell rings, run to the tower. The duty repeats until you retire from it.
+R	bell_pay	currency	coins	3
+S	take_duty	s			talk harbormaster					0	0	Accept bell duty from Ines
+S	answer_bell	r	step.take_duty and flag.bell_ringing		reach bell_tower			0		1		Answer the storm bell	The step re-arms each time the bell stops ringing and unlocks again the next time it rings.
+S	retire		step.take_duty		talk harbormaster		retired|Retired from bell duty			0	0	Hand the duty back to Ines

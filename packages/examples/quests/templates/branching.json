@@ -1,0 +1,297 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "keeper",
+        "name": "Keeper Aldo"
+      },
+      {
+        "id": "smuggler",
+        "name": "Cove Smuggler"
+      },
+      {
+        "id": "captain",
+        "name": "Captain Rosa"
+      }
+    ],
+    "locations": [
+      {
+        "id": "beach",
+        "name": "Driftwood beach"
+      },
+      {
+        "id": "harbor_office",
+        "name": "Harbor office"
+      },
+      {
+        "id": "cove",
+        "name": "Smuggler's cove"
+      },
+      {
+        "id": "harbor",
+        "name": "Harbor pier"
+      }
+    ],
+    "items": [],
+    "tags": [
+      {
+        "id": "branching"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "washed_crate",
+      "version": 1,
+      "title": "The Washed-Up Crate",
+      "summary": "A smuggler's crate washes ashore. Report it, sell what is inside, or return it to its owner. Get caught and lose everything.",
+      "tags": [
+        "branching"
+      ],
+      "steps": [
+        {
+          "id": "find_crate",
+          "title": "Inspect the crate on the beach",
+          "start": true,
+          "objective": {
+            "kind": "interact",
+            "object": "washed_crate"
+          },
+          "location": "beach"
+        },
+        {
+          "id": "choose_report",
+          "title": "Tell the keeper you will report it",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.find_crate"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "keeper",
+            "dialogue": "crate_found#report"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "crate_found"
+          },
+          "location": "beach",
+          "actors": [
+            "keeper"
+          ]
+        },
+        {
+          "id": "choose_keep",
+          "title": "Tell the keeper you will keep it",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.find_crate"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "keeper",
+            "dialogue": "crate_found#keep"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "crate_found"
+          },
+          "location": "beach",
+          "actors": [
+            "keeper"
+          ]
+        },
+        {
+          "id": "deliver_report",
+          "title": "Carry the crate to the harbor office",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.choose_report"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "reach",
+            "location": "harbor_office"
+          },
+          "outcome": {
+            "name": "reported",
+            "title": "Crate reported"
+          },
+          "location": "harbor_office"
+        },
+        {
+          "id": "pry_open",
+          "title": "Pry the crate open before the guard passes",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.choose_keep"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "interact",
+            "object": "crate_lock"
+          },
+          "failObjective": {
+            "kind": "event",
+            "event": "guard.spotted"
+          },
+          "location": "beach"
+        },
+        {
+          "id": "caught",
+          "title": "Caught with the crate",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.pry_open"
+              },
+              "failed"
+            ]
+          },
+          "outcome": {
+            "name": "confiscated",
+            "failed": true,
+            "title": "Caught by the harbor guard"
+          },
+          "location": "beach"
+        },
+        {
+          "id": "sell_contents",
+          "title": "Sell the contents to the smuggler",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.pry_open"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "smuggler",
+            "dialogue": "contraband_offer#sell"
+          },
+          "outcome": {
+            "name": "sold",
+            "title": "Sold to the smuggler"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "contraband_offer"
+          },
+          "location": "cove",
+          "actors": [
+            "smuggler"
+          ]
+        },
+        {
+          "id": "refuse_deal",
+          "title": "Refuse the smuggler's offer",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.pry_open"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "smuggler",
+            "dialogue": "contraband_offer#refuse"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "contraband_offer"
+          },
+          "location": "cove",
+          "actors": [
+            "smuggler"
+          ]
+        },
+        {
+          "id": "return_owner",
+          "title": "Return the crate to Captain Rosa",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.refuse_deal"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "captain"
+          },
+          "outcome": {
+            "name": "returned",
+            "title": "Returned to its owner"
+          },
+          "location": "harbor",
+          "actors": [
+            "captain"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "reported_rep",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": 10,
+          "outcome": "reported"
+        },
+        {
+          "id": "sold_coins",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 150,
+          "outcome": "sold"
+        },
+        {
+          "id": "sold_rep",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": -10,
+          "outcome": "sold"
+        },
+        {
+          "id": "returned_rep",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": 5,
+          "outcome": "returned"
+        },
+        {
+          "id": "returned_compass",
+          "kind": "item",
+          "ref": "compass.brass",
+          "outcome": "returned"
+        },
+        {
+          "id": "confiscated_rep",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": -15,
+          "outcome": "confiscated"
+        }
+      ]
+    }
+  ]
+}

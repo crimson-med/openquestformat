@@ -1,0 +1,75 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "keeper",
+      "name": "Keeper Aldo"
+    },
+    {
+      "id": "smuggler",
+      "name": "Cove Smuggler"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "crate_found",
+      "actor": "keeper",
+      "title": "The keeper eyes the crate",
+      "start": "look",
+      "nodes": [
+        {
+          "id": "look",
+          "text": "That crate came off a smuggler's skiff. What will you do with it?",
+          "choices": [
+            {
+              "text": "I will take it to the harbor office.",
+              "next": "report"
+            },
+            {
+              "text": "Finders keepers.",
+              "next": "keep"
+            }
+          ]
+        },
+        {
+          "id": "report",
+          "text": "Wise. The office is up the hill."
+        },
+        {
+          "id": "keep",
+          "text": "Your call. Do not say I did not warn you."
+        }
+      ]
+    },
+    {
+      "id": "contraband_offer",
+      "actor": "smuggler",
+      "title": "The smuggler wants the goods",
+      "start": "offer",
+      "nodes": [
+        {
+          "id": "offer",
+          "text": "I hear you found something of mine. I pay well for things that stay quiet.",
+          "choices": [
+            {
+              "text": "It is yours, for a price.",
+              "next": "sell"
+            },
+            {
+              "text": "This goes back to its owner.",
+              "next": "refuse"
+            }
+          ]
+        },
+        {
+          "id": "sell",
+          "text": "Pleasure doing business."
+        },
+        {
+          "id": "refuse",
+          "text": "You will regret that."
+        }
+      ]
+    }
+  ]
+}

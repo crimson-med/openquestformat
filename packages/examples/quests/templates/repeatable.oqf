@@ -1,0 +1,12 @@
+OQF1
+A	cook|Cook Bartholomew
+L	galley|Tavern galley
+I	fish.common|Harbor sardine	bait.worm|Worm bait
+T	daily
+Q	daily_catch	1	r	0	flag.notice_board_open	The Daily Catch	The tavern needs fresh sardines every day. Take the order, catch the fish, deliver them, and come back tomorrow.
+R	bait	item	bait.worm	2
+R	daily_coins	currency	coins	20	delivered
+R	daily_rep	reputation	tavern	1	delivered
+S	take_order	s			talk cook			0		0	0	Take today's order from the cook
+S	catch_fish		step.take_order		collect fish.common 3							Catch three harbor sardines
+S	deliver		step.catch_fish		talk cook		delivered|Order delivered			0	0	Deliver the sardines to the galley

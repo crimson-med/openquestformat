@@ -1,0 +1,160 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "angler",
+        "name": "Old Angler Wen"
+      }
+    ],
+    "locations": [
+      {
+        "id": "deep_pier",
+        "name": "End of the deep pier"
+      }
+    ],
+    "items": [
+      {
+        "id": "fish.legend",
+        "name": "Leviathan eel"
+      },
+      {
+        "id": "twine",
+        "name": "Waxed twine"
+      }
+    ],
+    "tags": [
+      {
+        "id": "loop"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "leviathan",
+      "version": 1,
+      "title": "The Leviathan Eel",
+      "summary": "The eel snaps every line. Cast, and when the line breaks, mend it and cast again until the eel is landed.",
+      "tags": [
+        "loop"
+      ],
+      "steps": [
+        {
+          "id": "meet_angler",
+          "title": "Hear the angler's tale",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "angler"
+          },
+          "location": "deep_pier",
+          "actors": [
+            "angler"
+          ]
+        },
+        {
+          "id": "cast_line",
+          "title": "Cast for the leviathan eel",
+          "journal": "Every snapped line sends you back to mend it. The loop ends when the eel is landed.",
+          "unlock": {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "step.meet_angler"
+                  },
+                  "done"
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "step.mend_line"
+                  },
+                  "active"
+                ]
+              }
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "fish.legend"
+          },
+          "failObjective": {
+            "kind": "event",
+            "event": "line.snapped"
+          },
+          "repeat": true,
+          "location": "deep_pier"
+        },
+        {
+          "id": "mend_line",
+          "title": "Mend the snapped line with two lengths of twine",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.cast_line"
+              },
+              "failed"
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "twine",
+            "count": 2
+          },
+          "repeat": true,
+          "rewards": [
+            "mend_xp"
+          ],
+          "location": "deep_pier"
+        },
+        {
+          "id": "land_eel",
+          "title": "Show the eel to the angler",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.cast_line"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "angler"
+          },
+          "outcome": {
+            "name": "landed",
+            "title": "The eel is landed"
+          },
+          "location": "deep_pier",
+          "actors": [
+            "angler"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "mend_xp",
+          "kind": "xp",
+          "ref": "xp",
+          "amount": 5
+        },
+        {
+          "id": "landed_trophy",
+          "kind": "item",
+          "ref": "trophy.eel",
+          "outcome": "landed"
+        },
+        {
+          "id": "landed_coins",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 300,
+          "outcome": "landed"
+        }
+      ]
+    }
+  ]
+}

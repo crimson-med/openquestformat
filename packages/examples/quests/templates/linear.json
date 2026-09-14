@@ -1,0 +1,135 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "fisher",
+        "name": "Fisher Maren"
+      }
+    ],
+    "locations": [
+      {
+        "id": "dock",
+        "name": "North dock"
+      },
+      {
+        "id": "reef",
+        "name": "Coral reef"
+      }
+    ],
+    "items": [
+      {
+        "id": "net",
+        "name": "Fishing net"
+      }
+    ],
+    "tags": [
+      {
+        "id": "tutorial"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "lost_net",
+      "version": 1,
+      "title": "The Lost Net",
+      "summary": "Maren lost her net on the reef. Swim out, bring it back, and collect a reward.",
+      "tags": [
+        "tutorial"
+      ],
+      "steps": [
+        {
+          "id": "talk_maren",
+          "title": "Speak with Maren",
+          "journal": "Maren is pacing the north dock. Her best net snagged on the reef this morning.",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "fisher"
+          },
+          "location": "dock",
+          "actors": [
+            "fisher"
+          ]
+        },
+        {
+          "id": "swim_reef",
+          "title": "Swim out to the reef",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.talk_maren"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "reach",
+            "location": "reef"
+          },
+          "location": "reef"
+        },
+        {
+          "id": "collect_net",
+          "title": "Untangle the net from the coral",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.swim_reef"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "net"
+          },
+          "rewards": [
+            "coins_found"
+          ],
+          "location": "reef"
+        },
+        {
+          "id": "return_net",
+          "title": "Bring the net back to Maren",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.collect_net"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "fisher"
+          },
+          "outcome": {
+            "name": "returned",
+            "title": "Net returned"
+          },
+          "location": "dock",
+          "actors": [
+            "fisher"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "coins_found",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 5
+        },
+        {
+          "id": "xp_finished",
+          "kind": "xp",
+          "ref": "xp",
+          "amount": 25,
+          "outcome": "returned"
+        }
+      ]
+    }
+  ]
+}

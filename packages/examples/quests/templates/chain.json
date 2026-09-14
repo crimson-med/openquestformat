@@ -1,0 +1,248 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "shipwright",
+        "name": "Shipwright Oda"
+      },
+      {
+        "id": "captain",
+        "name": "Captain Rosa"
+      }
+    ],
+    "locations": [
+      {
+        "id": "boatyard",
+        "name": "Boatyard"
+      },
+      {
+        "id": "open_sea",
+        "name": "Open sea"
+      },
+      {
+        "id": "harbor",
+        "name": "Harbor pier"
+      }
+    ],
+    "items": [
+      {
+        "id": "plank",
+        "name": "Oak plank"
+      }
+    ],
+    "tags": [
+      {
+        "id": "chain"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "repair_boat",
+      "version": 1,
+      "title": "Chain 1: Repair the Boat",
+      "summary": "Gather planks and patch the hull. Finishing this opens the next quest.",
+      "tags": [
+        "chain"
+      ],
+      "steps": [
+        {
+          "id": "gather_planks",
+          "title": "Gather three oak planks",
+          "start": true,
+          "objective": {
+            "kind": "collect",
+            "item": "plank",
+            "count": 3
+          },
+          "location": "boatyard",
+          "actors": [
+            "shipwright"
+          ]
+        },
+        {
+          "id": "patch_hull",
+          "title": "Patch the hull",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.gather_planks"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "interact",
+            "object": "hull"
+          },
+          "outcome": {
+            "name": "repaired",
+            "title": "Hull patched"
+          },
+          "location": "boatyard",
+          "actors": [
+            "shipwright"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "repair_xp",
+          "kind": "xp",
+          "ref": "xp",
+          "amount": 20,
+          "outcome": "repaired"
+        }
+      ]
+    },
+    {
+      "id": "first_voyage",
+      "version": 1,
+      "title": "Chain 2: First Voyage",
+      "summary": "Unlocked by the outcome of Repair the Boat.",
+      "tags": [
+        "chain"
+      ],
+      "unlock": {
+        "==": [
+          {
+            "var": "outcome.repair_boat.repaired"
+          },
+          true
+        ]
+      },
+      "steps": [
+        {
+          "id": "sail_out",
+          "title": "Sail out to the open sea",
+          "start": true,
+          "objective": {
+            "kind": "reach",
+            "location": "open_sea"
+          },
+          "location": "open_sea",
+          "actors": [
+            "captain"
+          ]
+        },
+        {
+          "id": "sail_home",
+          "title": "Sail back to the harbor",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.sail_out"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "reach",
+            "location": "harbor"
+          },
+          "outcome": {
+            "name": "returned",
+            "title": "Home safe"
+          },
+          "location": "harbor",
+          "actors": [
+            "captain"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "voyage_coins",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 50,
+          "outcome": "returned"
+        }
+      ]
+    },
+    {
+      "id": "captains_log",
+      "version": 1,
+      "title": "Chain 3: The Captain's Log",
+      "summary": "Unlocked once First Voyage is closed. One step reads a step of another quest.",
+      "tags": [
+        "chain"
+      ],
+      "unlock": {
+        "==": [
+          {
+            "var": "quest.first_voyage"
+          },
+          "closed"
+        ]
+      },
+      "steps": [
+        {
+          "id": "write_log",
+          "title": "Tell Rosa about the voyage",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "captain"
+          },
+          "location": "harbor",
+          "actors": [
+            "captain"
+          ]
+        },
+        {
+          "id": "note_open_sea",
+          "title": "Note the open sea in the log",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.first_voyage#sail_out"
+              },
+              "done"
+            ]
+          },
+          "optional": true,
+          "rewards": [
+            "log_bonus"
+          ],
+          "actors": [
+            "captain"
+          ]
+        },
+        {
+          "id": "sign_log",
+          "title": "Sign the captain's log",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.write_log"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "captain"
+          },
+          "outcome": {
+            "name": "signed",
+            "title": "Log signed"
+          },
+          "location": "harbor",
+          "actors": [
+            "captain"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "log_bonus",
+          "kind": "xp",
+          "ref": "xp",
+          "amount": 5
+        }
+      ]
+    }
+  ]
+}

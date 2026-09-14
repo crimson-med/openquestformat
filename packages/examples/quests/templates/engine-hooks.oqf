@@ -1,0 +1,16 @@
+OQF1
+L	shrine|Moon shrine
+T	hooks
+Q	moon_rite	1		0	var.season in ["autumn", "winter"]	The Moon Rite	Shows the parts the engine owns: game variables, a custom objective, custom and event rewards, and extension data.
+X	cozycoast	chapter	3
+R	rite_flag	flag	rite_performed
+R	moon_fishing	unlock	feature.moon_fishing
+R	calmed_event	event	cozycoast.spirit.calmed		calmed	source=shrine;weight=2
+X	oqf	shared	true
+R	codex_entry	custom	cozycoast.codex		calmed	entry=moon_spirit
+S	find_shrine	s			reach shrine					0		Find the moon shrine
+X	godot	marker	res://markers/shrine.tscn
+S	perform_rite		step.find_shrine		custom cozycoast.ritual moon candles			0		0		Perform the moon rite	A custom objective: only the engine knows when it is satisfied.
+S	moon_blessing	o	step.find_shrine and var.moon.isFull					1		0		Receive the full moon blessing	Gated on a game variable, so the validator cannot prove it is reachable.
+S	banish_spirit		step.perform_rite		event spirit.banished 3		calmed|The spirit is calmed			0		Banish the spirit three times
+X	cozycoast	music	moon_theme

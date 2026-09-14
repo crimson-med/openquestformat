@@ -1,0 +1,18 @@
+OQF1
+A	shipwright|Shipwright Oda	captain|Captain Rosa
+L	boatyard|Boatyard	open_sea|Open sea	harbor|Harbor pier
+I	plank|Oak plank
+T	chain
+Q	repair_boat	1		0		Chain 1: Repair the Boat	Gather planks and patch the hull. Finishing this opens the next quest.
+R	repair_xp	xp	xp	20	repaired
+S	gather_planks	s			collect plank 3					0	0	Gather three oak planks
+S	patch_hull		step.gather_planks		interact hull		repaired|Hull patched			0	0	Patch the hull
+Q	first_voyage	1		0	outcome.repair_boat.repaired	Chain 2: First Voyage	Unlocked by the outcome of Repair the Boat.
+R	voyage_coins	currency	coins	50	returned
+S	sail_out	s			reach open_sea					1	1	Sail out to the open sea
+S	sail_home		step.sail_out		reach harbor		returned|Home safe			2	1	Sail back to the harbor
+Q	captains_log	1		0	quest.first_voyage == "closed"	Chain 3: The Captain's Log	Unlocked once First Voyage is closed. One step reads a step of another quest.
+R	log_bonus	xp	xp	5
+S	write_log	s			talk captain					2	1	Tell Rosa about the voyage
+S	note_open_sea	o	step.first_voyage#sail_out					0			1	Note the open sea in the log
+S	sign_log		step.write_log		talk captain		signed|Log signed			2	1	Sign the captain's log

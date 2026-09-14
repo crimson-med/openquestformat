@@ -1,0 +1,172 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [],
+    "locations": [
+      {
+        "id": "shrine",
+        "name": "Moon shrine"
+      }
+    ],
+    "items": [],
+    "tags": [
+      {
+        "id": "hooks"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "moon_rite",
+      "version": 1,
+      "title": "The Moon Rite",
+      "summary": "Shows the parts the engine owns: game variables, a custom objective, custom and event rewards, and extension data.",
+      "tags": [
+        "hooks"
+      ],
+      "unlock": {
+        "in": [
+          {
+            "var": "var.season"
+          },
+          [
+            "autumn",
+            "winter"
+          ]
+        ]
+      },
+      "steps": [
+        {
+          "id": "find_shrine",
+          "title": "Find the moon shrine",
+          "start": true,
+          "objective": {
+            "kind": "reach",
+            "location": "shrine"
+          },
+          "location": "shrine",
+          "ext": {
+            "x-godot.marker": "res://markers/shrine.tscn"
+          }
+        },
+        {
+          "id": "perform_rite",
+          "title": "Perform the moon rite",
+          "journal": "A custom objective: only the engine knows when it is satisfied.",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.find_shrine"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "custom",
+            "custom": "cozycoast.ritual",
+            "args": [
+              "moon",
+              "candles"
+            ]
+          },
+          "rewards": [
+            "rite_flag"
+          ],
+          "location": "shrine"
+        },
+        {
+          "id": "moon_blessing",
+          "title": "Receive the full moon blessing",
+          "journal": "Gated on a game variable, so the validator cannot prove it is reachable.",
+          "unlock": {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "step.find_shrine"
+                  },
+                  "done"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "var.moon.isFull"
+                  },
+                  true
+                ]
+              }
+            ]
+          },
+          "optional": true,
+          "rewards": [
+            "moon_fishing"
+          ],
+          "location": "shrine"
+        },
+        {
+          "id": "banish_spirit",
+          "title": "Banish the spirit three times",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.perform_rite"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "event",
+            "event": "spirit.banished",
+            "count": 3
+          },
+          "outcome": {
+            "name": "calmed",
+            "title": "The spirit is calmed"
+          },
+          "location": "shrine",
+          "ext": {
+            "x-cozycoast.music": "moon_theme"
+          }
+        }
+      ],
+      "rewards": [
+        {
+          "id": "rite_flag",
+          "kind": "flag",
+          "ref": "rite_performed"
+        },
+        {
+          "id": "moon_fishing",
+          "kind": "unlock",
+          "ref": "feature.moon_fishing"
+        },
+        {
+          "id": "calmed_event",
+          "kind": "event",
+          "ref": "cozycoast.spirit.calmed",
+          "outcome": "calmed",
+          "payload": {
+            "source": "shrine",
+            "weight": 2
+          },
+          "ext": {
+            "x-oqf.shared": true
+          }
+        },
+        {
+          "id": "codex_entry",
+          "kind": "custom",
+          "ref": "cozycoast.codex",
+          "outcome": "calmed",
+          "payload": {
+            "entry": "moon_spirit"
+          }
+        }
+      ],
+      "ext": {
+        "x-cozycoast.chapter": 3
+      }
+    }
+  ]
+}

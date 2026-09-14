@@ -1,0 +1,20 @@
+OQF1
+A	keeper|Keeper Aldo	smuggler|Cove Smuggler	captain|Captain Rosa
+L	beach|Driftwood beach	harbor_office|Harbor office	cove|Smuggler's cove	harbor|Harbor pier
+T	branching
+Q	washed_crate	1		0		The Washed-Up Crate	A smuggler's crate washes ashore. Report it, sell what is inside, or return it to its owner. Get caught and lose everything.
+R	reported_rep	reputation	harbor	10	reported
+R	sold_coins	currency	coins	150	sold
+R	sold_rep	reputation	harbor	-10	sold
+R	returned_rep	reputation	harbor	5	returned
+R	returned_compass	item	compass.brass		returned
+R	confiscated_rep	reputation	harbor	-15	confiscated
+S	find_crate	s			interact washed_crate					0		Inspect the crate on the beach
+S	choose_report		step.find_crate		talk keeper crate_found#report				oqf:crate_found	0	0	Tell the keeper you will report it
+S	choose_keep		step.find_crate		talk keeper crate_found#keep				oqf:crate_found	0	0	Tell the keeper you will keep it
+S	deliver_report		step.choose_report		reach harbor_office		reported|Crate reported			1		Carry the crate to the harbor office
+S	pry_open		step.choose_keep		interact crate_lock	event guard.spotted				0		Pry the crate open before the guard passes
+S	caught		step.pry_open == "failed"				!confiscated|Caught by the harbor guard			0		Caught with the crate
+S	sell_contents		step.pry_open		talk smuggler contraband_offer#sell		sold|Sold to the smuggler		oqf:contraband_offer	2	1	Sell the contents to the smuggler
+S	refuse_deal		step.pry_open		talk smuggler contraband_offer#refuse				oqf:contraband_offer	2	1	Refuse the smuggler's offer
+S	return_owner		step.refuse_deal		talk captain		returned|Returned to its owner			3	2	Return the crate to Captain Rosa

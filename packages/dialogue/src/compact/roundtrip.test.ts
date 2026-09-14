@@ -5,7 +5,7 @@ import { toDialogueJson } from '../json/serialize.js'
 import { parseOqd } from './parse.js'
 import { toOqd } from './serialize.js'
 
-const FIXTURES = ['harbormasters-ledger'] as const
+const FIXTURES = ['harbormasters-ledger', 'templates/branching'] as const
 
 function read(name: string): string {
   return readFileSync(new URL(`../../../examples/quests/${name}`, import.meta.url), 'utf8')

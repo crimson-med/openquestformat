@@ -1,0 +1,119 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "harbormaster",
+        "name": "Harbormaster Ines"
+      }
+    ],
+    "locations": [
+      {
+        "id": "harbor",
+        "name": "Harbor pier"
+      },
+      {
+        "id": "bell_tower",
+        "name": "Bell tower"
+      }
+    ],
+    "items": [],
+    "tags": [
+      {
+        "id": "recurring"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "harbor_bell",
+      "version": 1,
+      "title": "The Harbor Bell",
+      "summary": "Whenever the storm bell rings, run to the tower. The duty repeats until you retire from it.",
+      "tags": [
+        "recurring"
+      ],
+      "steps": [
+        {
+          "id": "take_duty",
+          "title": "Accept bell duty from Ines",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "harbormaster"
+          },
+          "location": "harbor",
+          "actors": [
+            "harbormaster"
+          ]
+        },
+        {
+          "id": "answer_bell",
+          "title": "Answer the storm bell",
+          "journal": "The step re-arms each time the bell stops ringing and unlocks again the next time it rings.",
+          "unlock": {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "step.take_duty"
+                  },
+                  "done"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "flag.bell_ringing"
+                  },
+                  true
+                ]
+              }
+            ]
+          },
+          "objective": {
+            "kind": "reach",
+            "location": "bell_tower"
+          },
+          "repeat": true,
+          "rewards": [
+            "bell_pay"
+          ],
+          "location": "bell_tower"
+        },
+        {
+          "id": "retire",
+          "title": "Hand the duty back to Ines",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.take_duty"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "harbormaster"
+          },
+          "outcome": {
+            "name": "retired",
+            "title": "Retired from bell duty"
+          },
+          "location": "harbor",
+          "actors": [
+            "harbormaster"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "bell_pay",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 3
+        }
+      ]
+    }
+  ]
+}
