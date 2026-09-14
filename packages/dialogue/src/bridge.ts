@@ -5,7 +5,8 @@
  *
  * Emitted event names and payloads match docs/03-events.md and the quest
  * runtime's `talk` objective matching: `dialogue.ended` carries `actor` (the
- * conversation's actor) and `node` (the conversation id).
+ * conversation's actor), `node` (the conversation id) and `at` (the id of the
+ * node the conversation ended on).
  */
 import type { Condition, Payload, Scalar, Text } from '@oqf/core'
 

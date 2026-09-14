@@ -363,6 +363,91 @@ describe('against the quests', () => {
   })
 })
 
+describe('refs that name a node', () => {
+  const dialogue = doc({
+    id: 'known',
+    start: 'g',
+    nodes: [
+      { id: 'g', text: 'x', choices: [{ text: 'y', next: 'done' }, { text: 'z' }] },
+      { id: 'done', text: 'x' },
+    ],
+  })
+
+  function quest(step: Record<string, unknown>): OqfDocument {
+    return {
+      dictionaries: { actors: [], locations: [], items: [], tags: [] },
+      quests: [
+        {
+          id: 'q',
+          version: 1,
+          title: 'Q',
+          tags: [],
+          steps: [{ id: 's', title: 'S', rewards: [], actors: [], ...step }],
+          rewards: [],
+        },
+      ] as OqfDocument['quests'],
+    }
+  }
+
+  function check(step: Record<string, unknown>, options: { strict?: boolean } = {}) {
+    return validateDialogue([dialogue], { ...options, quests: [quest(step)] }).findings.filter(
+      (finding) => finding.code === 'unknown-dialogue-ref',
+    )
+  }
+
+  it('accepts a binding that names an existing node', () => {
+    expect(check({ dialogue: { provider: 'oqf', ref: 'known#done' } })).toEqual([])
+  })
+
+  it('reports a binding whose node part does not exist', () => {
+    const found = check({ dialogue: { provider: 'oqf', ref: 'known#gone' } })
+    expect(found).toHaveLength(1)
+    expect(found[0].message).toContain('unknown node "gone"')
+    expect(found[0].path).toBe('quests[0].steps[0].dialogue.ref')
+  })
+
+  it('checks the dialogue of a talk objective as well', () => {
+    const found = check({ objective: { kind: 'talk', actor: 'a', dialogue: 'known#gone' } })
+    expect(found).toHaveLength(1)
+    expect(found[0].path).toBe('quests[0].steps[0].objective.dialogue')
+  })
+
+  it('checks the dialogue of a talk fail objective as well', () => {
+    const found = check({ failObjective: { kind: 'talk', actor: 'a', dialogue: 'gone#done' } })
+    expect(found).toHaveLength(1)
+    expect(found[0].message).toContain('unknown conversation "gone"')
+    expect(found[0].path).toBe('quests[0].steps[0].failObjective.dialogue')
+  })
+
+  it('reports a ref once when the binding and the objective agree', () => {
+    expect(
+      check({
+        dialogue: { provider: 'oqf', ref: 'known#gone' },
+        objective: { kind: 'talk', actor: 'a', dialogue: 'known#gone' },
+      }),
+    ).toHaveLength(1)
+  })
+
+  it('counts a conversation as bound through the conversation part of the ref', () => {
+    expect(check({ dialogue: { provider: 'oqf', ref: 'known#done' } }, { strict: true })).toEqual(
+      [],
+    )
+    const strict = validateDialogue([dialogue], {
+      strict: true,
+      quests: [quest({ dialogue: { provider: 'oqf', ref: 'known#done' } })],
+    })
+    expect(strict.findings).toEqual([])
+  })
+
+  it('does not let a talk objective alone bind a conversation in strict mode', () => {
+    const strict = validateDialogue([dialogue], {
+      strict: true,
+      quests: [quest({ objective: { kind: 'talk', actor: 'a', dialogue: 'known#done' } })],
+    })
+    expect(strict.findings.map((finding) => finding.code)).toEqual(['unbound-conversation'])
+  })
+})
+
 describe('several documents', () => {
   it('prefixes the path with the document index and shares the id space', () => {
     const result = validateDialogue([

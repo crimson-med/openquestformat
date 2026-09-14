@@ -100,7 +100,7 @@
           "objective": {
             "kind": "talk",
             "actor": "gull_feeder",
-            "dialogue": "gulls_hint"
+            "dialogue": "gulls_hint#tell"
           },
           "optional": true,
           "rewards": [
@@ -267,7 +267,7 @@
           "objective": {
             "kind": "talk",
             "actor": "smuggler",
-            "dialogue": "smuggler_deal"
+            "dialogue": "smuggler_deal#accept"
           },
           "outcome": {
             "name": "sold",

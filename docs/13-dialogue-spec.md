@@ -44,7 +44,7 @@ Key order follows the declaration order in `model.ts`: Conversation `id, actor, 
 - `start(ref)` emits `dialogue.started { actor, node: conversationId }`, then shows `start`.
 - Showing a node applies its `set` (emit `flag.set { flag, value }` each) and `emit` in that order, once per visit.
 - Choosing applies the choice's `set` and `emit`, emits `dialogue.choice { node, choice }` (choice index), records `once`, then moves to `next` or ends.
-- Ending emits `dialogue.ended { actor, node: conversationId }`. The quest runtime's `talk` objective matches on these two keys.
+- Ending emits `dialogue.ended { actor, node: conversationId, at }`, where `at` is the id of the node the conversation ended on: the node whose picked choice had no `next`, or the linear node with no `next`. The quest runtime's `talk` objective matches on `actor` and `node`, and on `at` as well when the binding is spelled `conversationId#nodeId`.
 - Choice conditions are evaluated with the context resolver each time the view is built.
 
 ## Example

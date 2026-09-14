@@ -5,8 +5,10 @@
  * The behaviour is frozen in docs/13-dialogue-spec.md. Showing a node applies
  * its `set` and then its `emit`, once per visit. Choosing applies the choice's
  * `set` and `emit`, emits `dialogue.choice`, records `once`, then moves on.
- * Choice conditions are evaluated through the context resolver every time the
- * view is built, so a view is always current.
+ * Ending emits `dialogue.ended` with the conversation actor and id plus `at`,
+ * the node the conversation ended on, so a step can bind one ending rather than
+ * the whole conversation. Choice conditions are evaluated through the context
+ * resolver every time the view is built, so a view is always current.
  */
 import { evaluateCondition } from '@oqf/core'
 import {
@@ -102,7 +104,7 @@ class OqfDialogueSession implements DialogueSession {
       )
     }
     if (node.next === undefined) {
-      this.end()
+      this.end(node.id)
       return
     }
     this.enter(node.next)
@@ -131,7 +133,7 @@ class OqfDialogueSession implements DialogueSession {
     })
     if (choice.once === true) this.context.once?.add(onceKey(this.conversation.id, node.id, index))
     if (choice.next === undefined) {
-      this.end()
+      this.end(node.id)
       return
     }
     this.enter(choice.next)
@@ -183,10 +185,11 @@ class OqfDialogueSession implements DialogueSession {
     }
   }
 
-  private end(): void {
+  /** `at` is the node the conversation ended on, so a step can bind one ending. */
+  private end(at: string): void {
     this.finished = true
     this.node = undefined
-    this.context.emit({ name: DIALOGUE_ENDED, payload: this.conversationPayload() })
+    this.context.emit({ name: DIALOGUE_ENDED, payload: { ...this.conversationPayload(), at } })
   }
 }
 

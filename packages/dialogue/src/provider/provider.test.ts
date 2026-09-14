@@ -102,7 +102,10 @@ describe('ines_intro, end to end', () => {
       { name: 'dialogue.started', payload: { actor: 'harbormaster', node: 'ines_intro' } },
       { name: 'dialogue.choice', payload: { node: 'greet', choice: 0 } },
       { name: 'dialogue.choice', payload: { node: 'greet', choice: 3 } },
-      { name: 'dialogue.ended', payload: { actor: 'harbormaster', node: 'ines_intro' } },
+      {
+        name: 'dialogue.ended',
+        payload: { actor: 'harbormaster', node: 'ines_intro', at: 'promise' },
+      },
     ])
   })
 
@@ -136,7 +139,7 @@ describe('gulls_hint, end to end', () => {
       { name: 'dialogue.started', payload: { actor: 'gull_feeder', node: 'gulls_hint' } },
       { name: 'dialogue.choice', payload: { node: 'ask', choice: 0 } },
       { name: 'flag.set', payload: { flag: 'knows_otter', value: true } },
-      { name: 'dialogue.ended', payload: { actor: 'gull_feeder', node: 'gulls_hint' } },
+      { name: 'dialogue.ended', payload: { actor: 'gull_feeder', node: 'gulls_hint', at: 'tell' } },
     ])
   })
 
@@ -176,7 +179,7 @@ describe('otter_trade, end to end', () => {
     expect(events).toEqual([
       { name: 'dialogue.started', payload: { actor: 'otter', node: 'otter_trade' } },
       { name: 'dialogue.choice', payload: { node: 'offer', choice: 2 } },
-      { name: 'dialogue.ended', payload: { actor: 'otter', node: 'otter_trade' } },
+      { name: 'dialogue.ended', payload: { actor: 'otter', node: 'otter_trade', at: 'come_back' } },
     ])
   })
 
@@ -194,7 +197,7 @@ describe('otter_trade, end to end', () => {
       { name: 'flag.set', payload: { flag: 'otter_traded', value: true } },
       { name: 'dialogue.choice', payload: { node: 'offer', choice: 0 } },
       { name: 'cozycoast.ledger.handed', payload: { from: 'otter' } },
-      { name: 'dialogue.ended', payload: { actor: 'otter', node: 'otter_trade' } },
+      { name: 'dialogue.ended', payload: { actor: 'otter', node: 'otter_trade', at: 'handover' } },
     ])
     expect([...keys]).toEqual(['otter_trade#offer#0'])
   })
@@ -228,7 +231,10 @@ describe('ines_return, end to end', () => {
     expect(session.ended).toBe(true)
     expect(events).toEqual([
       { name: 'dialogue.started', payload: { actor: 'harbormaster', node: 'ines_return' } },
-      { name: 'dialogue.ended', payload: { actor: 'harbormaster', node: 'ines_return' } },
+      {
+        name: 'dialogue.ended',
+        payload: { actor: 'harbormaster', node: 'ines_return', at: 'farewell' },
+      },
     ])
   })
 })
@@ -248,7 +254,10 @@ describe('smuggler_deal, end to end', () => {
       { name: 'dialogue.choice', payload: { node: 'offer', choice: 0 } },
       { name: 'cozycoast.smuggler.deal', payload: { price: 200 } },
       { name: 'dialogue.choice', payload: { node: 'offer', choice: 1 } },
-      { name: 'dialogue.ended', payload: { actor: 'smuggler', node: 'smuggler_deal' } },
+      {
+        name: 'dialogue.ended',
+        payload: { actor: 'smuggler', node: 'smuggler_deal', at: 'accept' },
+      },
     ])
   })
 
@@ -261,7 +270,10 @@ describe('smuggler_deal, end to end', () => {
     expect(events).toEqual([
       { name: 'dialogue.started', payload: { actor: 'smuggler', node: 'smuggler_deal' } },
       { name: 'dialogue.choice', payload: { node: 'offer', choice: 2 } },
-      { name: 'dialogue.ended', payload: { actor: 'smuggler', node: 'smuggler_deal' } },
+      {
+        name: 'dialogue.ended',
+        payload: { actor: 'smuggler', node: 'smuggler_deal', at: 'walk_away' },
+      },
     ])
   })
 })
@@ -334,7 +346,7 @@ describe('showing a node', () => {
     session.advance()
     expect(events).toEqual([
       { name: 'dialogue.started', payload: { actor: '', node: 'a' } },
-      { name: 'dialogue.ended', payload: { actor: '', node: 'a' } },
+      { name: 'dialogue.ended', payload: { actor: '', node: 'a', at: 'g' } },
     ])
   })
 

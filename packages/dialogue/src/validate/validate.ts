@@ -308,24 +308,67 @@ function checkConversation(context: Context, entry: Entry): void {
   }
 }
 
+/** A dialogue ref is `conversationId` or `conversationId#nodeId`. */
+function splitRef(ref: string): { conversation: string; node?: string } {
+  const hash = ref.indexOf('#')
+  if (hash === -1) return { conversation: ref }
+  return { conversation: ref.slice(0, hash), node: ref.slice(hash + 1) }
+}
+
+/** Reports a ref that names no conversation, or no such node inside one. */
+function checkRef(
+  context: Context,
+  ref: string,
+  path: string,
+  where: { quest: string; step: string },
+): void {
+  const { conversation, node } = splitRef(ref)
+  const entry = context.conversations.get(conversation)
+  if (entry === undefined) {
+    report(
+      context,
+      'warning',
+      'unknown-dialogue-ref',
+      `step ${quote(where.step)} binds the unknown conversation ${quote(conversation)}`,
+      path,
+      where,
+    )
+    return
+  }
+  if (node === undefined || entry.nodes.has(node)) return
+  report(
+    context,
+    'warning',
+    'unknown-dialogue-ref',
+    `step ${quote(where.step)} binds the unknown node ${quote(node)} of conversation ${quote(conversation)}`,
+    path,
+    where,
+  )
+}
+
 function checkQuestBindings(context: Context, quests: OqfDocument[]): void {
   const bound = new Set<string>()
   quests.forEach((document, documentIndex) => {
     const prefix = quests.length > 1 ? `documents[${documentIndex}].` : ''
     document.quests.forEach((quest, questIndex) => {
       quest.steps.forEach((step, stepIndex) => {
+        const stepPath = `${prefix}quests[${questIndex}].steps[${stepIndex}]`
+        const where = { quest: quest.id, step: step.id }
         const binding = step.dialogue
-        if (binding === undefined || binding.provider !== OQF_PROVIDER) return
-        bound.add(binding.ref)
-        if (context.conversations.has(binding.ref)) return
-        report(
-          context,
-          'warning',
-          'unknown-dialogue-ref',
-          `step ${quote(step.id)} binds the unknown conversation ${quote(binding.ref)}`,
-          `${prefix}quests[${questIndex}].steps[${stepIndex}].dialogue.ref`,
-          { quest: quest.id, step: step.id },
-        )
+        if (binding !== undefined && binding.provider === OQF_PROVIDER) {
+          // Only an explicit binding counts a conversation as bound.
+          bound.add(splitRef(binding.ref).conversation)
+          checkRef(context, binding.ref, `${stepPath}.dialogue.ref`, where)
+        }
+        // A `talk` objective names the same conversation, so its ref is checked too.
+        for (const [name, objective] of [
+          ['objective', step.objective],
+          ['failObjective', step.failObjective],
+        ] as const) {
+          if (objective?.kind !== 'talk' || objective.dialogue === undefined) continue
+          if (binding !== undefined && binding.ref === objective.dialogue) continue
+          checkRef(context, objective.dialogue, `${stepPath}.${name}.dialogue`, where)
+        }
       })
     })
   })
