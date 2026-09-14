@@ -8,19 +8,23 @@
 import { type Quest, formatCompletion, stepGraph } from '@oqf/core'
 import {
   Background,
+  type Connection,
   Controls,
   type Edge,
+  type EdgeChange,
   MiniMap,
   type NodeChange,
   Panel,
   ReactFlow,
+  applyEdgeChanges,
   applyNodeChanges,
 } from '@xyflow/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Direction } from '../lib/direction'
 import { layoutQuest, questPositions } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForStep, worstLevel } from '../store/selectors'
+import '../styles/connections.css'
 import { DirectionToggle } from './DirectionToggle'
 import { type StepFlowNode, StepNode } from './StepNode'
 
@@ -59,6 +63,8 @@ export function QuestGraph({
         id: step.id,
         type: 'step',
         position: positions[step.id] ?? { x: 0, y: 0 },
+        // Steps are removed through the store, never by React Flow's delete key.
+        deletable: false,
         data: {
           stepId: step.id,
           title: String(step.title),
@@ -82,8 +88,8 @@ export function QuestGraph({
     setNodes(build())
   }, [build])
 
-  const edges = useMemo<Edge[]>(
-    () =>
+  const buildEdges = useCallback(
+    (): Edge[] =>
       stepGraph(quest).edges.map(([from, to]) => ({
         id: `${from}->${to}`,
         source: from,
@@ -93,9 +99,24 @@ export function QuestGraph({
     [quest],
   )
 
+  const [edges, setEdges] = useState<Edge[]>(buildEdges)
+  useEffect(() => {
+    setEdges(buildEdges())
+  }, [buildEdges])
+
   const onNodesChange = useCallback((changes: NodeChange<StepFlowNode>[]) => {
-    setNodes((current) => applyNodeChanges(changes, current))
+    const kept = changes.filter((change) => change.type !== 'remove')
+    setNodes((current) => applyNodeChanges(kept, current))
   }, [])
+
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdges((current) => applyEdgeChanges(changes, current))
+  }, [])
+
+  const isValidConnection = useCallback(
+    (connection: Edge | Connection) => connection.source !== connection.target,
+    [],
+  )
 
   return (
     <ReactFlow<StepFlowNode>
@@ -103,6 +124,25 @@ export function QuestGraph({
       edges={edges}
       nodeTypes={NODE_TYPES}
       onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={(connection) =>
+        dispatch({
+          type: 'step/link',
+          quest: quest.id,
+          from: connection.source,
+          to: connection.target,
+        })
+      }
+      onEdgesDelete={(removed) => {
+        for (const edge of removed) {
+          dispatch({ type: 'step/unlink', quest: quest.id, from: edge.source, to: edge.target })
+        }
+      }}
+      onEdgeClick={() =>
+        dispatch({ type: 'select', selection: { kind: 'quest', quest: quest.id } })
+      }
+      isValidConnection={isValidConnection}
+      deleteKeyCode={['Delete', 'Backspace']}
       onNodeDragStop={(_, node) =>
         dispatch({
           type: 'step/position',

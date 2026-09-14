@@ -52,7 +52,7 @@ export function StepNode({ data }: NodeProps<StepFlowNode>) {
 
   return (
     <div className={classes.join(' ')}>
-      <Handle type="target" position={across ? Position.Left : Position.Top} />
+      <Handle type="target" position={across ? Position.Left : Position.Top} isConnectable />
       <div className="node-role">
         <span aria-hidden="true">{ROLE_GLYPHS[role]}</span>
         {role}
@@ -71,7 +71,7 @@ export function StepNode({ data }: NodeProps<StepFlowNode>) {
           ))}
         </div>
       )}
-      <Handle type="source" position={across ? Position.Right : Position.Bottom} />
+      <Handle type="source" position={across ? Position.Right : Position.Bottom} isConnectable />
     </div>
   )
 }

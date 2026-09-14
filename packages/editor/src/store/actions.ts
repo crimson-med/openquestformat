@@ -34,6 +34,10 @@ export type Action =
   | ({ type: 'step/set'; quest: string; step: string } & FieldPatch<Step>)
   | { type: 'step/position'; quest: string; step: string; position: Position }
   | { type: 'step/positions'; quest: string; positions: Record<string, Position> }
+  /** Make `to` depend on `from`: `to.unlock` gains `step.<from>`. */
+  | { type: 'step/link'; quest: string; from: string; to: string }
+  /** Drop every read of `from` from the conditions of `to`. */
+  | { type: 'step/unlink'; quest: string; from: string; to: string }
   | ({ type: 'outcome/set'; quest: string; step: string } & FieldPatch<Outcome>)
   | { type: 'reward/add'; quest: string; id?: string }
   | { type: 'reward/remove'; quest: string; reward: string }

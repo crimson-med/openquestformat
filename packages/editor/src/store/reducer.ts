@@ -8,6 +8,7 @@
  */
 import { type Quest, type Reward, type Step, emptyDocument } from '@oqf/core'
 import { type Conversation, type DialogueNode, emptyDialogueDocument } from '@oqf/dialogue'
+import { linkSteps, unlinkSteps } from '../lib/connections'
 import { type Position, writePosition } from '../lib/position'
 import type { Action, DictionaryKind } from './actions'
 import { isMutating } from './actions'
@@ -257,6 +258,18 @@ function applyEdit(state: EditorState, action: Action): Documents {
           return position === undefined ? step : { ...step, ext: writePosition(step.ext, position) }
         }),
       }))
+    case 'step/link':
+    case 'step/unlink': {
+      if (action.from === action.to) return docs
+      const quest = docs.quests.quests.find((entry) => entry.id === action.quest)
+      if (quest === undefined) return docs
+      const ids = quest.steps.map((step) => step.id)
+      if (!ids.includes(action.from) || !ids.includes(action.to)) return docs
+      const change = action.type === 'step/link' ? linkSteps : unlinkSteps
+      return mapQuest(docs, action.quest, (entry) =>
+        mapStep(entry, action.to, (step) => change(step, action.from)),
+      )
+    }
     case 'outcome/set':
       return mapQuest(docs, action.quest, (quest) =>
         mapStep(quest, action.step, (step) => ({
