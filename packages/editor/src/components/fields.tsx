@@ -1,8 +1,9 @@
 /**
  * Form primitives for the inspector.
  *
- * Text lands in the store as you type. Conditions land on blur, because half a
- * condition is a parse error and nobody wants to see one per keystroke.
+ * Text lands in the store as you type. Conditions are parsed on every keystroke
+ * so the message shows at once, but they land in the store on blur or Enter,
+ * because half a condition should never reach the document.
  */
 import {
   type Condition,
@@ -12,7 +13,12 @@ import {
   parseCompletion,
   parseCondition,
 } from '@oqf/core'
-import { type ReactNode, useEffect, useId, useState } from 'react'
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import type { Suggestion } from '../lib/suggest'
+import '../styles/suggest.css'
+
+/** Offers completions for the token ending at `caret`. See lib/suggest.ts. */
+export type SuggestFn = (text: string, caret: number) => Suggestion[]
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -226,55 +232,225 @@ export function SelectField({
   )
 }
 
-/** A condition, edited as infix text and parsed on blur. */
-export function ConditionField({
+/**
+ * Text that parses to a value: shown as its canonical spelling, parsed on every
+ * keystroke for the inline message, committed on blur or Enter. With `suggest`
+ * a listbox of completions opens under the input while there is something to
+ * offer.
+ */
+function ParsedField<T>({
   label,
-  value,
-  onChange,
   hint,
+  canonical,
+  placeholder,
+  parse,
+  empty,
+  onCommit,
+  suggest,
 }: {
   label: string
-  value: Condition | undefined
-  onChange: (value: Condition | undefined) => void
   hint?: string
+  canonical: string
+  placeholder: string
+  parse: (trimmed: string) => T
+  /** What an empty field commits. */
+  empty: T
+  onCommit: (value: T) => void
+  suggest?: SuggestFn
 }) {
-  const canonical = value === undefined ? '' : formatCondition(value)
+  const listId = useId()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState(canonical)
   const [error, setError] = useState<string | undefined>(undefined)
+  const [caret, setCaret] = useState(canonical.length)
+  const [focused, setFocused] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const [highlight, setHighlight] = useState(0)
+  /** Where the caret goes once an accepted suggestion has rendered. */
+  const [pendingCaret, setPendingCaret] = useState<number | undefined>(undefined)
+
   useEffect(() => {
     setText(canonical)
     setError(undefined)
+    setDismissed(false)
   }, [canonical])
+
+  useLayoutEffect(() => {
+    if (pendingCaret === undefined) return
+    inputRef.current?.setSelectionRange(pendingCaret, pendingCaret)
+    setPendingCaret(undefined)
+  }, [pendingCaret])
+
+  const check = (next: string): string | undefined => {
+    const trimmed = next.trim()
+    if (trimmed === '') return undefined
+    try {
+      parse(trimmed)
+      return undefined
+    } catch (failure) {
+      return errorMessage(failure)
+    }
+  }
+
+  const update = (next: string, at: number) => {
+    setText(next)
+    setCaret(at)
+    setError(check(next))
+    setDismissed(false)
+    setHighlight(0)
+  }
 
   const commit = () => {
     const trimmed = text.trim()
     if (trimmed === '') {
       setError(undefined)
-      onChange(undefined)
+      onCommit(empty)
       return
     }
     try {
-      onChange(parseCondition(trimmed))
+      onCommit(parse(trimmed))
       setError(undefined)
     } catch (failure) {
       setError(errorMessage(failure))
     }
   }
 
+  const suggestions = focused && !dismissed && suggest !== undefined ? suggest(text, caret) : []
+  const open = suggestions.length > 0
+  const active = Math.min(highlight, Math.max(0, suggestions.length - 1))
+
+  const accept = (entry: Suggestion) => {
+    const next = text.slice(0, entry.range.start) + entry.insert + text.slice(entry.range.end)
+    const at = entry.range.start + entry.insert.length
+    setPendingCaret(at)
+    update(next, at)
+  }
+
   return (
     <Field label={label} hint={hint} error={error}>
-      <input
-        className="input mono"
-        value={text}
-        spellCheck={false}
-        placeholder="flag.met_ines and count.fish >= 5"
-        onChange={(event) => setText(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur()
-        }}
-      />
+      <div className="suggest-wrap">
+        <input
+          ref={inputRef}
+          className="input mono"
+          value={text}
+          spellCheck={false}
+          autoComplete="off"
+          placeholder={placeholder}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={open ? listId : undefined}
+          aria-activedescendant={open ? `${listId}-${active}` : undefined}
+          onChange={(event) =>
+            update(event.target.value, event.target.selectionStart ?? event.target.value.length)
+          }
+          onSelect={(event) => setCaret(event.currentTarget.selectionStart ?? text.length)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false)
+            commit()
+          }}
+          onKeyDown={(event) => {
+            if (open) {
+              if (event.key === 'ArrowDown') {
+                event.preventDefault()
+                setHighlight((active + 1) % suggestions.length)
+                return
+              }
+              if (event.key === 'ArrowUp') {
+                event.preventDefault()
+                setHighlight((active - 1 + suggestions.length) % suggestions.length)
+                return
+              }
+              if (event.key === 'Enter' || event.key === 'Tab') {
+                event.preventDefault()
+                accept(suggestions[active])
+                return
+              }
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                setDismissed(true)
+                return
+              }
+            }
+            if (event.key === 'Enter') event.currentTarget.blur()
+          }}
+        />
+        {open ? (
+          // biome-ignore lint/a11y/useSemanticElements: a select cannot follow a typed combobox
+          <div className="suggest-list" role="listbox" id={listId} tabIndex={-1}>
+            {suggestions.map((entry, index) => (
+              <SuggestOption
+                key={`${entry.detail}:${entry.insert}`}
+                id={`${listId}-${index}`}
+                entry={entry}
+                selected={index === active}
+                onAccept={accept}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
     </Field>
+  )
+}
+
+function SuggestOption({
+  id,
+  entry,
+  selected,
+  onAccept,
+}: {
+  id: string
+  entry: Suggestion
+  selected: boolean
+  onAccept: (entry: Suggestion) => void
+}) {
+  return (
+    <div
+      id={id}
+      className="suggest-option"
+      // biome-ignore lint/a11y/useSemanticElements: an option of the typed combobox above
+      role="option"
+      aria-selected={selected}
+      tabIndex={-1}
+      onMouseDown={(event) => {
+        // Keep focus on the input so blur does not commit before the pick lands.
+        event.preventDefault()
+        onAccept(entry)
+      }}
+    >
+      <span className="suggest-label">{entry.label}</span>
+      <span className="suggest-detail">{entry.detail}</span>
+    </div>
+  )
+}
+
+/** A condition, edited as infix text. */
+export function ConditionField({
+  label,
+  value,
+  onChange,
+  hint,
+  suggest,
+}: {
+  label: string
+  value: Condition | undefined
+  onChange: (value: Condition | undefined) => void
+  hint?: string
+  suggest?: SuggestFn
+}) {
+  return (
+    <ParsedField<Condition | undefined>
+      label={label}
+      hint={hint}
+      canonical={value === undefined ? '' : formatCondition(value)}
+      placeholder="flag.met_ines and count.fish >= 5"
+      parse={parseCondition}
+      empty={undefined}
+      onCommit={onChange}
+      suggest={suggest}
+    />
   )
 }
 
@@ -288,50 +464,26 @@ export function CompletionField({
   condition,
   onChange,
   hint,
+  suggest,
 }: {
   label: string
   objective: Objective | undefined
   condition: Condition | undefined
   onChange: (parts: { objective?: Objective; condition?: Condition }) => void
   hint?: string
+  suggest?: SuggestFn
 }) {
-  const canonical = formatCompletion({ objective, condition })
-  const [text, setText] = useState(canonical)
-  const [error, setError] = useState<string | undefined>(undefined)
-  useEffect(() => {
-    setText(canonical)
-    setError(undefined)
-  }, [canonical])
-
-  const commit = () => {
-    const trimmed = text.trim()
-    if (trimmed === '') {
-      setError(undefined)
-      onChange({})
-      return
-    }
-    try {
-      onChange(parseCompletion(trimmed))
-      setError(undefined)
-    } catch (failure) {
-      setError(errorMessage(failure))
-    }
-  }
-
   return (
-    <Field label={label} hint={hint} error={error}>
-      <input
-        className="input mono"
-        value={text}
-        spellCheck={false}
-        placeholder="collect fish.rare 5 and flag.otter_agreed"
-        onChange={(event) => setText(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur()
-        }}
-      />
-    </Field>
+    <ParsedField<{ objective?: Objective; condition?: Condition }>
+      label={label}
+      hint={hint}
+      canonical={formatCompletion({ objective, condition })}
+      placeholder="collect fish.rare 5 and flag.otter_agreed"
+      parse={parseCompletion}
+      empty={{}}
+      onCommit={onChange}
+      suggest={suggest}
+    />
   )
 }
 

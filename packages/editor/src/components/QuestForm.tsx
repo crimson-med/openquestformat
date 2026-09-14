@@ -3,6 +3,7 @@
  * removing and reordering happen here so the graph stays about shape.
  */
 import type { Condition, Quest } from '@oqf/core'
+import { buildVocabulary, suggest } from '../lib/suggest'
 import { useDispatch, useEditorState } from '../store/context'
 import { questPatch } from '../store/patch'
 import { findingsForStep } from '../store/selectors'
@@ -25,6 +26,7 @@ export function QuestForm({ quest }: { quest: Quest }) {
   const findings = state.findings.filter(
     (finding) => finding.quest === quest.id && finding.step === undefined,
   )
+  const vocabulary = buildVocabulary(state, quest.id)
 
   return (
     <div className="form">
@@ -65,6 +67,7 @@ export function QuestForm({ quest }: { quest: Quest }) {
           value={quest.unlock}
           hint="When the quest becomes offerable. Empty means always."
           onChange={(value: Condition | undefined) => set('unlock', value)}
+          suggest={(text, caret) => suggest(text, caret, vocabulary, 'condition')}
         />
         <PickerField
           label="Tags"

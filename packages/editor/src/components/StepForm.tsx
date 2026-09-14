@@ -5,6 +5,7 @@
  */
 import type { Condition, Objective, Quest, Step } from '@oqf/core'
 import { readPosition } from '../lib/position'
+import { buildVocabulary, suggest } from '../lib/suggest'
 import { useDispatch, useEditorState } from '../store/context'
 import { outcomePatch, stepPatch } from '../store/patch'
 import { conversationIds, findingsForStep } from '../store/selectors'
@@ -33,6 +34,11 @@ export function StepForm({ quest, step }: { quest: Quest; step: Step }) {
   const position = readPosition(step.ext)
   const findings = findingsForStep(state.findings, quest.id, step.id)
   const conversations = conversationIds(state)
+  const vocabulary = buildVocabulary(state, quest.id)
+  const suggestCondition = (text: string, caret: number) =>
+    suggest(text, caret, vocabulary, 'condition')
+  const suggestCompletion = (text: string, caret: number) =>
+    suggest(text, caret, vocabulary, 'completion')
   const binding = step.dialogue
   const set = <K extends keyof Step>(field: K, value: Step[K]) =>
     dispatch(stepPatch(quest.id, step.id, field, value))
@@ -87,12 +93,14 @@ export function StepForm({ quest, step }: { quest: Quest; step: Step }) {
           value={step.unlock}
           hint="locked to available. Empty means the step starts available."
           onChange={(value: Condition | undefined) => set('unlock', value)}
+          suggest={suggestCondition}
         />
         <ConditionField
           label="Activate"
           value={step.activate}
           hint="available to active. Empty means immediate."
           onChange={(value: Condition | undefined) => set('activate', value)}
+          suggest={suggestCondition}
         />
         <CompletionField
           label="Complete"
@@ -103,6 +111,7 @@ export function StepForm({ quest, step }: { quest: Quest; step: Step }) {
             set('objective', parts.objective)
             set('complete', parts.condition)
           }}
+          suggest={suggestCompletion}
         />
         <CompletionField
           label="Fail"
@@ -113,6 +122,7 @@ export function StepForm({ quest, step }: { quest: Quest; step: Step }) {
             set('failObjective', parts.objective)
             set('fail', parts.condition)
           }}
+          suggest={suggestCompletion}
         />
       </Section>
 
