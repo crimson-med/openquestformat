@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "editor",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@oqf/editor", "dev", "--port", "5179", "--strictPort"],
+      "port": 5179
+    }
+  ]
+}
