@@ -11,11 +11,17 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "author": "Mederic Burlet <mederic.burlet@gmail.com>",
   "license": "Apache-2.0",
-  "engines": { "node": ">=24" },
-  "publishConfig": { "access": "public" },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
@@ -25,7 +31,16 @@
     "@oqf/core": "workspace:*"
   },
   "devDependencies": {
+    "inkjs": "^2.4.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "inkjs": "^2.4.0"
+  },
+  "peerDependenciesMeta": {
+    "inkjs": {
+      "optional": true
+    }
   }
 }
