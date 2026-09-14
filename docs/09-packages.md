@@ -9,7 +9,7 @@ A pnpm workspace with one canonical model in `core` and thin packages around it,
 | `@oqf/runtime` | The state machine. Loads a pack, accepts events, evaluates conditions, transitions steps, grants rewards, emits events, reads and writes state documents, reconciles state against a newer quest version. Engine-agnostic: no DOM, no Node APIs, works in a browser, Electron renderer, Node, or Deno. | core, dialogue (bridge only) |
 | `@oqf/i18n` | `extract` and `inject` over a pack. Table adapters: JSON, CSV, PO, XLIFF. A minimal runtime resolver. | core |
 | `@oqf/cli` | `oqf validate`, `oqf convert` (oqf, json, md, oqd, ink, yarn), `oqf import` (ink, yarn), `oqf graph`, `oqf schema`, `oqf extract`, `oqf inject`. Thin wrapper over the packages above. | all |
-| `@oqf/editor` | Web editor. Graph view of steps, form view of fields, dialogue editor, live validation, import and export in every format. Authors compact natively. Ships as a static site and as a component others can embed. | core, dialogue, i18n |
+| `@oqf/editor` | Web editor. Graph view of steps with dependencies drawn as edges, form view of fields with suggestions, dialogue editor, live validation, quest and dialogue playtest through the runtime, strings table with extraction and injection, templates, import and export in every format including multi-file packs. Authors compact natively. Ships as a static site and as a component others can embed. | core, dialogue, i18n, runtime |
 | `@oqf/examples` | Reference quests in compact and JSON, including the Cozy Coast quest from [11-reference-quest.md](11-reference-quest.md). Used by tests in every other package. | none |
 
 ## Later

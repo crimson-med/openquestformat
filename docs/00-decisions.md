@@ -100,6 +100,12 @@ See [12-compact-spec.md](12-compact-spec.md). Columns may only be appended.
 
 Dialogue providers call the runtime's resolver from outside a quest evaluation. Unqualified `count.<step>` and `step.<step>` search every loaded quest; the qualified `quest#step` form is accepted everywhere.
 
+## D22. Editor-only data lives in the `x-editor` namespace, and a pack is edited as one document
+
+The editor writes what only it needs into extension keys under `x-editor`, which every format already round-trips: `x-editor.pos` holds a step's or node's position on the canvas, `x-editor.file` holds the file a quest or conversation came from. Opening several files or a folder merges them into one quest document and one dialogue document, tagging each quest and conversation with its file; exporting as a pack groups by tag, gives each file only the dictionary entries it references, and strips the tag so it never lands in a file. Positions stay in the file on purpose.
+
+Reason: the store stays one document with one dictionary set, which is what every selector, validator pass and cross-reference already expects, and the editor needs no format change or side file to remember layout or provenance. D12 guarantees other tools carry the keys through untouched.
+
 ## Open items
 
 - **One objective per step.** The reference quest wants `trade` to require both "collect five koi" and "talk to the otter". v0.1 holds one objective per step; the talk half rides on the dialogue binding and a flag. A list of objectives is a candidate for v0.2 once the runtime has shipped in Cozy Coast and the need is confirmed.

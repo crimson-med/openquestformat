@@ -49,6 +49,8 @@ Done when the reference dialogue exports to Ink and Yarn, both re-import with no
 
 Done when a quest can be written from nothing in the editor, exported, validated, and run in Cozy Coast without touching a text file.
 
+Where the editor stands against that sentence: a quest can be started from a template or from nothing, its steps and dependencies drawn on the graph, every field edited in the inspector with suggestions and live parse errors, validated on every change, played through `@oqf/runtime` in the Play tab, localized in the Strings tab, and exported as a single file or as a multi-file pack. Still missing: a dictionary manager, so actors, locations, items and tags can only be picked from what a file already declares, not added or renamed in the editor; and the Cozy Coast integration, so "run in Cozy Coast" is unproven.
+
 ## v1.5
 
 - Engine exporters: Godot first, then Unity, then Unreal. Each with a loader on the engine side and one sample project.

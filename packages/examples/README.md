@@ -16,7 +16,7 @@ warning free, in `.oqf` and `.json` pairs. The editor offers them under "New fro
 | Template | Pattern |
 |----------|---------|
 | `linear` | One step after another, a step reward and a quest-level reward. |
-| `branching` | A decision tree with four endings, one failed. Choices are dialogue exits (`talk actor conversation#node`), with `branching.oqd` holding the conversations. |
+| `branching` | A decision tree with four endings, one failed. Choices are dialogue exits (`talk actor conversation#node`), with `branching.oqd` and `branching.dialogue.json` holding the conversations. |
 | `repeatable` | A quest flagged `r`, gated by a quest `unlock`, retaken after every outcome. |
 | `loop` | Two `repeat` steps that unlock each other: a failed cast sends the player to mend the line, and the loop exits when the cast succeeds. |
 | `recurring-step` | One `repeat` step with no cycle, re-armed whenever its flag goes false and true again. |
