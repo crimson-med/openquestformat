@@ -19,6 +19,8 @@ export type Action =
   | { type: 'doc/load'; quests?: OqfDocument; dialogues?: DialogueDocument; selection?: Selection }
   | { type: 'doc/reset' }
   | { type: 'doc/markSaved' }
+  /** Swaps whole documents as one undoable edit, for extraction and injection. */
+  | { type: 'doc/replace'; quests?: OqfDocument; dialogues?: DialogueDocument }
   | { type: 'select'; selection: Selection }
   | { type: 'undo' }
   | { type: 'redo' }

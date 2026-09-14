@@ -20,6 +20,7 @@ import { useDispatch, useEditorState } from '../store/context'
 import { findingsForNode, worstLevel } from '../store/selectors'
 import { type DialogueFlowNode, DialogueNodeCard } from './DialogueNodeCard'
 import { DirectionToggle } from './DirectionToggle'
+import { useStringResolver } from './StringsContext'
 
 const NODE_TYPES = { dialogue: DialogueNodeCard }
 
@@ -34,6 +35,7 @@ export function DialogueGraph({
 }) {
   const state = useEditorState()
   const dispatch = useDispatch()
+  const resolve = useStringResolver()
   const selection = state.selection
   const selected =
     selection.kind === 'node' || selection.kind === 'choice' ? selection.node : undefined
@@ -56,8 +58,8 @@ export function DialogueGraph({
         data: {
           nodeId: node.id,
           speaker: node.speaker,
-          text: String(node.text),
-          choices: choices.map((choice) => String(choice.text)),
+          text: resolve(String(node.text)),
+          choices: choices.map((choice) => resolve(String(choice.text))),
           lore: node.lore === true,
           start: node.id === conversation.start,
           ends: choices.length === 0 && node.next === undefined,
@@ -67,7 +69,7 @@ export function DialogueGraph({
         },
       }
     })
-  }, [conversation, state.findings, selected, direction])
+  }, [conversation, state.findings, selected, direction, resolve])
 
   const [nodes, setNodes] = useState<DialogueFlowNode[]>(build)
   useEffect(() => {

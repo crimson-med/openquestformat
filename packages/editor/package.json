@@ -19,6 +19,7 @@
     "@dagrejs/dagre": "^3.1.1",
     "@oqf/core": "workspace:*",
     "@oqf/dialogue": "workspace:*",
+    "@oqf/i18n": "workspace:*",
     "@xyflow/react": "^12.11.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

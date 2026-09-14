@@ -50,6 +50,22 @@ describe('documents', () => {
     expect(state.selection.kind).toBe('none')
   })
 
+  it('replaces documents as one undoable edit', () => {
+    const before = start()
+    const quests = sampleQuests()
+    const first = quests.quests[0]
+    if (first !== undefined) first.title = '@ledger.title'
+    const replaced = reducer(before, { type: 'doc/replace', quests })
+    expect(replaced.quests).toBe(quests)
+    expect(replaced.dialogues).toBe(before.dialogues)
+    expect(replaced.dirty).toBe(true)
+    expect(replaced.past).toHaveLength(1)
+    expect(quest(replaced).title).toBe('@ledger.title')
+    const undone = reducer(replaced, { type: 'undo' })
+    expect(undone.quests).toBe(before.quests)
+    expect(quest(undone).title).toBe('The ledger')
+  })
+
   it('marks the document saved without touching it', () => {
     const dirty = run(start(), { type: 'quest/add' })
     const saved = reducer(dirty, { type: 'doc/markSaved' })
