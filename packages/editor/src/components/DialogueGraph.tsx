@@ -9,29 +9,26 @@ import {
   type Edge,
   MiniMap,
   type NodeChange,
-  Panel,
   ReactFlow,
   applyNodeChanges,
 } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Direction } from '../lib/direction'
-import { conversationPositions, dialogueEdges, layoutConversation } from '../lib/layout'
+import { conversationPositions, dialogueEdges } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForNode, worstLevel } from '../store/selectors'
 import { type DialogueFlowNode, DialogueNodeCard } from './DialogueNodeCard'
-import { DirectionToggle } from './DirectionToggle'
 import { useStringResolver } from './StringsContext'
 
 const NODE_TYPES = { dialogue: DialogueNodeCard }
 
+/** The add, layout and direction controls live in the canvas header above, not here. */
 export function DialogueGraph({
   conversation,
   direction,
-  onDirection,
 }: {
   conversation: Conversation
   direction: Direction
-  onDirection: (direction: Direction) => void
 }) {
   const state = useEditorState()
   const dispatch = useDispatch()
@@ -39,13 +36,6 @@ export function DialogueGraph({
   const selection = state.selection
   const selected =
     selection.kind === 'node' || selection.kind === 'choice' ? selection.node : undefined
-
-  const relayout = (next: Direction) =>
-    dispatch({
-      type: 'node/positions',
-      conversation: conversation.id,
-      positions: layoutConversation(conversation, { direction: next }),
-    })
 
   const build = useCallback((): DialogueFlowNode[] => {
     const positions = conversationPositions(conversation, { direction })
@@ -128,25 +118,6 @@ export function DialogueGraph({
       <Background gap={24} size={1} />
       <Controls showInteractive={false} />
       <MiniMap pannable zoomable />
-      <Panel position="top-left" className="canvas-actions">
-        <button
-          type="button"
-          title="Add node (N)"
-          onClick={() => dispatch({ type: 'node/add', conversation: conversation.id })}
-        >
-          Add node
-        </button>
-        <button type="button" onClick={() => relayout(direction)}>
-          Auto layout
-        </button>
-        <DirectionToggle
-          direction={direction}
-          onChange={(next) => {
-            relayout(next)
-            onDirection(next)
-          }}
-        />
-      </Panel>
     </ReactFlow>
   )
 }

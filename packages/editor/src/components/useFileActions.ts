@@ -14,11 +14,10 @@ import {
   serializeQuests,
 } from '../lib/files'
 import { mergePack, packFileName, packMime, splitPack } from '../lib/pack'
-import { loadReference } from '../lib/reference'
 import { type QuestTemplate, loadTemplate } from '../lib/templates'
 import { useDispatch, useEditorState } from '../store/context'
 
-/** `onLoad` runs before any action that replaces the document: open, template, reference, reset. */
+/** `onLoad` runs before any action that replaces the document: open, template, reset. */
 export function useFileActions(
   onNotice: (message: string | undefined) => void,
   onLoad?: () => void,
@@ -26,7 +25,6 @@ export function useFileActions(
   const state = useEditorState()
   const dispatch = useDispatch()
   const fileInput = useRef<HTMLInputElement>(null)
-  const folderInput = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const base = state.quests.quests[0]?.id ?? 'quests'
 
@@ -64,7 +62,6 @@ export function useFileActions(
     } finally {
       setBusy(false)
       if (fileInput.current !== null) fileInput.current.value = ''
-      if (folderInput.current !== null) folderInput.current.value = ''
     }
   }
 
@@ -126,25 +123,6 @@ export function useFileActions(
     }
   }
 
-  const loadReferenceQuest = () => {
-    try {
-      const reference = loadReference()
-      onLoad?.()
-      dispatch({
-        type: 'doc/load',
-        quests: reference.quests,
-        dialogues: reference.dialogues,
-        selection: {
-          kind: 'quest',
-          quest: reference.quests.quests[0]?.id ?? '',
-        },
-      })
-      onNotice('Loaded the reference quest, The Harbormaster’s Ledger.')
-    } catch (failure) {
-      onNotice(failure instanceof Error ? failure.message : String(failure))
-    }
-  }
-
   const reset = () => {
     onLoad?.()
     dispatch({ type: 'doc/reset' })
@@ -153,14 +131,12 @@ export function useFileActions(
 
   return {
     fileInput,
-    folderInput,
     busy,
     open,
     exportPack,
     exportQuests,
     exportDialogues,
     fromTemplate,
-    loadReferenceQuest,
     reset,
   }
 }

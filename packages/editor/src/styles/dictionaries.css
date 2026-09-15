@@ -98,7 +98,7 @@
 }
 
 .dict-table .input {
-  padding: 6px 8px;
+  padding: 0 8px;
 }
 
 .dict-table .input[aria-invalid="true"] {
@@ -112,7 +112,8 @@
 }
 
 .dict-usage-toggle {
-  padding: 4px 8px;
+  min-height: 26px;
+  padding: 0 8px;
   font-size: 13px;
 }
 

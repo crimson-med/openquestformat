@@ -14,7 +14,6 @@ import {
   type EdgeChange,
   MiniMap,
   type NodeChange,
-  Panel,
   ReactFlow,
   applyEdgeChanges,
   applyNodeChanges,
@@ -22,11 +21,10 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type EdgeSpec, edgeLabels, edgeSpec } from '../lib/connections'
 import type { Direction } from '../lib/direction'
-import { layoutQuest, questPositions } from '../lib/layout'
+import { questPositions } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForStep, worstLevel } from '../store/selectors'
 import '../styles/connections.css'
-import { DirectionToggle } from './DirectionToggle'
 import { EdgePopover } from './EdgePopover'
 import { usePlaytest } from './PlaytestContext'
 import { type StepFlowNode, StepNode } from './StepNode'
@@ -41,15 +39,8 @@ type PendingEdge =
 
 const DEFAULT_SPEC: EdgeSpec = { field: 'unlock', state: 'done' }
 
-export function QuestGraph({
-  quest,
-  direction,
-  onDirection,
-}: {
-  quest: Quest
-  direction: Direction
-  onDirection: (direction: Direction) => void
-}) {
+/** The add, layout and direction controls live in the canvas header above, not here. */
+export function QuestGraph({ quest, direction }: { quest: Quest; direction: Direction }) {
   const state = useEditorState()
   const dispatch = useDispatch()
   const resolve = useStringResolver()
@@ -61,13 +52,6 @@ export function QuestGraph({
     () => playtest.session?.stepStates(quest.id),
     [playtest.session, playtest.version, quest.id],
   )
-
-  const relayout = (next: Direction) =>
-    dispatch({
-      type: 'step/positions',
-      quest: quest.id,
-      positions: layoutQuest(quest, { direction: next }),
-    })
 
   const build = useCallback((): StepFlowNode[] => {
     const positions = questPositions(quest, { direction })
@@ -236,25 +220,6 @@ export function QuestGraph({
       <Background gap={24} size={1} />
       <Controls showInteractive={false} />
       <MiniMap pannable zoomable />
-      <Panel position="top-left" className="canvas-actions">
-        <button
-          type="button"
-          title="Add step (N)"
-          onClick={() => dispatch({ type: 'step/add', quest: quest.id })}
-        >
-          Add step
-        </button>
-        <button type="button" onClick={() => relayout(direction)}>
-          Auto layout
-        </button>
-        <DirectionToggle
-          direction={direction}
-          onChange={(next) => {
-            relayout(next)
-            onDirection(next)
-          }}
-        />
-      </Panel>
       {popover}
     </ReactFlow>
   )

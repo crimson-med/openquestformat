@@ -157,6 +157,13 @@ export function StringsPanel() {
 
   return (
     <div className="strings">
+      <header className="view-head">
+        <h2>Strings</h2>
+        <p>
+          Every player-facing text in the pack beside its translation. Extract literals to keys,
+          fill a language in, and inject it back or export the table.
+        </p>
+      </header>
       <div className="strings-bar">
         <div className="strings-group">
           <label htmlFor="strings-source">Source</label>

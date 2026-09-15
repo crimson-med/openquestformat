@@ -12,15 +12,18 @@ pnpm install
 pnpm editor          # from the repo root, or pnpm --filter @oqf/editor dev
 ```
 
-Open the printed URL and pick a template from "New", or "Load reference quest"
-(in the empty canvas and under the More menu) to get the Harbormaster's Ledger
-fixture, quest and dialogue both.
+Open the printed URL. The empty canvas is the onboarding screen: start from a
+template, open a file, or begin a blank quest. The "New" menu holds the same
+templates, the last of them the Harbormaster's Ledger fixture, quest and
+dialogue both. The `?` button (and Help under the More menu) opens a summary
+of the views, the graph legend and the shortcuts.
 
 ## What it does
 
 - **Quest graph.** One node per step, edges from `stepGraph`, dagre auto layout
-  top to bottom or left to right; the direction toggle sits on both canvases
-  and is remembered in local storage. Positions are written back to each step
+  top to bottom or left to right. The bar above each canvas holds Add, Auto
+  layout, the direction toggle (remembered in local storage), the quest or
+  conversation picker and a legend of the role colors. Positions are written back to each step
   as `x-editor.pos`, so a laid out quest keeps its shape in the file and in
   git. Steps are colored by role (start, step, optional, repeat, ending,
   failed) with a glyph, and show the playtest state when one is running.
@@ -41,13 +44,16 @@ fixture, quest and dialogue both.
   file writes them. Quests and conversations have a File field for multi-file
   packs.
 - **Validation.** `validatePack` and `validateDialogue` run on every change.
+  The drawer's Validation tab carries the count, red for errors and amber for
+  warnings, and a closed drawer shows a red dot while there are errors.
   Click a finding to select what it is about. Most findings carry one-click
   fixes (mark repeat, add an outcome, add a missing dictionary entry or reward,
   remove a dangling reference, bind a conversation), each a single undo step.
 - **Source.** The live compact text, and the JSON and markdown forms, read only.
 - **Play.** A mode, entered from the toolbar's Play button or cmd or ctrl P,
-  that replaces the inspector with the quest playtest while the graph stays
-  live. It runs the pack through `@oqf/runtime`. Next lists only the events
+  that replaces the inspector while the graph stays live: the quest playtest
+  on the Quests view, the conversation player on the Dialogue view. The
+  quest playtest runs the pack through `@oqf/runtime`. Next lists only the events
   that can move the quest right now, one button per objective of an active
   step, with the rest under Other events beside a free-form event form. World
   holds the flags and game variables the conditions read. Timeline groups what
@@ -68,20 +74,21 @@ fixture, quest and dialogue both.
   create it, and the pickers in the inspector link here with Manage.
 - **Dialogue.** A second graph, edges labelled with choice text, with the same
   layout controls as the quest graph.
-- **Files.** Open one file, several files or a folder; `.oqf`, `.oqd` and
-  either JSON form, the kind read from the magic line, not the extension. A
-  pack of files is merged into one document, and each quest and conversation
-  remembers its file in `x-editor.file`. Export the whole pack as files (split
-  back the way it came in), or the quests as `.oqf`, `.json` or `.md` and the
-  dialogue as `.oqd` or `.json`. Work autosaves to local storage.
+- **Files.** Open one file or several at once; `.oqf`, `.oqd` and either JSON
+  form, the kind read from the magic line, not the extension. A pack of files
+  is merged into one document, and each quest and conversation remembers its
+  file in `x-editor.file`. Export the whole pack as files (split back the way
+  it came in), or the quests as `.oqf`, `.json` or `.md` and the dialogue as
+  `.oqd` or `.json`. Work autosaves to local storage. Reset, under the More
+  menu, asks before it clears the editor.
 - **New.** A menu of templates, one per pattern the model supports, plus the
   reference quest.
 
 Shortcuts: undo and redo with cmd or ctrl Z, delete the selected step or node
 with Delete, export the quests with cmd or ctrl S, a command palette on cmd or
-ctrl K, play or stop playing the quest with cmd or ctrl P, `n` to add a step
-or node. Fit view keeps a readable zoom, and the
-minimap hides when the canvas is narrow.
+ctrl K, play or stop playing with cmd or ctrl P, `n` to add a step or node,
+Escape to close a menu or a dialog. Fit view keeps a readable zoom, and the
+minimap and the legend hide when the canvas is narrow.
 
 ## Templates
 

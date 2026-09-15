@@ -1,8 +1,8 @@
 /**
  * The three panes: graph, inspector, drawer. Everything else is a child of one
  * of them. The Strings and Dictionaries views replace the graph and inspector
- * with one full-width pane; the drawer stays. Play mode, on the Quests view,
- * replaces the inspector with the quest playtest and keeps the graph.
+ * with one full-width pane; the drawer stays. Play mode, on the Quests and
+ * Dialogue views, replaces the inspector with the play aside and keeps the graph.
  */
 import { ReactFlowProvider } from '@xyflow/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -10,8 +10,8 @@ import type { Command } from '../lib/commands'
 import { type Direction, browserStore, readDirection, writeDirection } from '../lib/direction'
 import { downloadText } from '../lib/download'
 import { MIME_TYPES, downloadName, serializeQuests } from '../lib/files'
+import { DIALOGUE_LEGEND, QUEST_LEGEND } from '../lib/help'
 import { layoutConversation, layoutQuest } from '../lib/layout'
-import { loadReference } from '../lib/reference'
 import { TEMPLATES } from '../lib/templates'
 import { useDispatch, useEditorState } from '../store/context'
 import {
@@ -20,15 +20,18 @@ import {
   findConversation,
   findQuest,
 } from '../store/selectors'
+import { CanvasHead } from './CanvasHead'
 import { CommandPalette } from './CommandPalette'
+import { ConfirmDialog } from './ConfirmDialog'
 import { DialogueGraph } from './DialogueGraph'
 import { DictionariesPanel } from './DictionariesPanel'
 import { Drawer, type DrawerTab } from './Drawer'
-import { EmptyState } from './EmptyState'
+import { EmptyState, Onboarding } from './EmptyState'
+import { HelpDialog } from './HelpDialog'
 import { Inspector } from './Inspector'
+import { PlayAside } from './PlayAside'
 import { PlaytestProvider, usePlaytest } from './PlaytestContext'
 import { QuestGraph } from './QuestGraph'
-import { QuestPlayPanel } from './QuestPlayPanel'
 import { StringsProvider } from './StringsContext'
 import { StringsPanel } from './StringsPanel'
 import { type Tab, Toolbar } from './Toolbar'
@@ -69,6 +72,8 @@ function AppContent() {
   const [playing, setPlaying] = useState(false)
   const [notice, setNotice] = useState<string | undefined>(undefined)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [resetAsked, setResetAsked] = useState(false)
   const [direction, setDirection] = useState<Direction>(() => readDirection(browserStore()))
   const changeDirection = (next: Direction) => {
     setDirection(next)
@@ -80,8 +85,9 @@ function AppContent() {
   const conversationId = activeConversationId(state)
   const conversation = findConversation(state, conversationId)
 
-  /** Play mode shows on the Quests view with a quest loaded, nowhere else. */
-  const canPlay = tab === 'quests' && quest !== undefined
+  /** Play mode shows on the Quests view with a quest, on the Dialogue view with a conversation. */
+  const canPlay =
+    (tab === 'quests' && quest !== undefined) || (tab === 'dialogue' && conversation !== undefined)
   const stopPlaying = playtest.stop
   const leavePlay = () => {
     setPlaying(false)
@@ -103,11 +109,11 @@ function AppContent() {
   const files = useFileActions(setNotice, leavePlay)
 
   useEffect(() => {
-    if (playing && quest === undefined) {
+    if (playing && !canPlay) {
       setPlaying(false)
       stopPlaying()
     }
-  }, [playing, quest, stopPlaying])
+  }, [playing, canPlay, stopPlaying])
 
   useEffect(() => {
     if (notice === undefined) return
@@ -180,10 +186,29 @@ function AppContent() {
     return () => window.removeEventListener('keydown', onKey)
   }, [dispatch, state.selection, state.quests, tab, questId, conversationId])
 
+  /** Lays the open graph out in `next` and remembers the direction. */
+  const layout = (next: Direction) => {
+    if (tab === 'quests' && quest !== undefined) {
+      dispatch({
+        type: 'step/positions',
+        quest: quest.id,
+        positions: layoutQuest(quest, { direction: next }),
+      })
+    } else if (tab === 'dialogue' && conversation !== undefined) {
+      dispatch({
+        type: 'node/positions',
+        conversation: conversation.id,
+        positions: layoutConversation(conversation, { direction: next }),
+      })
+    }
+    if (next !== direction) changeDirection(next)
+  }
+
   const questPicker =
-    state.quests.quests.length > 1 && tab === 'quests' ? (
+    state.quests.quests.length > 1 ? (
       <select
-        className="picker-select"
+        className="picker-select canvas-picker"
+        aria-label="Quest"
         value={questId ?? ''}
         onChange={(event) =>
           dispatch({ type: 'select', selection: { kind: 'quest', quest: event.target.value } })
@@ -198,9 +223,10 @@ function AppContent() {
     ) : null
 
   const conversationPicker =
-    state.dialogues.conversations.length > 1 && tab === 'dialogue' ? (
+    state.dialogues.conversations.length > 1 ? (
       <select
-        className="picker-select"
+        className="picker-select canvas-picker"
+        aria-label="Conversation"
         value={conversationId ?? ''}
         onChange={(event) =>
           dispatch({
@@ -217,16 +243,17 @@ function AppContent() {
       </select>
     ) : null
 
-  const canvasPicker = questPicker ?? conversationPicker
-
   /**
    * Switching to a graph moves the inspector to that graph, so the two never
-   * disagree. The Strings and Dictionaries views leave the selection alone.
+   * disagree. The Strings and Dictionaries views leave the selection alone and
+   * end play mode; the two graph views keep it.
    */
   const switchTab = (next: Tab) => {
     setTab(next)
-    if (next !== 'quests' && playing) leavePlay()
-    if (next === 'strings' || next === 'dictionaries') return
+    if (next === 'strings' || next === 'dictionaries') {
+      if (playing) leavePlay()
+      return
+    }
     const kind = state.selection.kind
     if (next === 'quests' && (kind === 'conversation' || kind === 'node' || kind === 'choice')) {
       if (questId !== undefined) {
@@ -244,26 +271,10 @@ function AppContent() {
     }
   }
 
-  // The file actions and the tab switch close over the state, so it stands in for them.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: state covers files and switchTab
+  // The file actions, the layout and the tab switch close over the state, so it stands in for them.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state covers files, layout and switchTab
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = []
-    const layout = (next: Direction) => {
-      if (tab === 'quests' && quest !== undefined) {
-        dispatch({
-          type: 'step/positions',
-          quest: quest.id,
-          positions: layoutQuest(quest, { direction: next }),
-        })
-      } else if (tab === 'dialogue' && conversation !== undefined) {
-        dispatch({
-          type: 'node/positions',
-          conversation: conversation.id,
-          positions: layoutConversation(conversation, { direction: next }),
-        })
-      }
-      if (next !== direction) changeDirection(next)
-    }
     const showDrawer = (next: DrawerTab) => {
       setDrawerTab(next)
       setDrawerOpen(true)
@@ -378,7 +389,7 @@ function AppContent() {
     if (playing || canPlay) {
       list.push({
         id: 'view/play',
-        title: playing ? 'Stop playing' : 'Play quest',
+        title: playing ? 'Stop playing' : tab === 'dialogue' ? 'Play conversation' : 'Play quest',
         group: 'View',
         keywords: ['playtest', 'run', 'runtime'],
         shortcut: '⌘P',
@@ -402,6 +413,13 @@ function AppContent() {
           run: () => showDrawer(entry.tab),
         }),
       ),
+      {
+        id: 'view/help',
+        title: 'Help',
+        group: 'View',
+        keywords: ['shortcuts', 'legend', 'views', 'keys'],
+        run: () => setHelpOpen(true),
+      },
     )
 
     list.push(
@@ -456,18 +474,11 @@ function AppContent() {
         run: files.exportPack,
       },
       {
-        id: 'file/reference',
-        title: 'Load reference quest',
-        group: 'File',
-        keywords: ['harbormaster', 'ledger', 'example'],
-        run: files.loadReferenceQuest,
-      },
-      {
         id: 'file/reset',
         title: 'Reset (clears everything)',
         group: 'File',
         keywords: ['clear', 'new', 'empty'],
-        run: files.reset,
+        run: () => setResetAsked(true),
       },
     )
 
@@ -513,6 +524,61 @@ function AppContent() {
     return list
   }, [state, tab, drawerOpen, direction, quest, conversation, dispatch, playing, canPlay])
 
+  const graph =
+    tab === 'quests' ? (
+      quest === undefined ? (
+        <Onboarding
+          onTemplate={files.fromTemplate}
+          onOpen={() => files.fileInput.current?.click()}
+          onBlank={() => dispatch({ type: 'quest/add' })}
+        />
+      ) : (
+        <>
+          <CanvasHead
+            addLabel="Add step"
+            onAdd={() => dispatch({ type: 'step/add', quest: quest.id })}
+            onLayout={() => layout(direction)}
+            direction={direction}
+            onDirection={layout}
+            picker={questPicker}
+            legend={QUEST_LEGEND}
+          />
+          <ReactFlowProvider>
+            <QuestGraph key={`${quest.id}-${direction}`} quest={quest} direction={direction} />
+          </ReactFlowProvider>
+        </>
+      )
+    ) : conversation === undefined ? (
+      <EmptyState
+        title="No conversations"
+        body="Open an .oqd file or add a conversation to start writing dialogue."
+        actions={
+          <button type="button" onClick={() => dispatch({ type: 'conversation/add' })}>
+            Add a conversation
+          </button>
+        }
+      />
+    ) : (
+      <>
+        <CanvasHead
+          addLabel="Add node"
+          onAdd={() => dispatch({ type: 'node/add', conversation: conversation.id })}
+          onLayout={() => layout(direction)}
+          direction={direction}
+          onDirection={layout}
+          picker={conversationPicker}
+          legend={DIALOGUE_LEGEND}
+        />
+        <ReactFlowProvider>
+          <DialogueGraph
+            key={`${conversation.id}-${direction}`}
+            conversation={conversation}
+            direction={direction}
+          />
+        </ReactFlowProvider>
+      </>
+    )
+
   return (
     <ViewContext.Provider value={{ tab, setTab: switchTab }}>
       <div className="app">
@@ -521,6 +587,8 @@ function AppContent() {
           onTab={switchTab}
           files={files}
           onCommands={() => setPaletteOpen(true)}
+          onHelp={() => setHelpOpen(true)}
+          onReset={() => setResetAsked(true)}
           canPlay={canPlay}
           playing={playing}
           onPlay={togglePlay}
@@ -529,6 +597,15 @@ function AppContent() {
           open={paletteOpen}
           commands={commands}
           onClose={() => setPaletteOpen(false)}
+        />
+        <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+        <ConfirmDialog
+          open={resetAsked}
+          title="Clear everything?"
+          body="This removes the loaded quests and dialogue. Undo cannot bring them back."
+          action="Clear"
+          onConfirm={files.reset}
+          onClose={() => setResetAsked(false)}
         />
         {notice === undefined ? null : (
           <output className="notice">
@@ -544,68 +621,10 @@ function AppContent() {
           </section>
         ) : (
           <main className={playing && canPlay ? 'panes panes-playing' : 'panes'}>
-            <section className="canvas">
-              {canvasPicker === null ? null : <div className="canvas-head">{canvasPicker}</div>}
-              {tab === 'quests' ? (
-                quest === undefined ? (
-                  <EmptyState
-                    title="Nothing open"
-                    body="Open a file or load the reference quest."
-                    actions={
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const reference = loadReference()
-                            dispatch({
-                              type: 'doc/load',
-                              quests: reference.quests,
-                              dialogues: reference.dialogues,
-                            })
-                          }}
-                        >
-                          Load reference quest
-                        </button>
-                        <button type="button" onClick={() => dispatch({ type: 'quest/add' })}>
-                          Start an empty quest
-                        </button>
-                      </>
-                    }
-                  />
-                ) : (
-                  <ReactFlowProvider>
-                    <QuestGraph
-                      key={`${quest.id}-${direction}`}
-                      quest={quest}
-                      direction={direction}
-                      onDirection={changeDirection}
-                    />
-                  </ReactFlowProvider>
-                )
-              ) : conversation === undefined ? (
-                <EmptyState
-                  title="No conversations"
-                  body="Open an .oqd file or add a conversation to start writing dialogue."
-                  actions={
-                    <button type="button" onClick={() => dispatch({ type: 'conversation/add' })}>
-                      Add a conversation
-                    </button>
-                  }
-                />
-              ) : (
-                <ReactFlowProvider>
-                  <DialogueGraph
-                    key={`${conversation.id}-${direction}`}
-                    conversation={conversation}
-                    direction={direction}
-                    onDirection={changeDirection}
-                  />
-                </ReactFlowProvider>
-              )}
-            </section>
+            <section className="canvas">{graph}</section>
             {playing && canPlay ? (
               <aside className="inspector play-aside">
-                <QuestPlayPanel />
+                <PlayAside tab={tab} />
               </aside>
             ) : (
               <aside className="inspector">

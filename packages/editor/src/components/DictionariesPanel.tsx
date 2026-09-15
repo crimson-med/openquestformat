@@ -255,6 +255,13 @@ export function DictionariesPanel({ onShow }: { onShow: (tab: Tab) => void }) {
 
   return (
     <div className="dictionaries">
+      <header className="view-head">
+        <h2>Dictionaries</h2>
+        <p>
+          The actors, locations, items, tags and speakers the pack declares, with where each one is
+          used. A rename follows every usage.
+        </p>
+      </header>
       <div className="dict-bar">
         <div className="segmented dict-kinds" role="tablist" aria-label="Dictionary">
           {ENTRY_KINDS.map((entry) => (
