@@ -1,20 +1,30 @@
 /**
  * Play the focused quest through the runtime without leaving the editor.
  *
- * One column, top to bottom: where the quest stands, what can move it now
- * (Next), the rest of the events and the world the conditions read behind
- * disclosures, and the Timeline of every input with what the runtime did
- * under it. The graph shows the same state on every step card.
+ * One column, top to bottom: where the quest stands, the conversation being
+ * talked through (when one is), what can move it now (Next), the rest of the
+ * events and the world the conditions read behind disclosures, and the
+ * Timeline of every input with what the runtime did under it. The graph shows
+ * the same state on every step card.
+ *
+ * A step bound to a conversation offers Talk: the built-in provider runs with
+ * its resolver wired to the runtime and every event it emits fed to the
+ * session, so ending the conversation completes the talk objective the way a
+ * game would. The synthetic End buttons stay for skipping the talk.
  */
 import type { Payload, StepState } from '@oqf/core'
+import type { Conversation } from '@oqf/dialogue'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type DialoguePlay, startConversation } from '../lib/dialoguePlay'
 import {
   type EventSuggestion,
   type NextEventGroup,
   ROLE_GLYPHS,
   type TranscriptCard,
+  boundConversation,
   formatPayload,
   groupTranscript,
+  labelChoices,
   lastOutcome,
   nextEvents,
   objectiveCount,
@@ -26,6 +36,7 @@ import {
 import { useDispatch, useEditorState } from '../store/context'
 import { activeQuestId, findQuest } from '../store/selectors'
 import '../styles/playtest.css'
+import { DialogueStage } from './DialoguePlayPanel'
 import { usePlaytest } from './PlaytestContext'
 
 const INTRO =
@@ -40,18 +51,39 @@ function StateChip({ state, text }: { state: StepState; text?: string }) {
   return <span className={`state-chip ${state}`}>{text ?? state}</span>
 }
 
+/** The conversation a Next card can talk through, and how to open it. */
+interface TalkOffer {
+  conversation: Conversation
+  open: (conversation: Conversation) => void
+  /** True while another conversation is on the stage. */
+  busy: boolean
+}
+
 function EventButtons({
   group,
   fire,
   disabled,
+  talk,
 }: {
   group: NextEventGroup
   fire: (name: string, payload: Payload) => void
   disabled: boolean
+  talk?: TalkOffer
 }) {
   const key = (event: EventSuggestion) => `${event.fail ? 'fail' : 'do'}-${event.label}`
   return (
     <div className="next-buttons">
+      {talk === undefined ? null : (
+        <button
+          type="button"
+          className="next-event next-talk"
+          disabled={disabled || group.waiting || talk.busy}
+          title={`Play ${talk.conversation.id} through the built-in provider`}
+          onClick={() => talk.open(talk.conversation)}
+        >
+          Talk
+        </button>
+      )}
       {group.events.map((event) => (
         <button
           key={key(event)}
@@ -74,11 +106,13 @@ function NextGroup({
   fire,
   disabled,
   compact,
+  talk,
 }: {
   group: NextEventGroup
   fire: (name: string, payload: Payload) => void
   disabled: boolean
   compact?: boolean
+  talk?: TalkOffer
 }) {
   return (
     <li className={`next-group ${group.state}`}>
@@ -91,7 +125,7 @@ function NextGroup({
         {compact === true ? <StateChip state={group.state} /> : null}
       </div>
       {group.objective === '' ? null : <div className="next-objective mono">{group.objective}</div>}
-      <EventButtons group={group} fire={fire} disabled={disabled} />
+      <EventButtons group={group} fire={fire} disabled={disabled} talk={talk} />
     </li>
   )
 }
@@ -183,8 +217,52 @@ export function QuestPlayPanel() {
     [quest],
   )
   // biome-ignore lint/correctness/useExhaustiveDependencies: version drives the reread
-  const cards = useMemo(() => groupTranscript(transcript), [transcript, playtest.version])
+  const cards = useMemo(
+    () => labelChoices(groupTranscript(transcript), state.dialogues),
+    [transcript, state.dialogues, playtest.version],
+  )
   const outcome = questId === undefined ? undefined : lastOutcome(transcript, questId)
+
+  // The conversation on the stage. It mutates in place; its version says when to read it again.
+  const [talk, setTalk] = useState<DialoguePlay | null>(null)
+  const [talkVersion, setTalkVersion] = useState(0)
+  const [talkError, setTalkError] = useState<string | undefined>(undefined)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version drives the reread
+  const talkView = useMemo(() => (talk === null ? null : talk.current()), [talk, talkVersion])
+  useEffect(() => {
+    if (!running) setTalk(null)
+  }, [running])
+  const closeTalk = () => {
+    setTalk(null)
+    setTalkError(undefined)
+  }
+  const openTalk = (conversation: Conversation) => {
+    if (session === null) return
+    setTalkError(undefined)
+    try {
+      setTalk(
+        startConversation(state.dialogues, conversation.id, {
+          resolve: (path) => session.engine.resolve(path),
+          emit: (event) => playtest.feed(event.name, event.payload),
+        }),
+      )
+    } catch (failure) {
+      setTalk(null)
+      setTalkError(failure instanceof Error ? failure.message : String(failure))
+    }
+  }
+  const talkAct = (run: (current: DialoguePlay) => void) => {
+    if (talk === null) return
+    run(talk)
+    setTalkVersion((current) => current + 1)
+  }
+  const talkOffer = (stepId: string): TalkOffer | undefined => {
+    const step = quest?.steps.find((entry) => entry.id === stepId)
+    if (step === undefined) return undefined
+    const conversation = boundConversation(step, state.dialogues)
+    if (conversation === undefined) return undefined
+    return { conversation, open: openTalk, busy: talk !== null }
+  }
 
   const flagNames = Object.keys(snapshot?.flags ?? {}).sort()
   const varNames = Object.keys(snapshot?.vars ?? {}).sort()
@@ -210,6 +288,7 @@ export function QuestPlayPanel() {
 
   const start = () => {
     if (questId === undefined) return
+    closeTalk()
     if (running) playtest.update((current) => current.start())
     else playtest.start(state.quests, questId)
   }
@@ -288,7 +367,13 @@ export function QuestPlayPanel() {
           <button type="button" onClick={start}>
             Restart
           </button>
-          <button type="button" onClick={() => playtest.update((current) => current.reset())}>
+          <button
+            type="button"
+            onClick={() => {
+              closeTalk()
+              playtest.update((current) => current.reset())
+            }}
+          >
             Reset
           </button>
         </div>
@@ -296,6 +381,24 @@ export function QuestPlayPanel() {
           <span className="field-error">{snapshot.error}</span>
         )}
       </header>
+
+      {talkError === undefined ? null : <span className="field-error">{talkError}</span>}
+
+      {talk === null ? null : (
+        <section className="play-section play-talk">
+          <h4>
+            Talking <span className="mono">{talk.conversation}</span>
+          </h4>
+          <DialogueStage
+            view={talkView}
+            ended={talk.ended}
+            error={talk.error}
+            onChoose={(index) => talkAct((current) => current.choose(index))}
+            onAdvance={() => talkAct((current) => current.advance())}
+            onClose={closeTalk}
+          />
+        </section>
+      )}
 
       {open ? (
         <section className="play-section">
@@ -305,7 +408,13 @@ export function QuestPlayPanel() {
           ) : (
             <ul className="next-groups">
               {split.now.map((group) => (
-                <NextGroup key={group.step} group={group} fire={fire} disabled={false} />
+                <NextGroup
+                  key={group.step}
+                  group={group}
+                  fire={fire}
+                  disabled={false}
+                  talk={talkOffer(group.step)}
+                />
               ))}
             </ul>
           )}
@@ -490,6 +599,11 @@ export function QuestPlayPanel() {
                   {card.input === null ? null : (
                     <span className="tl-payload muted mono">
                       {formatPayload(card.input.payload)}
+                    </span>
+                  )}
+                  {card.label === undefined ? null : (
+                    <span className="tl-choice" title={card.label}>
+                      {card.label}
                     </span>
                   )}
                 </div>

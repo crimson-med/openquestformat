@@ -1,13 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { type OqfDocument, type Step, parseCompact } from '@oqf/core'
+import { type DialogueDocument, parseOqd } from '@oqf/dialogue'
 import { describe, expect, it } from 'vitest'
+import { startConversation } from './dialoguePlay'
 import {
   type EventSuggestion,
   PlaytestSession,
   type TranscriptEntry,
+  boundConversation,
+  choiceText,
   formatPayload,
   groupTranscript,
+  labelChoices,
   lastOutcome,
   nextEvents,
   objectiveCount,
@@ -17,16 +22,23 @@ import {
   suggestEvents,
 } from './playtest'
 
-function template(name: string): OqfDocument {
-  return parseCompact(
-    readFileSync(
-      fileURLToPath(new URL(`../../../examples/quests/templates/${name}`, import.meta.url)),
-      'utf8',
-    ),
+function templateText(name: string): string {
+  return readFileSync(
+    fileURLToPath(new URL(`../../../examples/quests/templates/${name}`, import.meta.url)),
+    'utf8',
   )
 }
 
+function template(name: string): OqfDocument {
+  return parseCompact(templateText(name))
+}
+
+function dialogueTemplate(name: string): DialogueDocument {
+  return parseOqd(templateText(name))
+}
+
 const branching = template('branching.oqf')
+const branchingDialogue = dialogueTemplate('branching.oqd')
 const engineHooks = template('engine-hooks.oqf')
 const repeatable = template('repeatable.oqf')
 const failure = template('failure.oqf')
@@ -607,5 +619,156 @@ describe('readsWorld', () => {
   it('finds a flag read by the quest unlock alone', () => {
     const quest = { ...repeatable.quests[0], steps: [] }
     expect(readsWorld(quest)).toEqual({ flags: true, vars: false })
+  })
+})
+
+describe('boundConversation', () => {
+  const step = (id: string) => branching.quests[0].steps.find((entry) => entry.id === id) as Step
+
+  it('finds the conversation a step binds through the built-in provider', () => {
+    expect(boundConversation(step('choose_report'), branchingDialogue)?.id).toBe('crate_found')
+    expect(boundConversation(step('sell_contents'), branchingDialogue)?.id).toBe('contraband_offer')
+  })
+
+  it('finds nothing without a binding, for another provider, or a missing conversation', () => {
+    expect(boundConversation(step('find_crate'), branchingDialogue)).toBeUndefined()
+    expect(boundConversation(step('return_owner'), branchingDialogue)).toBeUndefined()
+    const ink = { ...step('choose_report'), dialogue: { provider: 'ink', ref: 'crate_found' } }
+    expect(boundConversation(ink, branchingDialogue)).toBeUndefined()
+    const gone = { ...step('choose_report'), dialogue: { provider: 'oqf', ref: 'nowhere' } }
+    expect(boundConversation(gone, branchingDialogue)).toBeUndefined()
+  })
+})
+
+describe('choiceText and labelChoices', () => {
+  it('reads the text of one choice on one node', () => {
+    expect(choiceText(branchingDialogue, 'crate_found', 'look', 1)).toBe('Finders keepers.')
+    expect(choiceText(branchingDialogue, 'crate_found', 'look', 5)).toBeUndefined()
+    expect(choiceText(branchingDialogue, 'crate_found', 'report', 0)).toBeUndefined()
+    expect(choiceText(branchingDialogue, 'nowhere', 'look', 0)).toBeUndefined()
+  })
+
+  it('labels dialogue.choice cards from the conversation started before them', () => {
+    const entries: TranscriptEntry[] = [
+      { kind: 'input', name: 'object.interacted', payload: { object: 'washed_crate' } },
+      {
+        kind: 'input',
+        name: 'dialogue.started',
+        payload: { actor: 'keeper', node: 'crate_found' },
+      },
+      { kind: 'input', name: 'dialogue.choice', payload: { node: 'look', choice: 0 } },
+      { kind: 'input', name: 'dialogue.ended', payload: { node: 'crate_found', at: 'report' } },
+      { kind: 'input', name: 'dialogue.choice', payload: { node: 'look', choice: 9 } },
+    ]
+    const cards = labelChoices(groupTranscript(entries), branchingDialogue)
+    expect(cards.map((card) => card.label)).toEqual([
+      undefined,
+      undefined,
+      'I will take it to the harbor office.',
+      undefined,
+      undefined,
+    ])
+  })
+
+  it('leaves a choice card alone when no conversation started before it', () => {
+    const entries: TranscriptEntry[] = [
+      { kind: 'input', name: 'dialogue.choice', payload: { node: 'look', choice: 0 } },
+    ]
+    const [card] = labelChoices(groupTranscript(entries), branchingDialogue)
+    expect(card.label).toBeUndefined()
+  })
+})
+
+describe('a conversation played inside a quest playtest', () => {
+  it('reaches the reported outcome through the keeper with no synthetic dialogue.ended', () => {
+    const session = new PlaytestSession(branching, 'washed_crate')
+    session.start()
+    session.emit('object.interacted', { object: 'washed_crate' })
+    expect(states(session).choose_report).toBe('active')
+
+    const step = branching.quests[0].steps.find((entry) => entry.id === 'choose_report') as Step
+    const conversation = boundConversation(step, branchingDialogue)
+    expect(conversation?.id).toBe('crate_found')
+
+    const play = startConversation(branchingDialogue, conversation?.id ?? '', {
+      resolve: (path) => session.engine.resolve(path),
+      emit: (event) => session.emit(event.name, event.payload),
+    })
+    expect(play.current()?.speaker).toBe('keeper')
+    expect(play.current()?.choices.map((choice) => String(choice.text))).toEqual([
+      'I will take it to the harbor office.',
+      'Finders keepers.',
+    ])
+
+    play.choose(0)
+    expect(play.current()?.node).toBe('report')
+    expect(states(session).choose_report).toBe('active')
+    play.advance()
+    expect(play.ended).toBe(true)
+    expect(states(session).choose_report).toBe('done')
+    expect(states(session).deliver_report).toBe('active')
+
+    session.emit('location.entered', { location: 'harbor_office' })
+    const snapshot = session.snapshot()
+    expect(snapshot.status).toBe('closed')
+    expect(snapshot.outcome).toBe('reported')
+    expect(snapshot.error).toBeUndefined()
+    expect(states(session).choose_keep).toBe('skipped')
+
+    const inputs = session.transcript.filter(
+      (entry): entry is TranscriptEntry & { kind: 'input' } => entry.kind === 'input',
+    )
+    expect(inputs.map((entry) => entry.name)).toEqual([
+      'object.interacted',
+      'dialogue.started',
+      'dialogue.choice',
+      'dialogue.ended',
+      'location.entered',
+    ])
+    expect(inputs[3].payload).toEqual({ actor: 'keeper', node: 'crate_found', at: 'report' })
+    expect(
+      play.transcript.filter((entry) => entry.kind === 'event').map((entry) => entry.text),
+    ).toEqual(['dialogue.started', 'dialogue.choice', 'dialogue.ended'])
+
+    const cards = labelChoices(groupTranscript(session.transcript), branchingDialogue)
+    expect(cards.map((card) => [card.title, card.label])).toEqual([
+      ['Start', undefined],
+      ['object.interacted', undefined],
+      ['dialogue.started', undefined],
+      ['dialogue.choice', 'I will take it to the harbor office.'],
+      ['dialogue.ended', undefined],
+      ['location.entered', undefined],
+    ])
+    expect(cards[4].effects).toEqual([
+      { kind: 'step', quest: 'washed_crate', step: 'choose_report', from: 'active', to: 'done' },
+      {
+        kind: 'step',
+        quest: 'washed_crate',
+        step: 'deliver_report',
+        from: 'locked',
+        to: 'available',
+      },
+      {
+        kind: 'step',
+        quest: 'washed_crate',
+        step: 'deliver_report',
+        from: 'available',
+        to: 'active',
+      },
+    ])
+  })
+
+  it('reads real quest state in choice conditions through the runtime resolver', () => {
+    const session = new PlaytestSession(branching, 'washed_crate')
+    session.start()
+    const play = startConversation(branchingDialogue, 'crate_found', {
+      resolve: (path) => session.engine.resolve(path),
+      emit: (event) => session.emit(event.name, event.payload),
+    })
+    expect(session.engine.resolve('step.find_crate')).toBe('active')
+    play.choose(1)
+    play.advance()
+    expect(states(session).choose_keep).toBe('locked')
+    expect(session.snapshot().outcome).toBeNull()
   })
 })

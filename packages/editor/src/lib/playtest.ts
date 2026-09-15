@@ -19,6 +19,13 @@ import {
   formatCompletion,
 } from '@oqf/core'
 import {
+  type Conversation,
+  DIALOGUE_CHOICE,
+  DIALOGUE_STARTED,
+  type DialogueDocument,
+  OQF_PROVIDER,
+} from '@oqf/dialogue'
+import {
   EVENT_FLAG_SET,
   EVENT_REWARD_GRANTED,
   type OqfEvent,
@@ -423,6 +430,8 @@ export interface TranscriptCard {
   /** The input that opened the card, or null for the Start card. */
   input: { name: string; payload: Payload } | null
   title: string
+  /** A reading of the input for people, such as the text of a dialogue choice. */
+  label?: string
   /** What the runtime answered, in order. Never holds an input entry. */
   effects: Exclude<TranscriptEntry, { kind: 'input' }>[]
 }
@@ -565,4 +574,58 @@ export function nextEvents(
     else result.later.push(group)
   }
   return result
+}
+
+/**
+ * The conversation a step binds through the built-in provider, so play mode
+ * can talk it through instead of firing a synthetic `dialogue.ended`. Nothing
+ * for a step without a binding, a binding to another provider, or a
+ * conversation the document does not hold.
+ */
+export function boundConversation(
+  step: Step,
+  dialogues: DialogueDocument,
+): Conversation | undefined {
+  const binding = step.dialogue
+  if (binding === undefined || binding.provider !== OQF_PROVIDER) return undefined
+  return dialogues.conversations.find((conversation) => conversation.id === binding.ref)
+}
+
+/** The text of one choice on one node, or nothing when the document has no such choice. */
+export function choiceText(
+  dialogues: DialogueDocument,
+  conversation: string,
+  node: string,
+  index: number,
+): string | undefined {
+  const found = dialogues.conversations.find((entry) => entry.id === conversation)
+  const choice = found?.nodes.find((entry) => entry.id === node)?.choices?.[index]
+  return choice === undefined ? undefined : String(choice.text)
+}
+
+/**
+ * Label every `dialogue.choice` card with the text of the choice. The
+ * provider's choice payload names the node and the index, not the
+ * conversation, so the label comes from the `dialogue.started` card before
+ * it. Other cards pass through untouched.
+ */
+export function labelChoices(
+  cards: readonly TranscriptCard[],
+  dialogues: DialogueDocument,
+): TranscriptCard[] {
+  let conversation: string | undefined
+  return cards.map((card) => {
+    const input = card.input
+    if (input === null) return card
+    if (input.name === DIALOGUE_STARTED) {
+      conversation = typeof input.payload.node === 'string' ? input.payload.node : undefined
+      return card
+    }
+    if (input.name !== DIALOGUE_CHOICE || conversation === undefined) return card
+    const node = input.payload.node
+    const index = input.payload.choice
+    if (typeof node !== 'string' || typeof index !== 'number') return card
+    const label = choiceText(dialogues, conversation, node, index)
+    return label === undefined ? card : { ...card, label }
+  })
 }

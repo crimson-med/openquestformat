@@ -1,5 +1,5 @@
 /**
- * The playtest session shared by the drawer and the graph.
+ * The playtest session shared by play mode and the graph.
  *
  * The session is a mutable object outside the store, so a version counter is
  * bumped after every action to rerender the readers. A session built from a
