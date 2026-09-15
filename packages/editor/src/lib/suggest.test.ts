@@ -267,3 +267,44 @@ describe('suggest in a completion', () => {
     expect(labels('collect fish and var.x == "sp', 'completion')).toEqual([])
   })
 })
+
+describe('suggest a new dictionary entry', () => {
+  it('offers to create the actor, location or item an objective names', () => {
+    const [create] = suggest('talk ines', 9, vocabulary, 'completion')
+    expect(create).toEqual({
+      label: 'Create actor ines',
+      insert: 'ines',
+      detail: 'create',
+      range: { start: 5, end: 9 },
+      create: { kind: 'actors', id: 'ines' },
+    })
+    expect(suggest('kill gull', 9, vocabulary, 'completion')[0].create).toEqual({
+      kind: 'actors',
+      id: 'gull',
+    })
+    expect(suggest('reach cove', 10, vocabulary, 'completion')[0].create).toEqual({
+      kind: 'locations',
+      id: 'cove',
+    })
+    expect(suggest('collect lure.golden', 19, vocabulary, 'completion')[0]).toMatchObject({
+      label: 'Create item lure.golden',
+      create: { kind: 'items', id: 'lure.golden' },
+    })
+  })
+
+  it('waits until nothing in the vocabulary matches the token', () => {
+    expect(labels('talk ot', 'completion')).toEqual(['otter'])
+    expect(labels('talk otter', 'completion')).toEqual(['otter'])
+    expect(labels('talk otters', 'completion')).toEqual(['Create actor otters'])
+    expect(labels('collect fish', 'completion')).toEqual(['fish.rare'])
+  })
+
+  it('stays quiet for an empty token, a count, other objectives and conditions', () => {
+    expect(labels('talk ', 'completion')).toEqual(['harbormaster', 'otter'])
+    expect(labels('collect fish.rare 5', 'completion')).toEqual([])
+    expect(labels('interact door', 'completion')).toEqual([])
+    expect(labels('event gong', 'completion')).toEqual([])
+    expect(labels('talk otter ines', 'completion')).toEqual(['ines_intro'])
+    expect(labels('talk ines', 'condition')).toEqual([])
+  })
+})

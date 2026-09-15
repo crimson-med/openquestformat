@@ -7,6 +7,7 @@
  */
 import type { OqfDocument, Outcome, Quest, Ref, Reward, Step } from '@oqf/core'
 import type { Choice, Conversation, DialogueDocument, DialogueNode } from '@oqf/dialogue'
+import type { EntryKind } from '../lib/dictionaries'
 import type { Position } from '../lib/position'
 import type { Selection } from './types'
 
@@ -26,6 +27,11 @@ export type Action =
   | { type: 'redo' }
   | { type: 'dict/set'; kind: DictionaryKind; refs: Ref[] }
   | { type: 'speakers/set'; speakers: Ref[] }
+  /** Appends an entry to a dictionary (`speakers` lives in the dialogue document). */
+  | { type: 'dict/add'; kind: EntryKind; id: string; name?: string }
+  /** Renames an entry and every usage of it; a `name` replaces the display name. */
+  | { type: 'dict/rename'; kind: EntryKind; id: string; to: string; name?: string }
+  | { type: 'dict/remove'; kind: EntryKind; id: string }
   | { type: 'quest/add'; id?: string; title?: string }
   | { type: 'quest/remove'; quest: string }
   | { type: 'quest/move'; quest: string; to: number }

@@ -1,16 +1,23 @@
-/* Strings tab: the localization toolbar, the warnings strip and the table. */
+/* Strings view: the localization toolbar, the warnings strip and the table. */
 
 .strings {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 0 20px 20px;
 }
 
 .strings-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 14px;
+  padding: 16px 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .strings-group {
@@ -82,8 +89,7 @@
 }
 
 .strings-table-wrap {
-  overflow: auto;
-  max-height: 60vh;
+  overflow-x: auto;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
   background: var(--field);

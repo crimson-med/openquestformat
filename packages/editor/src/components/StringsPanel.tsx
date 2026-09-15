@@ -1,7 +1,7 @@
 /**
- * The Strings tab: every player-facing text in the pack beside its
+ * The Strings view: every player-facing text in the pack beside its
  * translation in the chosen language, with extraction, injection, import,
- * export and a preview switch for the graphs.
+ * export and a preview switch for the graphs. Fills the main pane.
  */
 import { useMemo, useRef, useState } from 'react'
 import { downloadText } from '../lib/download'

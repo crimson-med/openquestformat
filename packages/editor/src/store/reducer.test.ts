@@ -94,6 +94,95 @@ describe('documents', () => {
   })
 })
 
+describe('dictionary entries', () => {
+  it('adds an entry to a dictionary and to the speakers', () => {
+    const state = run(
+      start(),
+      { type: 'dict/add', kind: 'actors', id: 'otter', name: 'Old Salt Otter' },
+      { type: 'dict/add', kind: 'tags', id: 'side' },
+      { type: 'dict/add', kind: 'speakers', id: 'otter' },
+    )
+    expect(state.quests.dictionaries.actors).toEqual([
+      { id: 'harbormaster', name: 'Harbormaster Ines' },
+      { id: 'otter', name: 'Old Salt Otter' },
+    ])
+    expect(state.quests.dictionaries.tags).toEqual([{ id: 'main' }, { id: 'side' }])
+    expect(state.dialogues.speakers.map((ref) => ref.id)).toEqual(['harbormaster', 'otter'])
+    expect(state.dirty).toBe(true)
+  })
+
+  it('ignores an add with a taken or empty id', () => {
+    const before = start()
+    const taken = reducer(before, { type: 'dict/add', kind: 'actors', id: 'harbormaster' })
+    expect(taken.quests).toBe(before.quests)
+    const empty = reducer(before, { type: 'dict/add', kind: 'items', id: '' })
+    expect(empty.quests).toBe(before.quests)
+  })
+
+  it('renames an entry and rewrites the step actors and the talk objective', () => {
+    const before = start()
+    const state = reducer(before, {
+      type: 'dict/rename',
+      kind: 'actors',
+      id: 'harbormaster',
+      to: 'ines',
+      name: 'Ines',
+    })
+    expect(state.quests.dictionaries.actors).toEqual([{ id: 'ines', name: 'Ines' }])
+    const step = quest(state).steps[0]
+    expect(step.actors).toEqual(['ines'])
+    expect(step.objective).toEqual({ kind: 'talk', actor: 'ines' })
+    expect(quest(state).steps[1]).toBe(quest(before).steps[1])
+    expect(state.dialogues).toBe(before.dialogues)
+    expect(state.findings.filter((finding) => finding.level === 'error')).toHaveLength(0)
+  })
+
+  it('renames a speaker on its conversations', () => {
+    const state = reducer(start(), {
+      type: 'dict/rename',
+      kind: 'speakers',
+      id: 'harbormaster',
+      to: 'ines',
+    })
+    expect(state.dialogues.speakers).toEqual([{ id: 'ines', name: 'Harbormaster Ines' }])
+    expect(conversation(state).actor).toBe('ines')
+  })
+
+  it('refuses a rename onto a taken id', () => {
+    const before = run(start(), { type: 'dict/add', kind: 'actors', id: 'otter' })
+    const after = reducer(before, {
+      type: 'dict/rename',
+      kind: 'actors',
+      id: 'harbormaster',
+      to: 'otter',
+    })
+    expect(after.quests).toBe(before.quests)
+  })
+
+  it('removes an entry', () => {
+    const state = run(
+      start(),
+      { type: 'dict/remove', kind: 'items', id: 'ledger' },
+      { type: 'dict/remove', kind: 'speakers', id: 'harbormaster' },
+    )
+    expect(state.quests.dictionaries.items).toEqual([])
+    expect(state.dialogues.speakers).toEqual([])
+  })
+
+  it('undoes a rename in one step', () => {
+    const before = start()
+    const renamed = reducer(before, {
+      type: 'dict/rename',
+      kind: 'actors',
+      id: 'harbormaster',
+      to: 'ines',
+    })
+    const undone = reducer(renamed, { type: 'undo' })
+    expect(undone.quests).toBe(before.quests)
+    expect(quest(undone).steps[0].actors).toEqual(['harbormaster'])
+  })
+})
+
 describe('quests', () => {
   it('adds, renames, reorders and removes', () => {
     let state = reducer(start(), { type: 'quest/add', title: 'Second' })

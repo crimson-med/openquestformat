@@ -1,6 +1,7 @@
 /**
  * The bottom drawer: what is wrong, what the file looks like, and a place to
- * play a conversation. Collapsible, because the canvas wants the room.
+ * play the quest or a conversation. Collapsible, because the canvas wants the
+ * room.
  */
 import { type ReactNode, useState } from 'react'
 import { useEditorState } from '../store/context'
@@ -9,9 +10,8 @@ import { FindingList } from './FindingList'
 import { PlayPanel } from './PlayPanel'
 import { QuestPlayPanel } from './QuestPlayPanel'
 import { SourcePanel } from './SourcePanel'
-import { StringsPanel } from './StringsPanel'
 
-export type DrawerTab = 'validation' | 'source' | 'play' | 'strings'
+export type DrawerTab = 'validation' | 'source' | 'play'
 
 type PlayMode = 'quest' | 'dialogue'
 
@@ -83,7 +83,6 @@ export function Drawer({
           )}
           {tabButton('source', 'Source')}
           {tabButton('play', 'Play')}
-          {tabButton('strings', 'Strings')}
         </nav>
         <button type="button" className="ghost" onClick={() => onOpen(!open)}>
           {open ? 'Hide' : 'Show'}
@@ -103,7 +102,6 @@ export function Drawer({
               )}
             </>
           ) : null}
-          {tab === 'strings' ? <StringsPanel /> : null}
         </div>
       ) : null}
     </section>
