@@ -265,16 +265,20 @@ function applyEdit(state: EditorState, action: Action): Documents {
         }),
       }))
     case 'step/link':
-    case 'step/unlink': {
+    case 'step/unlink':
+    case 'step/relink': {
       if (action.from === action.to) return docs
       const quest = docs.quests.quests.find((entry) => entry.id === action.quest)
       if (quest === undefined) return docs
       const ids = quest.steps.map((step) => step.id)
       if (!ids.includes(action.from) || !ids.includes(action.to)) return docs
-      const change = action.type === 'step/link' ? linkSteps : unlinkSteps
-      return mapQuest(docs, action.quest, (entry) =>
-        mapStep(entry, action.to, (step) => change(step, action.from)),
-      )
+      const change = (step: Step): Step => {
+        if (action.type === 'step/unlink') return unlinkSteps(step, action.from)
+        const options = { field: action.field, state: action.state }
+        if (action.type === 'step/link') return linkSteps(step, action.from, options)
+        return linkSteps(unlinkSteps(step, action.from), action.from, options)
+      }
+      return mapQuest(docs, action.quest, (entry) => mapStep(entry, action.to, change))
     }
     case 'outcome/set':
       return mapQuest(docs, action.quest, (quest) =>

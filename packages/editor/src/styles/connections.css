@@ -35,3 +35,100 @@
   stroke-width: 2;
   stroke-dasharray: 6 4;
 }
+
+/* One stroke per field the dependency is read from: unlock solid, activate
+   dashed, complete dotted, fail in the error color. */
+.react-flow__edge.dep-activate .react-flow__edge-path {
+  stroke-dasharray: 7 5;
+}
+
+.react-flow__edge.dep-complete .react-flow__edge-path {
+  stroke-dasharray: 2 4;
+  stroke-linecap: round;
+}
+
+.react-flow__edge.dep-fail .react-flow__edge-path {
+  stroke: var(--error);
+}
+
+.react-flow__edge.dep-fail .react-flow__edge-text {
+  fill: var(--error);
+}
+
+/* Edge labels: small, monospaced, on a panel-colored tag. */
+.react-flow__edge-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.react-flow__edge-textbg {
+  fill: var(--panel);
+  stroke: var(--line-soft);
+  stroke-width: 1;
+  rx: 4;
+}
+
+.react-flow__edge.selected .react-flow__edge-text {
+  fill: var(--accent);
+}
+
+/* The dependency popover, anchored beside the target node. */
+.edge-popover {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 260px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.edge-popover-title {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-popover .segmented {
+  margin: 0;
+  min-width: 0;
+}
+
+.edge-popover .segmented button {
+  flex: 1;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.edge-popover-state {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.edge-popover-state .picker-select {
+  padding: 6px 10px;
+}
+
+.edge-popover-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.edge-popover-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.edge-popover-actions .ghost {
+  margin-left: auto;
+}

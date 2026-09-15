@@ -246,6 +246,41 @@ describe('steps', () => {
     expect('unlock' in quest(state).steps[2]).toBe(false)
   })
 
+  it('links into a chosen field and state', () => {
+    const state = reducer(start(), {
+      type: 'step/link',
+      quest: 'ledger',
+      from: 'find_it',
+      to: 'talk_ines',
+      field: 'fail',
+      state: 'failed',
+    })
+    const step = quest(state).steps[0]
+    expect(step.fail).toEqual(parseCondition('step.find_it == "failed"'))
+    expect('unlock' in step).toBe(false)
+    expect(step.start).toBe(true)
+  })
+
+  it('relinks as one undo entry', () => {
+    let state = reducer(start(), { type: 'step/add', quest: 'ledger', id: 'sell' })
+    state = reducer(state, { type: 'step/link', quest: 'ledger', from: 'find_it', to: 'sell' })
+    const linked = state
+    state = reducer(state, {
+      type: 'step/relink',
+      quest: 'ledger',
+      from: 'find_it',
+      to: 'sell',
+      field: 'activate',
+      state: 'active',
+    })
+    const step = quest(state).steps[2]
+    expect('unlock' in step).toBe(false)
+    expect(step.activate).toEqual(parseCondition('step.find_it == "active"'))
+    expect(state.past).toHaveLength(linked.past.length + 1)
+    const undone = reducer(state, { type: 'undo' })
+    expect(quest(undone).steps[2]).toEqual(quest(linked).steps[2])
+  })
+
   it('drops the start flag of a step that gains a link', () => {
     const state = reducer(start(), {
       type: 'step/link',
