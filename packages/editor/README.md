@@ -25,9 +25,13 @@ fixture, quest and dialogue both.
   git. Steps are colored by role (start, step, optional, repeat, ending,
   failed) with a glyph, and show the playtest state when one is running.
 - **Dependencies on the canvas.** Dragging from one step's handle to another
-  adds `step.<from>` to the target's `unlock`. Deleting the edge removes every
-  read of that step from the target's conditions. Hand-written conditions stay
-  as they are otherwise: the graph and the inspector edit the same text.
+  opens a small popover to pick the field (unlock, activate, complete, fail)
+  and the state the target waits for (done, failed, active, available,
+  skipped), then writes that read into the target's condition. Edges are
+  labelled and styled by field, clicking one edits or removes it, and deleting
+  it removes every read of that step from the target's conditions.
+  Hand-written conditions stay as they are otherwise: the graph and the
+  inspector edit the same text.
 - **Inspector.** Every field of a quest, step, reward, outcome, conversation,
   node and choice. Conditions are edited as infix text, parsed on every
   keystroke for the inline message, and committed on blur or Enter. Condition
@@ -37,20 +41,29 @@ fixture, quest and dialogue both.
   file writes them. Quests and conversations have a File field for multi-file
   packs.
 - **Validation.** `validatePack` and `validateDialogue` run on every change.
-  Click a finding to select what it is about.
+  Click a finding to select what it is about. Most findings carry one-click
+  fixes (mark repeat, add an outcome, add a missing dictionary entry or reward,
+  remove a dangling reference, bind a conversation), each a single undo step.
 - **Source.** The live compact text, and the JSON and markdown forms, read only.
 - **Play.** A Quest | Dialogue switch. Quest play runs the pack through
-  `@oqf/runtime`: one button per step objective fires the event it listens
-  for, any other event can be typed in with a payload, flags and game variables
-  make up the world the conditions read, and a step board and transcript show
-  what the runtime did. Dialogue play drives the built-in provider against a
-  flags map you toggle by hand, prints the events it emits, and feeds them to
-  the running quest session.
-- **Strings.** Every player-facing text in the pack beside its translation in
-  a chosen language. Extract literals to keys, inject a language back, import
+  `@oqf/runtime`. The Next column lists only the events that can move the
+  quest right now, one button per objective of an active step, with the rest
+  under Other events beside a free-form event form. World holds the flags and
+  game variables the conditions read. Timeline groups what the runtime did
+  under the event that caused it, with a chip per step showing its state, and
+  the graph shows the same states on the nodes. Dialogue play drives the
+  built-in provider against a flags map you toggle by hand, prints the events
+  it emits, and feeds them to the running quest session.
+- **Strings.** A top-level view, next to Quests and Dialogue: every
+  player-facing text in the pack beside its translation in a chosen language. Extract literals to keys, inject a language back, import
   and export tables as JSON, CSV, PO or XLIFF, see missing and orphan keys, and
   preview a language on the graphs. Tables live in local storage, not in the
   documents.
+- **Dictionaries.** A top-level view for actors, locations, items, tags and
+  speakers: add, rename and remove entries, see where each is used and jump
+  there. A rename rewrites every usage, and an entry in use cannot be removed.
+  Typing an unknown actor, item or location in a completion field offers to
+  create it, and the pickers in the inspector link here with Manage.
 - **Dialogue.** A second graph, edges labelled with choice text, with the same
   layout controls as the quest graph.
 - **Files.** Open one file, several files or a folder; `.oqf`, `.oqd` and
@@ -70,10 +83,11 @@ minimap hides when the canvas is narrow.
 ## Templates
 
 `packages/examples/quests/templates/` holds the quests behind the New menu:
-linear, branching (with dialogue), repeatable, loop, recurring step, parallel,
-failure, chain and engine hooks. Each isolates one pattern, is valid and
-warning free, and is the same fixture the other packages test against, so a
-template never drifts from what the validator accepts.
+linear, branching, repeatable, loop, recurring step, parallel, failure, chain
+and engine hooks. Each isolates one pattern, is valid and warning free, ships
+dialogue for its talk steps (engine hooks has none), and is the same fixture
+the other packages test against, so a template never drifts from what the
+validator accepts.
 
 ## Embedding
 
