@@ -1,0 +1,32 @@
+/* One-click fix buttons under a finding. */
+
+.fixes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0 2px 12px;
+}
+
+.fix {
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 2px 9px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.fix:hover {
+  background: var(--accent-soft);
+}
+
+.fix:active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.findings.compact .fixes {
+  padding-left: 8px;
+}

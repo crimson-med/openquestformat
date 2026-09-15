@@ -150,6 +150,11 @@ function applyEdit(state: EditorState, action: Action): Documents {
     selection: state.selection,
   }
   switch (action.type) {
+    case 'batch': {
+      let current = docs
+      for (const edit of action.actions) current = applyEdit({ ...state, ...current }, edit)
+      return current
+    }
     case 'doc/replace':
       return {
         ...docs,
