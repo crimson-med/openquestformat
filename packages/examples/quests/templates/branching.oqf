@@ -10,8 +10,8 @@ R	returned_rep	reputation	harbor	5	returned
 R	returned_compass	item	compass.brass		returned
 R	confiscated_rep	reputation	harbor	-15	confiscated
 S	find_crate	s			interact washed_crate					0		Inspect the crate on the beach
-S	choose_report		step.find_crate		talk keeper crate_found#report				oqf:crate_found	0	0	Tell the keeper you will report it
-S	choose_keep		step.find_crate		talk keeper crate_found#keep				oqf:crate_found	0	0	Tell the keeper you will keep it
+S	choose_report		step.find_crate		talk keeper crate_found#report	talk keeper crate_found#keep			oqf:crate_found	0	0	Tell the keeper you will report it
+S	choose_keep		step.find_crate		talk keeper crate_found#keep	talk keeper crate_found#report			oqf:crate_found	0	0	Tell the keeper you will keep it
 S	deliver_report		step.choose_report		reach harbor_office		reported|Crate reported			1		Carry the crate to the harbor office
 S	pry_open		step.choose_keep		interact crate_lock	event guard.spotted				0		Pry the crate open before the guard passes
 S	caught		step.pry_open == "failed"				!confiscated|Caught by the harbor guard			0		Caught with the crate
