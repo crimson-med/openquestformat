@@ -711,7 +711,7 @@ describe('a conversation played inside a quest playtest', () => {
     expect(snapshot.status).toBe('closed')
     expect(snapshot.outcome).toBe('reported')
     expect(snapshot.error).toBeUndefined()
-    expect(states(session).choose_keep).toBe('skipped')
+    expect(states(session).choose_keep).toBe('failed')
 
     const inputs = session.transcript.filter(
       (entry): entry is TranscriptEntry & { kind: 'input' } => entry.kind === 'input',
@@ -739,6 +739,7 @@ describe('a conversation played inside a quest playtest', () => {
     ])
     expect(cards[4].effects).toEqual([
       { kind: 'step', quest: 'washed_crate', step: 'choose_report', from: 'active', to: 'done' },
+      { kind: 'step', quest: 'washed_crate', step: 'choose_keep', from: 'active', to: 'failed' },
       {
         kind: 'step',
         quest: 'washed_crate',
