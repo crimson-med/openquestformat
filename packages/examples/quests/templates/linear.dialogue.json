@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "fisher",
+      "name": "Fisher Maren"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "maren_intro",
+      "actor": "fisher",
+      "title": "Maren has lost her net",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "My best net is snagged on the reef and I cannot swim out there with this knee. Will you fetch it?",
+          "choices": [
+            {
+              "text": "Where on the reef?",
+              "next": "where"
+            },
+            {
+              "text": "I will fetch it.",
+              "next": "help"
+            }
+          ]
+        },
+        {
+          "id": "where",
+          "text": "Past the second buoy, where the coral turns red. You will see the floats.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "help",
+          "text": "Thank you. Mind the current on the way back."
+        }
+      ]
+    },
+    {
+      "id": "maren_return",
+      "actor": "fisher",
+      "title": "Maren takes the net back",
+      "start": "thanks",
+      "nodes": [
+        {
+          "id": "thanks",
+          "text": "That is the one. A few holes, nothing a needle cannot fix.",
+          "next": "farewell"
+        },
+        {
+          "id": "farewell",
+          "text": "Here, for your trouble. The dock owes you a dry seat."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+OQD1
+A	fisher|Fisher Maren
+C	maren_intro	0	greet	Maren has lost her net
+N	greet						My best net is snagged on the reef and I cannot swim out there with this knee. Will you fetch it?
+O	where					Where on the reef?
+O	help					I will fetch it.
+N	where		l	greet			Past the second buoy, where the coral turns red. You will see the floats.
+N	help						Thank you. Mind the current on the way back.
+C	maren_return	0	thanks	Maren takes the net back
+N	thanks			farewell			That is the one. A few holes, nothing a needle cannot fix.
+N	farewell						Here, for your trouble. The dock owes you a dry seat.

@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "cook",
+      "name": "Cook Bartholomew"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "order_taken",
+      "actor": "cook",
+      "title": "Bartholomew places the order",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "Three sardines for tonight's stew. The morning boats are already out, so you will have to fish for them yourself.",
+          "choices": [
+            {
+              "text": "How fresh do they need to be?",
+              "next": "fresh"
+            },
+            {
+              "text": "Three sardines. On it.",
+              "next": "go"
+            }
+          ]
+        },
+        {
+          "id": "fresh",
+          "text": "Caught today. Yesterday's sardine is bait, not supper.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "go",
+          "text": "Good. The galley door is open until the stew goes on."
+        }
+      ]
+    },
+    {
+      "id": "order_delivered",
+      "actor": "cook",
+      "title": "Bartholomew takes the sardines",
+      "start": "thanks",
+      "nodes": [
+        {
+          "id": "thanks",
+          "text": "Three, and still wet. That is a proper order.",
+          "next": "pay"
+        },
+        {
+          "id": "pay",
+          "text": "Here is your coin. Same again tomorrow, if the notice board still has it up."
+        }
+      ]
+    }
+  ]
+}

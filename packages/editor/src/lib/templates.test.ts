@@ -20,9 +20,18 @@ describe('TEMPLATES', () => {
   )
 
   it('attaches dialogue only where the template has it', () => {
-    const branching = findTemplate('branching')
-    const linear = findTemplate('linear')
-    expect(branching && loadTemplate(branching).dialogues.conversations.length).toBe(2)
-    expect(linear && loadTemplate(linear).dialogues.conversations.length).toBe(0)
+    const conversations = (id: string): number | undefined => {
+      const template = findTemplate(id)
+      return template && loadTemplate(template).dialogues.conversations.length
+    }
+    expect(conversations('linear')).toBe(2)
+    expect(conversations('branching')).toBe(2)
+    expect(conversations('repeatable')).toBe(2)
+    expect(conversations('loop')).toBe(2)
+    expect(conversations('recurring-step')).toBe(2)
+    expect(conversations('parallel')).toBe(3)
+    expect(conversations('failure')).toBe(2)
+    expect(conversations('chain')).toBe(2)
+    expect(conversations('engine-hooks')).toBe(0)
   })
 })

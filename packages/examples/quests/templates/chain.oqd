@@ -1,0 +1,11 @@
+OQD1
+A	captain|Captain Rosa
+C	log_voyage	0	greet	Rosa asks about the voyage
+N	greet						You took her out past the breakwater and back. Tell me how she handled.
+O	history					How long have you kept the log?
+O	steady					Steady. The patched hull held.
+N	history		l	greet			Since my first command. Every boat out of this harbor has a page.
+N	steady						Then it goes in the log as her first voyage. Write it plain.
+C	log_signed	0	read	Rosa signs the log
+N	read			sign			Good entry. Short, honest, and the date is right.
+N	sign						Signed. She is a proper boat now, and you are in her book.

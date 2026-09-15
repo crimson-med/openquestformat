@@ -42,6 +42,10 @@
             "kind": "talk",
             "actor": "harbormaster"
           },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "bell_duty"
+          },
           "location": "harbor",
           "actors": [
             "harbormaster"
@@ -99,6 +103,10 @@
           "outcome": {
             "name": "retired",
             "title": "Retired from bell duty"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "bell_retire"
           },
           "location": "harbor",
           "actors": [

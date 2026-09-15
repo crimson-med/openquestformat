@@ -46,6 +46,10 @@
             "kind": "talk",
             "actor": "merchant"
           },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "escort_offer"
+          },
           "location": "gate",
           "actors": [
             "merchant"
@@ -158,6 +162,10 @@
           "failObjective": {
             "kind": "event",
             "event": "world.nightfall"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "market_sale"
           },
           "location": "market",
           "actors": [

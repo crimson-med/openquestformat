@@ -47,6 +47,10 @@
             "kind": "talk",
             "actor": "angler"
           },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "eel_tale"
+          },
           "location": "deep_pier",
           "actors": [
             "angler"
@@ -127,6 +131,10 @@
           "outcome": {
             "name": "landed",
             "title": "The eel is landed"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "eel_landed"
           },
           "location": "deep_pier",
           "actors": [

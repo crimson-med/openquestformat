@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "harbormaster",
+      "name": "Harbormaster Ines"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "bell_duty",
+      "actor": "harbormaster",
+      "title": "Ines offers bell duty",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "The storm bell needs a runner. When it rings, get to the tower and see that it is answered. It will ring more than once.",
+          "choices": [
+            {
+              "text": "What does it pay?",
+              "next": "pay"
+            },
+            {
+              "text": "I will take the duty.",
+              "next": "accept"
+            }
+          ]
+        },
+        {
+          "id": "pay",
+          "text": "Three coins a bell. Not much, but the bell does not care about the weather.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "accept",
+          "text": "Good. Keep an ear out."
+        }
+      ]
+    },
+    {
+      "id": "bell_retire",
+      "actor": "harbormaster",
+      "title": "Ines takes the duty back",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "Handing it back? Fair enough, you have run enough stairs.",
+          "next": "farewell"
+        },
+        {
+          "id": "farewell",
+          "text": "The next runner will hear about you. Go dry your boots."
+        }
+      ]
+    }
+  ]
+}

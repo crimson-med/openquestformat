@@ -1,0 +1,17 @@
+OQD1
+A	organizer|Festival organizer Pim	bandleader|Bandleader Suli
+C	festival_plan	0	greet	Pim lists what the square needs
+N	greet						The festival is in three days and the square is bare. I need lanterns, bunting and a band, in whatever order you can manage.
+O	pies					Anything else?
+O	go					I will get started.
+N	pies		l	greet			Fish pies, if you can. Nobody dances hungry. That is a bonus, not a condition.
+N	go						Suli is by the fountain if you want to start with the band.
+C	band_hire	1	greet	Suli agrees to play
+N	greet						Pim sent you? We will play, if the square has somewhere to stand and the pay is honest.
+O	play					What do you play?
+O	booked					Consider it booked.
+N	play		l	greet			Whatever keeps feet moving. Reels, mostly.
+N	booked						Then we start tuning. Save us a pie.
+C	festival_open	0	look	Pim opens the festival
+N	look			open			Lanterns up, bunting hung, and I can hear Suli tuning from here.
+N	open						That is a festival. Ring the bell, we are open.

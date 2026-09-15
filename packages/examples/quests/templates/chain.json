@@ -186,6 +186,10 @@
             "kind": "talk",
             "actor": "captain"
           },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "log_voyage"
+          },
           "location": "harbor",
           "actors": [
             "captain"
@@ -228,6 +232,10 @@
           "outcome": {
             "name": "signed",
             "title": "Log signed"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "log_signed"
           },
           "location": "harbor",
           "actors": [

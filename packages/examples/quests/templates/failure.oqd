@@ -1,0 +1,13 @@
+OQD1
+A	merchant|Merchant Tobin	buyer|Buyer Lysa
+C	escort_offer	0	greet	Tobin needs an escort
+N	greet						I have a cart of silk for the night market and a road I do not trust. Walk with me and there are forty coins in it, more when the sale closes.
+O	road					What is wrong with the road?
+O	accept			escort_accepted		I will walk you there.
+O	decline			escort_declined		Find someone else.
+N	road			greet			Bandits, twice this month. They do not care who is driving.
+N	accept						Good. Stay close and keep your eyes on the treeline.
+N	decline						Then I will take my chances alone.
+C	market_sale	1	greet	Lysa closes the deal
+N	greet			close			Tobin's silk? I was about to give up on you. Let me see the bolts.
+N	close						Fine work. Here is the price, and a share for the road.
