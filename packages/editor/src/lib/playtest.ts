@@ -7,7 +7,15 @@
  * stands. Nothing here touches React or the document store: playtest state is
  * scratch, never document state, so it is neither saved nor undone.
  */
-import type { OqfDocument, Payload, Quest, Scalar, Step, StepState } from '@oqf/core'
+import {
+  type OqfDocument,
+  type Payload,
+  type Quest,
+  type Scalar,
+  type Step,
+  type StepState,
+  formatCompletion,
+} from '@oqf/core'
 import {
   EVENT_FLAG_SET,
   EVENT_REWARD_GRANTED,
@@ -184,6 +192,12 @@ export class PlaytestSession {
   setFlag(flag: string, value: Scalar = true): void {
     this.flags.set(flag, value)
     this.emit(EVENT_FLAG_SET, { flag, value })
+  }
+
+  /** Forget a flag the author set. The runtime reads it as false from here on. */
+  removeFlag(flag: string): void {
+    this.flags.delete(flag)
+    this.emit(EVENT_FLAG_SET, { flag, value: false })
   }
 
   /** Set a `var.*` value the runtime resolves, then re-run conditions. */
@@ -395,4 +409,137 @@ export function suggestEvents(quest: Quest): EventSuggestion[] {
     suggestions.push(...suggestFor(quest, step, false), ...suggestFor(quest, step, true))
   }
   return suggestions
+}
+
+/**
+ * The transcript grouped by cause. Every input the author fired (or a played
+ * conversation fed) opens a card; the runtime's answers nest under it in order.
+ * Entries before the first input, the offer and the initial availability that
+ * `start` produces, go into a first card titled Start.
+ */
+export interface TranscriptCard {
+  /** The input that opened the card, or null for the Start card. */
+  input: { name: string; payload: Payload } | null
+  title: string
+  /** What the runtime answered, in order. Never holds an input entry. */
+  effects: Exclude<TranscriptEntry, { kind: 'input' }>[]
+}
+
+export function groupTranscript(transcript: readonly TranscriptEntry[]): TranscriptCard[] {
+  const cards: TranscriptCard[] = []
+  let current: TranscriptCard | null = null
+  for (const entry of transcript) {
+    if (entry.kind === 'input') {
+      current = {
+        input: { name: entry.name, payload: entry.payload },
+        title: entry.name,
+        effects: [],
+      }
+      cards.push(current)
+      continue
+    }
+    if (current === null) {
+      current = { input: null, title: 'Start', effects: [] }
+      cards.push(current)
+    }
+    current.effects.push(entry)
+  }
+  return cards
+}
+
+/** The last outcome one quest reached in the transcript, if any. */
+export function lastOutcome(
+  transcript: readonly TranscriptEntry[],
+  quest: string,
+): { name: string; failed: boolean } | undefined {
+  for (let index = transcript.length - 1; index >= 0; index -= 1) {
+    const entry = transcript[index]
+    if (entry.kind === 'outcome' && entry.quest === quest) {
+      return { name: entry.name, failed: entry.failed }
+    }
+  }
+  return undefined
+}
+
+/** The one role that names a step, the same pick the graph card makes. Endings win. */
+export type StepRole = 'failed' | 'ending' | 'start' | 'repeat' | 'optional' | 'step'
+
+export const ROLE_GLYPHS: Record<StepRole, string> = {
+  failed: '✕',
+  ending: '⚑',
+  start: '▶',
+  repeat: '↻',
+  optional: '◌',
+  step: '•',
+}
+
+/** The count the objective must reach, for the kinds that carry one. */
+export function objectiveCount(step: Step | undefined): number | undefined {
+  const objective = step?.objective
+  if (objective === undefined) return undefined
+  if (objective.kind === 'kill' || objective.kind === 'collect' || objective.kind === 'event') {
+    return objective.count
+  }
+  return undefined
+}
+
+export function stepRole(step: Step): StepRole {
+  if (step.outcome?.failed === true) return 'failed'
+  if (step.outcome !== undefined) return 'ending'
+  if (step.start === true || step.unlock === undefined) return 'start'
+  if (step.repeat === true) return 'repeat'
+  if (step.optional === true) return 'optional'
+  return 'step'
+}
+
+/** The suggestions of one step, with what the author needs to read them. */
+export interface NextEventGroup {
+  step: string
+  stepTitle: string
+  role: StepRole
+  /** The step's objective as the compact format prints it, empty without one. */
+  objective: string
+  /** Where the step stands; `locked` before the session starts. */
+  state: StepState
+  /** True when the step is available but its activate condition still holds it back. */
+  waiting: boolean
+  events: EventSuggestion[]
+}
+
+export interface NextEvents {
+  /** Steps that are active, or available and waiting on activate: what moves the quest now. */
+  now: NextEventGroup[]
+  /** Everything else: locked, done, failed and skipped steps. */
+  later: NextEventGroup[]
+}
+
+/**
+ * Split the suggestions into the ones that can move the quest right now and
+ * the rest, grouped per step in quest order. Without a snapshot every step
+ * reads as locked and everything is `later`.
+ */
+export function nextEvents(
+  quest: Quest,
+  snapshot: PlaytestSnapshot | undefined,
+  suggestions: readonly EventSuggestion[],
+): NextEvents {
+  const states = new Map(snapshot?.steps.map((step) => [step.id, step.state]) ?? [])
+  const result: NextEvents = { now: [], later: [] }
+  for (const step of quest.steps) {
+    const events = suggestions.filter((entry) => entry.step === step.id)
+    if (events.length === 0) continue
+    const state = states.get(step.id) ?? 'locked'
+    const group: NextEventGroup = {
+      step: step.id,
+      stepTitle: String(step.title),
+      role: stepRole(step),
+      objective: formatCompletion({ objective: step.objective }),
+      state,
+      waiting: state === 'available',
+      events,
+    }
+    if (state === 'active' || state === 'available') result.now.push(group)
+    else result.later.push(group)
+  }
+  return result
 }

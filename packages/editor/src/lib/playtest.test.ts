@@ -1,13 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { type OqfDocument, parseCompact } from '@oqf/core'
+import { type OqfDocument, type Step, parseCompact } from '@oqf/core'
 import { describe, expect, it } from 'vitest'
 import {
   type EventSuggestion,
   PlaytestSession,
   type TranscriptEntry,
   formatPayload,
+  groupTranscript,
+  lastOutcome,
+  nextEvents,
+  objectiveCount,
   parsePayload,
+  stepRole,
   suggestEvents,
 } from './playtest'
 
@@ -23,6 +28,7 @@ function template(name: string): OqfDocument {
 const branching = template('branching.oqf')
 const engineHooks = template('engine-hooks.oqf')
 const repeatable = template('repeatable.oqf')
+const failure = template('failure.oqf')
 
 function states(session: PlaytestSession): Record<string, string> {
   return Object.fromEntries(session.snapshot().steps.map((step) => [step.id, step.state]))
@@ -389,5 +395,197 @@ describe('parsePayload', () => {
   it('formats a payload the way the transcript prints it', () => {
     expect(formatPayload({ item: 'fish', amount: 2 })).toBe('item=fish amount=2')
     expect(formatPayload({})).toBe('')
+  })
+})
+
+describe('PlaytestSession.removeFlag', () => {
+  it('drops the flag from the snapshot and the runtime reads it as false', () => {
+    const session = new PlaytestSession(failure, 'escort_merchant')
+    session.start()
+    session.emit('dialogue.ended', { actor: 'merchant' })
+    expect(states(session).escort).toBe('available')
+    session.setFlag('escort_accepted')
+    expect(states(session).escort).toBe('active')
+
+    session.removeFlag('escort_accepted')
+    expect(session.snapshot().flags).toEqual({})
+    expect(session.engine.resolve('flag.escort_accepted')).toBe(false)
+    expect(states(session).escort).toBe('active')
+    expect(session.transcript.at(-1)).toEqual({
+      kind: 'input',
+      name: 'flag.set',
+      payload: { flag: 'escort_accepted', value: false },
+    })
+    session.reset()
+    expect(session.snapshot().flags).toEqual({})
+  })
+})
+
+describe('groupTranscript', () => {
+  it('opens a Start card for everything before the first input', () => {
+    const session = new PlaytestSession(branching, 'washed_crate')
+    expect(groupTranscript(session.transcript)).toEqual([])
+
+    session.start()
+    const [start] = groupTranscript(session.transcript)
+    expect(start.input).toBeNull()
+    expect(start.title).toBe('Start')
+    expect(start.effects).toEqual([
+      { kind: 'offered', quest: 'washed_crate' },
+      { kind: 'step', quest: 'washed_crate', step: 'find_crate', from: 'locked', to: 'available' },
+      { kind: 'step', quest: 'washed_crate', step: 'find_crate', from: 'available', to: 'active' },
+    ])
+  })
+
+  it('nests every answer under the input that caused it, in order', () => {
+    const session = new PlaytestSession(branching, 'washed_crate')
+    session.start()
+    session.emit('object.interacted', { object: 'washed_crate' })
+    session.emit('dialogue.ended', { actor: 'keeper', node: 'crate_found', at: 'report' })
+    session.emit('location.entered', { location: 'harbor_office' })
+
+    const cards = groupTranscript(session.transcript)
+    expect(cards.map((card) => card.title)).toEqual([
+      'Start',
+      'object.interacted',
+      'dialogue.ended',
+      'location.entered',
+    ])
+    expect(cards[1].input).toEqual({
+      name: 'object.interacted',
+      payload: { object: 'washed_crate' },
+    })
+    expect(cards[1].effects.map((entry) => entry.kind)).toEqual([
+      'step',
+      'step',
+      'step',
+      'step',
+      'step',
+    ])
+    const last = cards[3].effects
+    expect(last[0]).toMatchObject({ kind: 'step', step: 'deliver_report', to: 'done' })
+    expect(last.filter((entry) => entry.kind === 'reward')).toHaveLength(1)
+    expect(last.at(-1)).toMatchObject({ kind: 'outcome', name: 'reported' })
+    expect(cards.flatMap((card) => card.effects)).toHaveLength(
+      session.transcript.filter((entry) => entry.kind !== 'input').length,
+    )
+  })
+
+  it('skips the Start card when the first entry is an input', () => {
+    const entries: TranscriptEntry[] = [
+      { kind: 'input', name: 'guard.spotted', payload: {} },
+      { kind: 'input', name: 'item.collected', payload: { item: 'fish', amount: 1 } },
+    ]
+    expect(groupTranscript(entries)).toEqual([
+      { input: { name: 'guard.spotted', payload: {} }, title: 'guard.spotted', effects: [] },
+      {
+        input: { name: 'item.collected', payload: { item: 'fish', amount: 1 } },
+        title: 'item.collected',
+        effects: [],
+      },
+    ])
+  })
+})
+
+describe('lastOutcome', () => {
+  it('finds the newest outcome of the quest and nothing before one is reached', () => {
+    const session = new PlaytestSession(repeatable, 'daily_catch')
+    session.start()
+    expect(lastOutcome(session.transcript, 'daily_catch')).toBeUndefined()
+    session.emit('dialogue.ended', { actor: 'cook' })
+    session.emit('item.collected', { item: 'fish.common', amount: 3 })
+    session.emit('dialogue.ended', { actor: 'cook' })
+    expect(lastOutcome(session.transcript, 'daily_catch')).toEqual({
+      name: 'delivered',
+      failed: false,
+    })
+    expect(lastOutcome(session.transcript, 'other')).toBeUndefined()
+  })
+})
+
+describe('objectiveCount', () => {
+  it('reads the count of a counted objective and nothing otherwise', () => {
+    const steps = repeatable.quests[0].steps
+    expect(objectiveCount(steps.find((step) => step.id === 'catch_fish'))).toBe(3)
+    expect(objectiveCount(steps.find((step) => step.id === 'take_order'))).toBeUndefined()
+    expect(objectiveCount(undefined)).toBeUndefined()
+    const hooks = engineHooks.quests[0].steps
+    expect(objectiveCount(hooks.find((step) => step.id === 'banish_spirit'))).toBe(3)
+  })
+})
+
+describe('stepRole', () => {
+  it('picks the role the graph card shows, endings first', () => {
+    const quest = branching.quests[0]
+    const role = (id: string) => stepRole(quest.steps.find((step) => step.id === id) as Step)
+    expect(role('find_crate')).toBe('start')
+    expect(role('choose_report')).toBe('step')
+    expect(role('deliver_report')).toBe('ending')
+    expect(role('caught')).toBe('failed')
+    const plain = quest.steps.find((step) => step.id === 'choose_report') as Step
+    expect(stepRole({ ...plain, repeat: true })).toBe('repeat')
+    expect(stepRole({ ...plain, optional: true })).toBe('optional')
+  })
+})
+
+describe('nextEvents', () => {
+  const quest = branching.quests[0]
+  const suggestions = suggestEvents(quest)
+
+  it('puts everything in later before the session starts', () => {
+    const split = nextEvents(quest, undefined, suggestions)
+    expect(split.now).toEqual([])
+    expect(split.later.map((group) => group.step)).toEqual([
+      'find_crate',
+      'choose_report',
+      'choose_keep',
+      'deliver_report',
+      'pry_open',
+      'sell_contents',
+      'refuse_deal',
+      'return_owner',
+    ])
+    expect(split.later.every((group) => group.state === 'locked' && !group.waiting)).toBe(true)
+  })
+
+  it('follows the active steps as the quest moves', () => {
+    const session = new PlaytestSession(branching, 'washed_crate')
+    session.start()
+    let split = nextEvents(quest, session.snapshot(), suggestions)
+    expect(split.now).toEqual([
+      {
+        step: 'find_crate',
+        stepTitle: 'Inspect the crate on the beach',
+        role: 'start',
+        objective: 'interact washed_crate',
+        state: 'active',
+        waiting: false,
+        events: suggestion(suggestions, 'find_crate'),
+      },
+    ])
+    expect(split.later.map((group) => group.step)).not.toContain('find_crate')
+
+    session.emit('object.interacted', { object: 'washed_crate' })
+    session.emit('dialogue.ended', { actor: 'keeper', node: 'crate_found', at: 'keep' })
+    split = nextEvents(quest, session.snapshot(), suggestions)
+    expect(split.now.map((group) => [group.step, group.role])).toEqual([
+      ['choose_report', 'step'],
+      ['pry_open', 'step'],
+    ])
+    expect(split.now[1].events.map((event) => event.fail)).toEqual([false, true])
+    expect(split.later.find((group) => group.step === 'find_crate')?.state).toBe('done')
+    expect(split.later.find((group) => group.step === 'choose_keep')?.state).toBe('done')
+  })
+
+  it('marks an available step as waiting on its activate condition', () => {
+    const escort = failure.quests[0]
+    const session = new PlaytestSession(failure, 'escort_merchant')
+    session.start()
+    session.emit('dialogue.ended', { actor: 'merchant' })
+    const split = nextEvents(escort, session.snapshot(), suggestEvents(escort))
+    expect(split.now.map((group) => [group.step, group.state, group.waiting])).toEqual([
+      ['escort', 'available', true],
+    ])
+    expect(split.later.map((group) => group.step)).toEqual(['meet_merchant', 'close_sale'])
   })
 })
