@@ -74,7 +74,7 @@ describe('PlaytestSession on the branching template', () => {
     expect(states(session)).toEqual({
       find_crate: 'done',
       choose_report: 'done',
-      choose_keep: 'skipped',
+      choose_keep: 'failed',
       deliver_report: 'done',
       pry_open: 'skipped',
       caught: 'skipped',
@@ -101,10 +101,10 @@ describe('PlaytestSession on the branching template', () => {
       'choose_report:available>active',
       'choose_keep:available>active',
       'choose_report:active>done',
+      'choose_keep:active>failed',
       'deliver_report:locked>available',
       'deliver_report:available>active',
       'deliver_report:active>done',
-      'choose_keep:active>skipped',
       'pry_open:locked>skipped',
       'caught:locked>skipped',
       'sell_contents:locked>skipped',
@@ -569,13 +569,11 @@ describe('nextEvents', () => {
     session.emit('object.interacted', { object: 'washed_crate' })
     session.emit('dialogue.ended', { actor: 'keeper', node: 'crate_found', at: 'keep' })
     split = nextEvents(quest, session.snapshot(), suggestions)
-    expect(split.now.map((group) => [group.step, group.role])).toEqual([
-      ['choose_report', 'step'],
-      ['pry_open', 'step'],
-    ])
-    expect(split.now[1].events.map((event) => event.fail)).toEqual([false, true])
+    expect(split.now.map((group) => [group.step, group.role])).toEqual([['pry_open', 'step']])
+    expect(split.now[0].events.map((event) => event.fail)).toEqual([false, true])
     expect(split.later.find((group) => group.step === 'find_crate')?.state).toBe('done')
     expect(split.later.find((group) => group.step === 'choose_keep')?.state).toBe('done')
+    expect(split.later.find((group) => group.step === 'choose_report')?.state).toBe('failed')
   })
 
   it('marks an available step as waiting on its activate condition', () => {

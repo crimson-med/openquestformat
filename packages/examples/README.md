@@ -19,7 +19,7 @@ under "New from template".
 | Template | Pattern | Dialogue |
 |----------|---------|----------|
 | `linear` | One step after another, a step reward and a quest-level reward. | Maren asks for her net, then takes it back. |
-| `branching` | A decision tree with four endings, one failed. Choices are dialogue exits (`talk actor conversation#node`). | The keeper's question and the smuggler's offer, each choice a bound exit. |
+| `branching` | A decision tree with four endings, one failed. Choices are dialogue exits (`talk actor conversation#node`), and the two choices fail each other's exit, so picking one rules the other out. | The keeper's question and the smuggler's offer, each choice a bound exit. |
 | `repeatable` | A quest flagged `r`, gated by a quest `unlock`, retaken after every outcome. | The cook places the order, then takes the sardines. |
 | `loop` | Two `repeat` steps that unlock each other: a failed cast sends the player to mend the line, and the loop exits when the cast succeeds. | Wen tells of the eel, then sees it landed. |
 | `recurring-step` | One `repeat` step with no cycle, re-armed whenever its flag goes false and true again. | Ines offers bell duty, then takes it back. |

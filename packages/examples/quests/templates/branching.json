@@ -76,6 +76,11 @@
             "actor": "keeper",
             "dialogue": "crate_found#report"
           },
+          "failObjective": {
+            "kind": "talk",
+            "actor": "keeper",
+            "dialogue": "crate_found#keep"
+          },
           "dialogue": {
             "provider": "oqf",
             "ref": "crate_found"
@@ -100,6 +105,11 @@
             "kind": "talk",
             "actor": "keeper",
             "dialogue": "crate_found#keep"
+          },
+          "failObjective": {
+            "kind": "talk",
+            "actor": "keeper",
+            "dialogue": "crate_found#report"
           },
           "dialogue": {
             "provider": "oqf",
