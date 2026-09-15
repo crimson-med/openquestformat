@@ -1,22 +1,29 @@
 /**
  * Play the focused quest through the runtime without leaving the editor.
  *
- * Every objective becomes a button that fires the event it listens for, and
- * anything else can be typed in by hand. Flags and game variables are the
- * world the conditions read. The transcript is what the runtime answered, and
- * the graph shows the same state on every step card.
+ * The panel answers one question, what can I do now and what did that do:
+ * the Next column lists the events that move the quest as it stands, the
+ * World column holds the flags and variables conditions read, and the
+ * Timeline shows every input with the transitions, rewards and outcome it
+ * caused nested under it. The graph shows the same state on every step card.
  */
-import type { Payload } from '@oqf/core'
-import { type FormEvent, useMemo } from 'react'
+import type { Payload, StepState } from '@oqf/core'
+import { type FormEvent, useEffect, useMemo, useRef } from 'react'
 import {
   type EventSuggestion,
-  type TranscriptEntry,
+  type NextEventGroup,
+  ROLE_GLYPHS,
+  type TranscriptCard,
   formatPayload,
+  groupTranscript,
+  lastOutcome,
+  nextEvents,
+  objectiveCount,
   parsePayload,
   parseScalar,
   suggestEvents,
 } from '../lib/playtest'
-import { useEditorState } from '../store/context'
+import { useDispatch, useEditorState } from '../store/context'
 import { activeQuestId, findQuest } from '../store/selectors'
 import '../styles/playtest.css'
 import { usePlaytest } from './PlaytestContext'
@@ -26,31 +33,131 @@ function field(event: FormEvent<HTMLFormElement>, name: string): HTMLInputElemen
   return input instanceof HTMLInputElement ? input : undefined
 }
 
-function describe(entry: TranscriptEntry): { kind: string; text: string; detail?: string } {
-  switch (entry.kind) {
-    case 'input':
-      return { kind: 'you', text: entry.name, detail: formatPayload(entry.payload) }
+function StateChip({ state, text }: { state: StepState; text?: string }) {
+  return <span className={`state-chip ${state}`}>{text ?? state}</span>
+}
+
+function EventButtons({
+  group,
+  fire,
+  disabled,
+}: {
+  group: NextEventGroup
+  fire: (name: string, payload: Payload) => void
+  disabled: boolean
+}) {
+  const key = (event: EventSuggestion) => `${event.fail ? 'fail' : 'do'}-${event.label}`
+  return (
+    <div className="next-buttons">
+      {group.events.map((event) => (
+        <button
+          key={key(event)}
+          type="button"
+          className={event.fail ? 'next-event fail' : 'next-event'}
+          disabled={disabled || (group.waiting && !event.fail)}
+          title={`${event.name} ${formatPayload(event.payload)}`.trim()}
+          onClick={() => fire(event.name, event.payload)}
+        >
+          {event.fail ? <span className="fail-chip">fail</span> : null}
+          {event.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function NextGroup({
+  group,
+  fire,
+  disabled,
+  compact,
+}: {
+  group: NextEventGroup
+  fire: (name: string, payload: Payload) => void
+  disabled: boolean
+  compact?: boolean
+}) {
+  return (
+    <li className={`next-group ${group.state}`}>
+      <div className="next-head">
+        <span className={`role-glyph ${group.role}`} aria-hidden="true">
+          {ROLE_GLYPHS[group.role]}
+        </span>
+        <span className="next-title">{group.stepTitle}</span>
+        {group.waiting ? <StateChip state="available" text="waiting on activate" /> : null}
+        {compact === true ? <StateChip state={group.state} /> : null}
+      </div>
+      {group.objective === '' ? null : <div className="next-objective mono">{group.objective}</div>}
+      <EventButtons group={group} fire={fire} disabled={disabled} />
+    </li>
+  )
+}
+
+function Effect({
+  effect,
+  titles,
+}: {
+  effect: TranscriptCard['effects'][number]
+  titles: ReadonlyMap<string, string>
+}) {
+  switch (effect.kind) {
     case 'offered':
-      return { kind: 'offered', text: entry.quest }
+      return (
+        <li className="tl-effect offered">
+          <span className="tl-label">offered</span>
+          <span className="mono">{effect.quest}</span>
+        </li>
+      )
     case 'step':
-      return { kind: 'step', text: entry.step, detail: `${entry.from} to ${entry.to}` }
+      return (
+        <li className="tl-effect step">
+          <span className="mono">{effect.step}</span>
+          <span className="tl-from mono">{effect.from}</span>
+          <StateChip state={effect.to} />
+          <span className="tl-title muted">{titles.get(effect.step) ?? ''}</span>
+        </li>
+      )
     case 'reward':
-      return {
-        kind: 'reward',
-        text: entry.grant.reward,
-        detail: `${entry.grant.kind} ${entry.grant.ref} x${entry.grant.amount}`,
-      }
+      return (
+        <li className="tl-effect reward">
+          <span className="tl-label">reward</span>
+          <span className="mono">{effect.grant.reward}</span>
+          <span className="muted mono">
+            {effect.grant.kind} {effect.grant.ref} x{effect.grant.amount}
+          </span>
+        </li>
+      )
     case 'outcome':
-      return { kind: 'outcome', text: entry.name, detail: entry.failed ? 'failed' : undefined }
+      return (
+        <li className="tl-effect outcome">
+          <span className="tl-label">outcome</span>
+          <strong>{effect.name}</strong>
+          {effect.failed ? <span className="fail-chip">failed</span> : null}
+        </li>
+      )
     case 'flag':
-      return { kind: 'flag', text: `${entry.flag}=${String(entry.value)}` }
+      return (
+        <li className="tl-effect flag">
+          <span className="tl-label">flag</span>
+          <span className="mono">
+            {effect.flag}={String(effect.value)}
+          </span>
+        </li>
+      )
     case 'event':
-      return { kind: 'event', text: entry.name, detail: formatPayload(entry.payload) }
+      return (
+        <li className="tl-effect event">
+          <span className="tl-label">event</span>
+          <span className="mono">{effect.name}</span>
+          <span className="muted mono">{formatPayload(effect.payload)}</span>
+        </li>
+      )
   }
 }
 
 export function QuestPlayPanel() {
   const state = useEditorState()
+  const dispatch = useDispatch()
   const playtest = usePlaytest()
   const questId = activeQuestId(state)
   const quest = findQuest(state, questId)
@@ -64,15 +171,24 @@ export function QuestPlayPanel() {
   )
   const transcript = running ? session.transcript : []
   const suggestions = useMemo(() => (quest === undefined ? [] : suggestEvents(quest)), [quest])
-  const groups = useMemo(() => {
-    const byStep = new Map<string, EventSuggestion[]>()
-    for (const suggestion of suggestions) {
-      const list = byStep.get(suggestion.step) ?? []
-      list.push(suggestion)
-      byStep.set(suggestion.step, list)
-    }
-    return [...byStep.entries()]
-  }, [suggestions])
+  const split = useMemo(
+    () => (quest === undefined ? { now: [], later: [] } : nextEvents(quest, snapshot, suggestions)),
+    [quest, snapshot, suggestions],
+  )
+  const titles = useMemo(
+    () => new Map(quest?.steps.map((step) => [step.id, String(step.title)]) ?? []),
+    [quest],
+  )
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version drives the reread
+  const cards = useMemo(() => groupTranscript(transcript), [transcript, playtest.version])
+  const outcome = questId === undefined ? undefined : lastOutcome(transcript, questId)
+
+  const timeline = useRef<HTMLElement | null>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new card scrolls the column
+  useEffect(() => {
+    const column = timeline.current
+    if (column !== null) column.scrollTop = column.scrollHeight
+  }, [cards.length])
 
   const open = snapshot?.status === 'open'
 
@@ -113,148 +229,184 @@ export function QuestPlayPanel() {
 
   const flagNames = Object.keys(snapshot?.flags ?? {}).sort()
   const varNames = Object.keys(snapshot?.vars ?? {}).sort()
+  const quests = state.quests.quests
+  const passes = snapshot?.passes ?? 0
+
+  const acceptLabel = quest?.repeat === true || passes > 0 ? 'Accept again' : 'Accept'
 
   return (
-    <div className="quest-play">
-      <section className="quest-play-drive">
-        <div className="play-actions">
+    <div className="quest-play play-columns">
+      <header className="play-head">
+        {quests.length > 1 ? (
+          <select
+            className="picker-select play-picker mono"
+            value={questId ?? ''}
+            aria-label="Quest to play"
+            onChange={(event) =>
+              dispatch({ type: 'select', selection: { kind: 'quest', quest: event.target.value } })
+            }
+          >
+            {quests.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.id}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="play-target mono">{questId ?? 'no quest'}</span>
+        )}
+        <span className={`status-pill ${snapshot?.status ?? 'idle'}`}>
+          {snapshot?.status ?? 'not running'}
+        </span>
+        {snapshot?.outcome !== null && snapshot?.outcome !== undefined ? (
+          <span className="play-stat">
+            outcome <strong>{snapshot.outcome}</strong>
+          </span>
+        ) : null}
+        {snapshot !== undefined ? (
+          <span className="play-stat">
+            passes <strong>{passes}</strong>
+          </span>
+        ) : null}
+        {snapshot?.error !== undefined ? (
+          <span className="field-error">{snapshot.error}</span>
+        ) : null}
+        <div className="play-controls">
           <button type="button" onClick={start} disabled={quest === undefined}>
             {running ? 'Restart' : 'Start'}
           </button>
-          {snapshot !== undefined && snapshot.status !== 'open' ? (
-            <button type="button" onClick={() => playtest.update((current) => current.accept())}>
-              Accept
-            </button>
-          ) : null}
           <button
             type="button"
-            className="ghost"
             disabled={!running}
             onClick={() => playtest.update((current) => current.reset())}
           >
             Reset
           </button>
-          <button type="button" className="ghost" disabled={!running} onClick={playtest.stop}>
+          <button type="button" disabled={!running} onClick={playtest.stop}>
             Stop
           </button>
-          <span className="play-target mono">{questId ?? 'no quest'}</span>
         </div>
-        {snapshot === undefined ? (
-          <p className="note">Press start to offer and accept this quest in a fresh runtime.</p>
-        ) : (
-          <p className="quest-play-status">
-            <span className={`status-tag ${snapshot.status}`}>{snapshot.status}</span>
-            <span>
-              outcome <strong>{snapshot.outcome ?? 'none'}</strong>
-            </span>
-            <span>
-              passes <strong>{snapshot.passes}</strong>
-            </span>
-            <span>
-              rewards <strong>{snapshot.rewards.length}</strong>
-            </span>
-          </p>
-        )}
-        {snapshot?.error !== undefined ? <p className="field-error">{snapshot.error}</p> : null}
+      </header>
 
-        <h4>Suggested events</h4>
-        {groups.length === 0 ? (
-          <p className="note">No step has an objective to fire an event for.</p>
+      <section className="play-col play-next">
+        <h4>Next</h4>
+        {!running ? (
+          <p className="note">Press Start to offer and accept this quest in a fresh runtime.</p>
+        ) : open ? (
+          split.now.length === 0 ? (
+            <p className="note">No step is active. Unlock one with a flag or a variable.</p>
+          ) : (
+            <ul className="next-groups">
+              {split.now.map((group) => (
+                <NextGroup key={group.step} group={group} fire={fire} disabled={false} />
+              ))}
+            </ul>
+          )
         ) : (
-          <ul className="suggestion-groups">
-            {groups.map(([stepId, list]) => (
-              <li
-                key={stepId}
-                className={
-                  snapshot === undefined
-                    ? ''
-                    : `run-${snapshot.steps.find((step) => step.id === stepId)?.state ?? 'locked'}`
-                }
-              >
-                <div className="suggestion-step">
-                  <span className="mono">{stepId}</span>
-                  <span className="muted">{list[0].stepTitle}</span>
-                </div>
-                <div className="suggestion-buttons">
-                  {list.map((suggestion) => (
-                    <button
-                      key={`${suggestion.fail ? 'fail' : 'do'}-${suggestion.label}`}
-                      type="button"
-                      className={suggestion.fail ? 'suggestion fail' : 'suggestion'}
-                      disabled={!open}
-                      title={`${suggestion.name} ${formatPayload(suggestion.payload)}`.trim()}
-                      onClick={() => fire(suggestion.name, suggestion.payload)}
-                    >
-                      {suggestion.fail ? <span className="suggestion-fail">fail</span> : null}
-                      {suggestion.label}
-                    </button>
-                  ))}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="play-outcome">
+            <p>
+              {outcome !== undefined ? (
+                <>
+                  Outcome <strong>{outcome.name}</strong> reached
+                  {outcome.failed ? <span className="fail-chip">failed</span> : null}
+                </>
+              ) : snapshot?.status === 'offered' ? (
+                'The quest is offered and waits to be accepted.'
+              ) : (
+                'The quest is unseen. Accept to offer and open it.'
+              )}
+            </p>
+            <div className="play-controls">
+              <button type="button" onClick={start}>
+                Restart
+              </button>
+              {snapshot?.status !== 'closed' ? (
+                <button
+                  type="button"
+                  onClick={() => playtest.update((current) => current.accept())}
+                >
+                  {acceptLabel}
+                </button>
+              ) : null}
+            </div>
+          </div>
         )}
-
-        <h4>Any event</h4>
-        <form className="event-form" onSubmit={submitEvent}>
-          <input className="input mono" name="name" placeholder="item.collected" />
-          <input className="input mono" name="payload" placeholder="item=fish.rare;amount=1" />
-          <button type="submit" disabled={!running}>
-            Emit
-          </button>
-        </form>
+        <details className="play-other">
+          <summary>
+            Other events
+            {split.later.length > 0 ? <span className="pill">{split.later.length}</span> : null}
+          </summary>
+          {split.later.length === 0 ? null : (
+            <ul className="next-groups">
+              {split.later.map((group) => (
+                <NextGroup key={group.step} group={group} fire={fire} disabled={!open} compact />
+              ))}
+            </ul>
+          )}
+          <form className="event-form" onSubmit={submitEvent}>
+            <input className="input mono" name="name" placeholder="item.collected" />
+            <input className="input mono" name="payload" placeholder="item=fish.rare;amount=1" />
+            <button type="submit" disabled={!running}>
+              Emit
+            </button>
+          </form>
+        </details>
       </section>
 
-      <section className="quest-play-world">
-        <h4>Flags</h4>
+      <section className="play-col play-world">
+        <h4>World</h4>
+        <h5>Flags</h5>
+        {flagNames.length === 0 ? null : (
+          <table className="world-table">
+            <tbody>
+              {flagNames.map((name) => {
+                const value = snapshot?.flags[name]
+                return (
+                  <tr key={name}>
+                    <td className="mono">{name}</td>
+                    <td>
+                      <label className="world-toggle">
+                        <input
+                          type="checkbox"
+                          checked={value === true || (value !== false && value !== undefined)}
+                          onChange={(event) =>
+                            playtest.update((current) =>
+                              current.setFlag(name, event.target.checked),
+                            )
+                          }
+                        />
+                        {typeof value === 'boolean' ? (value ? 'on' : 'off') : String(value)}
+                      </label>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="ghost world-remove"
+                        aria-label={`Remove flag ${name}`}
+                        onClick={() => playtest.update((current) => current.removeFlag(name))}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
         <form className="add-form" onSubmit={submitFlag}>
           <input className="input mono" name="flag" placeholder="otter_agreed" />
           <button type="submit" disabled={!running}>
             Add
           </button>
         </form>
-        {flagNames.length === 0 ? (
-          <p className="note">Flags set here reach the runtime as flag.set events.</p>
-        ) : (
-          <ul className="flag-list">
-            {flagNames.map((name) => {
-              const value = snapshot?.flags[name]
-              return (
-                <li key={name}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={value === true || (value !== false && value !== undefined)}
-                      onChange={(event) =>
-                        playtest.update((current) => current.setFlag(name, event.target.checked))
-                      }
-                    />
-                    <span className="mono">{name}</span>
-                    {typeof value === 'boolean' ? null : (
-                      <span className="muted mono">{String(value)}</span>
-                    )}
-                  </label>
-                </li>
-              )
-            })}
-          </ul>
-        )}
 
-        <h4>Game variables</h4>
-        <form className="add-form" onSubmit={submitVar}>
-          <input className="input mono" name="name" placeholder="time.isNight" />
-          <input className="input mono" name="value" placeholder="true" />
-          <button type="submit" disabled={!running}>
-            Add
-          </button>
-        </form>
-        {varNames.length === 0 ? (
-          <p className="note">Values for var.* conditions, typed as numbers and booleans.</p>
-        ) : (
-          <table className="var-table">
+        <h5>Variables</h5>
+        {varNames.length === 0 ? null : (
+          <table className="world-table">
             <tbody>
               {varNames.map((name) => {
-                const value = snapshot?.vars[name]
+                const value = snapshot?.vars[name] ?? ''
                 return (
                   <tr key={name}>
                     <td className="mono">{name}</td>
@@ -263,6 +415,7 @@ export function QuestPlayPanel() {
                         key={String(value)}
                         className="input mono"
                         defaultValue={String(value)}
+                        aria-label={`Value of ${name}`}
                         onBlur={(event) => {
                           const next = parseScalar(event.target.value.trim())
                           if (next !== value) {
@@ -274,10 +427,11 @@ export function QuestPlayPanel() {
                     <td>
                       <button
                         type="button"
-                        className="ghost"
+                        className="ghost world-remove"
+                        aria-label={`Remove variable ${name}`}
                         onClick={() => playtest.update((current) => current.removeVar(name))}
                       >
-                        Remove
+                        ×
                       </button>
                     </td>
                   </tr>
@@ -286,44 +440,70 @@ export function QuestPlayPanel() {
             </tbody>
           </table>
         )}
+        <form className="add-form" onSubmit={submitVar}>
+          <input className="input mono" name="name" placeholder="time.isNight" />
+          <input className="input mono" name="value" placeholder="true" />
+          <button type="submit" disabled={!running}>
+            Add
+          </button>
+        </form>
       </section>
 
-      <section className="quest-play-watch">
-        <h4>Steps</h4>
-        {snapshot === undefined ? (
-          <p className="note">Each step shows its runtime state and counters here.</p>
-        ) : (
-          <ul className="step-board">
-            {snapshot.steps.map((step) => (
-              <li key={step.id} className={`run-${step.state}`}>
-                <span className="state-tag">{step.state}</span>
-                <span className="mono">{step.id}</span>
-                <span className="muted step-counts mono">
-                  {step.count}
-                  {step.failCount > 0 ? ` / fail ${step.failCount}` : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <h4>Transcript</h4>
-        {transcript.length === 0 ? (
-          <p className="note">What the runtime does with each event shows up here.</p>
-        ) : (
-          <ol className="quest-transcript">
-            {transcript.map((entry, index) => {
-              const line = describe(entry)
+      <section className="play-col play-timeline" ref={timeline}>
+        <h4>Timeline</h4>
+        {snapshot === undefined || quest === undefined ? null : (
+          <div className="step-chips">
+            {snapshot.steps.map((step) => {
+              const threshold = objectiveCount(quest.steps.find((entry) => entry.id === step.id))
               return (
-                <li key={`${entry.kind}-${index}`} className={entry.kind}>
-                  <span className="kind">{line.kind}</span>
-                  <span className="text mono">{line.text}</span>
-                  {line.detail === undefined || line.detail === '' ? null : (
-                    <span className="detail mono">{line.detail}</span>
+                <button
+                  key={step.id}
+                  type="button"
+                  className={`step-chip ${step.state}`}
+                  title={`${step.title} (${step.state})`}
+                  onClick={() =>
+                    dispatch({
+                      type: 'select',
+                      selection: { kind: 'step', quest: snapshot.quest, step: step.id },
+                    })
+                  }
+                >
+                  <span className="mono">{step.id}</span>
+                  {threshold === undefined ? null : (
+                    <span className="step-chip-count mono">
+                      {step.count}/{threshold}
+                    </span>
                   )}
-                </li>
+                </button>
               )
             })}
+          </div>
+        )}
+        {cards.length === 0 ? (
+          <p className="note">What the runtime does with each event shows up here.</p>
+        ) : (
+          <ol className="timeline">
+            {cards.map((card, index) => (
+              <li key={`${card.title}-${index}`} className="tl-card">
+                <div className="tl-head">
+                  <span className="tl-name mono">{card.title}</span>
+                  {card.input === null ? null : (
+                    <span className="tl-payload muted mono">
+                      {formatPayload(card.input.payload)}
+                    </span>
+                  )}
+                </div>
+                {card.effects.length === 0 ? (
+                  <p className="tl-none muted">nothing changed</p>
+                ) : (
+                  <ul className="tl-effects">
+                    {card.effects.map((effect, position) => (
+                      <Effect key={`${effect.kind}-${position}`} effect={effect} titles={titles} />
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
           </ol>
         )}
       </section>

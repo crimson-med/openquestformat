@@ -15,6 +15,7 @@ import {
 } from '@oqf/dialogue'
 import { useCallback, useRef, useState } from 'react'
 import { useEditorState } from '../store/context'
+import '../styles/playtest.css'
 import { usePlaytest } from './PlaytestContext'
 
 interface TranscriptEntry {
@@ -105,17 +106,25 @@ export function PlayPanel({ conversation }: { conversation: string | undefined }
   )
 
   const flagNames = Object.keys(flags).sort()
+  const started = session.current !== null
 
   return (
-    <div className="play">
-      <div className="play-stage">
-        <div className="play-actions">
+    <div className="play play-columns">
+      <header className="play-head">
+        <span className="play-target mono">{conversation ?? 'no conversation'}</span>
+        <span className={`status-pill ${started ? (view === null ? 'closed' : 'open') : 'idle'}`}>
+          {started ? (view === null ? 'ended' : 'talking') : 'not running'}
+        </span>
+        {error !== undefined ? <span className="field-error">{error}</span> : null}
+        <div className="play-controls">
           <button type="button" onClick={start} disabled={conversation === undefined}>
-            {session.current === null ? 'Start' : 'Restart'}
+            {started ? 'Restart' : 'Start'}
           </button>
-          <span className="play-target mono">{conversation ?? 'no conversation'}</span>
         </div>
-        {error !== undefined ? <p className="field-error">{error}</p> : null}
+      </header>
+
+      <div className="play-col play-stage">
+        <h4>Stage</h4>
         {view === null ? (
           <p className="note">
             {session.current === null
@@ -154,9 +163,35 @@ export function PlayPanel({ conversation }: { conversation: string | undefined }
         )}
       </div>
 
-      <div className="play-flags">
+      <div className="play-col play-world">
         <h4>Flags</h4>
+        {flagNames.length === 0 ? (
+          <p className="note">No flags yet. Add the ones your choices are gated on.</p>
+        ) : (
+          <table className="world-table">
+            <tbody>
+              {flagNames.map((name) => (
+                <tr key={name}>
+                  <td className="mono">{name}</td>
+                  <td>
+                    <label className="world-toggle">
+                      <input
+                        type="checkbox"
+                        checked={flags[name]}
+                        onChange={(event) =>
+                          setFlags((current) => ({ ...current, [name]: event.target.checked }))
+                        }
+                      />
+                      {flags[name] ? 'on' : 'off'}
+                    </label>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         <form
+          className="add-form"
           onSubmit={(event) => {
             event.preventDefault()
             const input = event.currentTarget.elements.namedItem('flag')
@@ -170,41 +205,25 @@ export function PlayPanel({ conversation }: { conversation: string | undefined }
           <input className="input mono" name="flag" placeholder="otter_agreed" />
           <button type="submit">Add</button>
         </form>
-        {flagNames.length === 0 ? (
-          <p className="note">No flags yet. Add the ones your choices are gated on.</p>
-        ) : (
-          <ul className="flag-list">
-            {flagNames.map((name) => (
-              <li key={name}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={flags[name]}
-                    onChange={(event) =>
-                      setFlags((current) => ({ ...current, [name]: event.target.checked }))
-                    }
-                  />
-                  <span className="mono">{name}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
-      <div className="play-transcript">
+      <div className="play-col play-transcript">
         <h4>Transcript</h4>
         {transcript.length === 0 ? (
           <p className="note">Events the conversation emits show up here.</p>
         ) : (
-          <ol>
+          <ol className="timeline">
             {transcript.map((entry, index) => (
-              <li key={`${entry.kind}-${index}`} className={entry.kind}>
-                <span className="kind">{entry.kind}</span>
-                <span className="text">{entry.text}</span>
-                {entry.detail === undefined ? null : (
-                  <span className="detail mono">{entry.detail}</span>
-                )}
+              <li key={`${entry.kind}-${index}`} className={`tl-card ${entry.kind}`}>
+                <div className="tl-head">
+                  <span className="tl-label">{entry.kind}</span>
+                  <span className={entry.kind === 'event' ? 'tl-name mono' : 'tl-name'}>
+                    {entry.text}
+                  </span>
+                  {entry.detail === undefined ? null : (
+                    <span className="tl-payload muted mono">{entry.detail}</span>
+                  )}
+                </div>
               </li>
             ))}
           </ol>

@@ -1,44 +1,125 @@
-/* Quest playtest: the Play tab panel and the run state overlay on step cards. */
+/* Playtest: the Play tab in both modes, and the run state overlay on step cards. */
 
 .play-mode {
   display: inline-flex;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  flex: none;
 }
 
-.quest-play {
+/* The drawer body becomes a column so the panel can take the rest of the
+   drawer's height and scroll each of its columns on its own. */
+
+.drawer-body:has(> .play-columns) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Layout shared by the quest and dialogue modes: a header strip, then three columns. */
+
+.play-columns,
+.play.play-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.8fr) minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1.2fr) 260px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px 16px;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
-.quest-play h4 {
-  margin: 16px 0 8px;
-  font-size: 14px;
+.play-columns .play-col {
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.play-columns .play-col h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
 }
 
-.quest-play section > h4:first-child {
+.play-columns .play-col h5 {
+  margin: 10px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.play-columns .play-col h5:first-of-type {
   margin-top: 0;
 }
 
-.quest-play-status {
+/* Header strip */
+
+.play-head {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
-  margin: 0;
+  gap: 10px 14px;
   font-size: 13px;
   color: var(--muted);
 }
 
-.quest-play-status strong {
+.play-head .play-target {
+  font-weight: 600;
   color: var(--text);
 }
 
-.status-tag,
-.state-tag,
+.play-picker {
+  width: auto;
+  padding: 5px 10px;
+  font-weight: 600;
+}
+
+.play-stat strong {
+  color: var(--text);
+}
+
+.play-head .field-error {
+  flex-basis: 100%;
+}
+
+.play-controls {
+  display: inline-flex;
+  margin-left: auto;
+}
+
+.play-controls button {
+  padding: 5px 12px;
+  font-size: 13px;
+  border-radius: 0;
+  margin-left: -1px;
+}
+
+.play-controls button:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  margin-left: 0;
+}
+
+.play-controls button:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.play-controls button:only-child {
+  border-radius: var(--radius-sm);
+}
+
+.play-controls button:hover:not(:disabled) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Status pill and state chips */
+
+.status-pill,
+.state-chip,
 .node-run {
   display: inline-block;
   font-size: 11px;
@@ -48,192 +129,456 @@
   letter-spacing: 0.04em;
   border-radius: 999px;
   padding: 1px 8px;
+  line-height: 1.6;
   background: var(--line-soft);
   color: var(--muted);
+  white-space: nowrap;
 }
 
-.status-tag.open {
+.status-pill.offered {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.status-pill.open {
   background: var(--accent-soft);
   color: var(--accent);
 }
 
-.status-tag.closed {
+.status-pill.closed {
   background: color-mix(in oklch, var(--role-start) 18%, var(--panel));
   color: var(--role-start);
 }
 
-/* Suggested events */
+.state-chip.available {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
 
-.suggestion-groups {
+.state-chip.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.state-chip.done {
+  background: color-mix(in oklch, var(--role-start) 18%, var(--panel));
+  color: var(--role-start);
+}
+
+.state-chip.failed {
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+.state-chip.skipped {
+  background: var(--panel-2);
+  color: var(--role-optional);
+  text-decoration: line-through;
+}
+
+.fail-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 0 6px;
+  margin-left: 6px;
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+/* Next column */
+
+.next-groups {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.suggestion-groups > li {
+.next-group {
   padding: 8px 10px;
   background: var(--field);
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
 }
 
-.suggestion-groups > li.run-active {
+.next-group.active {
   border-color: var(--accent);
 }
 
-.suggestion-groups > li.run-done,
-.suggestion-groups > li.run-skipped,
-.suggestion-groups > li.run-failed {
-  opacity: 0.6;
+.next-group.done,
+.next-group.skipped,
+.next-group.failed,
+.next-group.locked {
+  opacity: 0.75;
 }
 
-.suggestion-step {
+.next-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  align-items: baseline;
-  margin-bottom: 6px;
+  align-items: center;
+  gap: 6px 8px;
   font-size: 13px;
 }
 
-.suggestion-buttons {
+.next-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.role-glyph {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--panel-2);
+  color: var(--role-step);
+}
+
+.role-glyph.start {
+  color: var(--role-start);
+}
+
+.role-glyph.repeat {
+  color: var(--role-repeat);
+}
+
+.role-glyph.optional {
+  color: var(--role-optional);
+}
+
+.role-glyph.ending {
+  color: var(--role-ending);
+}
+
+.role-glyph.failed {
+  color: var(--role-failed);
+}
+
+.next-objective {
+  margin: 4px 0 0 26px;
+  color: var(--muted);
+}
+
+.next-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin: 8px 0 0 26px;
 }
 
-.suggestion {
+.next-event {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 5px 12px;
   font-size: 13px;
 }
 
-.suggestion.fail {
+.next-event.fail {
   border-color: var(--error-soft);
   color: var(--error);
 }
 
-.suggestion-fail {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  border-radius: 999px;
-  padding: 0 6px;
-  background: var(--error-soft);
-  color: var(--error);
+.next-event.fail:hover:not(:disabled) {
+  border-color: var(--error);
+}
+
+.next-event .fail-chip {
+  margin-left: 0;
+}
+
+.play-outcome {
+  padding: 10px 12px;
+  background: var(--field);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.play-outcome p {
+  margin: 0 0 10px;
+}
+
+.play-outcome .play-controls {
+  margin-left: 0;
+}
+
+.play-other {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.play-other summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.play-other[open] summary {
+  margin-bottom: 8px;
+}
+
+.play-other .next-groups {
+  margin-bottom: 10px;
 }
 
 .event-form,
 .add-form {
   display: flex;
   gap: 6px;
-  margin-bottom: 8px;
 }
 
 .event-form .input,
 .add-form .input {
   flex: 1;
   min-width: 0;
+  padding: 5px 9px;
 }
 
-/* Flags and game variables */
-
-.quest-play .flag-list label .muted {
-  margin-left: auto;
+.event-form button,
+.add-form button {
+  padding: 5px 12px;
+  font-size: 13px;
 }
 
-.var-table {
+.play-world .add-form {
+  margin-bottom: 4px;
+}
+
+/* World column */
+
+.world-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  margin-bottom: 6px;
 }
 
-.var-table td {
+.world-table td {
   padding: 2px 4px 2px 0;
   vertical-align: middle;
+  border-bottom: 1px solid var(--line-soft);
 }
 
-.var-table td:first-child {
+.world-table td:first-child {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.var-table .input {
+.world-table td:last-child {
+  width: 26px;
+  padding-right: 0;
+  text-align: right;
+}
+
+.world-table .input {
   width: 100%;
   min-width: 0;
+  padding: 3px 8px;
 }
 
-/* Step board */
-
-.step-board {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-}
-
-.step-board li {
-  display: flex;
+.world-toggle {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  color: var(--muted);
+  cursor: pointer;
 }
 
-.step-board .state-tag {
-  min-width: 78px;
-  text-align: center;
-}
-
-.step-counts {
-  margin-left: auto;
-  font-size: 12px;
-}
-
-/* Transcript */
-
-.quest-transcript {
-  list-style: none;
+.world-toggle input {
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
 }
 
-.quest-transcript li {
+.world-remove {
+  padding: 0 6px;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+/* Timeline column */
+
+.step-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 4px;
+  margin-bottom: 10px;
 }
 
-.quest-transcript .kind {
-  color: var(--muted);
-  min-width: 56px;
+.step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
   font-size: 12px;
-  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  background: var(--panel-2);
+  color: var(--muted);
 }
 
-.quest-transcript li.input .kind {
+.step-chip.available {
+  background: var(--warning-soft);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.step-chip.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
   color: var(--accent);
 }
 
-.quest-transcript li.outcome .text {
-  font-weight: 700;
+.step-chip.done {
+  background: color-mix(in oklch, var(--role-start) 18%, var(--panel));
+  border-color: var(--role-start);
   color: var(--role-start);
 }
 
-.quest-transcript li.reward .text {
+.step-chip.failed {
+  background: var(--error-soft);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.step-chip.skipped {
+  text-decoration: line-through;
+  color: var(--role-optional);
+}
+
+.step-chip-count {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.tl-card {
+  padding: 6px 10px;
+  background: var(--field);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
+
+.tl-card:last-child {
+  border-color: var(--line);
+}
+
+.tl-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.tl-name {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.tl-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  min-width: 52px;
+}
+
+.tl-effects {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  border-top: 1px dashed var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tl-effect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.tl-from {
+  color: var(--role-optional);
+}
+
+.tl-from::after {
+  content: " to";
+}
+
+.tl-title {
+  font-size: 12px;
+}
+
+.tl-effect.outcome strong {
+  color: var(--role-start);
+}
+
+.tl-effect.reward .mono:first-of-type {
   color: var(--role-repeat);
 }
 
-.quest-transcript .detail {
-  color: var(--muted);
+.tl-none {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+/* Dialogue mode keeps its stage card; the transcript entries use the timeline cards. */
+
+.play-columns .play-transcript .tl-card {
+  display: block;
+}
+
+.play-columns .play-transcript .tl-card.choice .tl-name {
+  color: var(--text);
+}
+
+.play-columns .play-transcript .tl-card.line .tl-name {
+  font-weight: 400;
+  color: var(--text);
+}
+
+@media (max-width: 1000px) {
+  .play-columns,
+  .play.play-columns {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    overflow: auto;
+  }
+
+  .play-columns .play-col {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .play-controls {
+    margin-left: 0;
+  }
 }
 
 /* Run states: shared by the step board, the suggestion groups and the graph. */
