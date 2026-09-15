@@ -3,6 +3,7 @@
  * handful of flags worth seeing without opening the inspector.
  */
 import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
+import { ROLE_GLYPHS, type StepRole } from '../lib/playtest'
 import '../styles/playtest.css'
 
 export interface StepNodeData extends Record<string, unknown> {
@@ -24,19 +25,8 @@ export interface StepNodeData extends Record<string, unknown> {
 
 export type StepFlowNode = Node<StepNodeData, 'step'>
 
-type Role = 'failed' | 'ending' | 'start' | 'repeat' | 'optional' | 'step'
-
-const ROLE_GLYPHS: Record<Role, string> = {
-  failed: '✕',
-  ending: '⚑',
-  start: '▶',
-  repeat: '↻',
-  optional: '◌',
-  step: '•',
-}
-
 /** The one role that colors the card. Endings win over everything else. */
-function roleOf(data: StepNodeData): Role {
+function roleOf(data: StepNodeData): StepRole {
   if (data.failed) return 'failed'
   if (data.ending) return 'ending'
   if (data.start) return 'start'
