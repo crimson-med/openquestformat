@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "captain",
+      "name": "Captain Rosa"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "log_voyage",
+      "actor": "captain",
+      "title": "Rosa asks about the voyage",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "You took her out past the breakwater and back. Tell me how she handled.",
+          "choices": [
+            {
+              "text": "How long have you kept the log?",
+              "next": "history"
+            },
+            {
+              "text": "Steady. The patched hull held.",
+              "next": "steady"
+            }
+          ]
+        },
+        {
+          "id": "history",
+          "text": "Since my first command. Every boat out of this harbor has a page.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "steady",
+          "text": "Then it goes in the log as her first voyage. Write it plain."
+        }
+      ]
+    },
+    {
+      "id": "log_signed",
+      "actor": "captain",
+      "title": "Rosa signs the log",
+      "start": "read",
+      "nodes": [
+        {
+          "id": "read",
+          "text": "Good entry. Short, honest, and the date is right.",
+          "next": "sign"
+        },
+        {
+          "id": "sign",
+          "text": "Signed. She is a proper boat now, and you are in her book."
+        }
+      ]
+    }
+  ]
+}

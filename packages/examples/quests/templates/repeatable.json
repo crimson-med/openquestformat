@@ -59,6 +59,10 @@
           "rewards": [
             "bait"
           ],
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "order_taken"
+          },
           "location": "galley",
           "actors": [
             "cook"
@@ -99,6 +103,10 @@
           "outcome": {
             "name": "delivered",
             "title": "Order delivered"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "order_delivered"
           },
           "location": "galley",
           "actors": [

@@ -1,0 +1,81 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "merchant",
+      "name": "Merchant Tobin"
+    },
+    {
+      "id": "buyer",
+      "name": "Buyer Lysa"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "escort_offer",
+      "actor": "merchant",
+      "title": "Tobin needs an escort",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "I have a cart of silk for the night market and a road I do not trust. Walk with me and there are forty coins in it, more when the sale closes.",
+          "choices": [
+            {
+              "text": "What is wrong with the road?",
+              "next": "road"
+            },
+            {
+              "text": "I will walk you there.",
+              "next": "accept",
+              "set": [
+                {
+                  "flag": "escort_accepted"
+                }
+              ]
+            },
+            {
+              "text": "Find someone else.",
+              "next": "decline",
+              "set": [
+                {
+                  "flag": "escort_declined"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "road",
+          "text": "Bandits, twice this month. They do not care who is driving.",
+          "next": "greet"
+        },
+        {
+          "id": "accept",
+          "text": "Good. Stay close and keep your eyes on the treeline."
+        },
+        {
+          "id": "decline",
+          "text": "Then I will take my chances alone."
+        }
+      ]
+    },
+    {
+      "id": "market_sale",
+      "actor": "buyer",
+      "title": "Lysa closes the deal",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "Tobin's silk? I was about to give up on you. Let me see the bolts.",
+          "next": "close"
+        },
+        {
+          "id": "close",
+          "text": "Fine work. Here is the price, and a share for the road."
+        }
+      ]
+    }
+  ]
+}

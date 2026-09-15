@@ -48,6 +48,10 @@
             "kind": "talk",
             "actor": "fisher"
           },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "maren_intro"
+          },
           "location": "dock",
           "actors": [
             "fisher"
@@ -108,6 +112,10 @@
           "outcome": {
             "name": "returned",
             "title": "Net returned"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "maren_return"
           },
           "location": "dock",
           "actors": [

@@ -51,6 +51,10 @@
             "kind": "talk",
             "actor": "organizer"
           },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "festival_plan"
+          },
           "location": "square",
           "actors": [
             "organizer"
@@ -126,6 +130,10 @@
             "kind": "talk",
             "actor": "bandleader"
           },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "band_hire"
+          },
           "location": "square",
           "actors": [
             "bandleader"
@@ -191,6 +199,10 @@
           "outcome": {
             "name": "opened",
             "title": "The festival opens"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "festival_open"
           },
           "location": "square",
           "actors": [

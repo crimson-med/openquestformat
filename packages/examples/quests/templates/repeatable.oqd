@@ -1,0 +1,11 @@
+OQD1
+A	cook|Cook Bartholomew
+C	order_taken	0	greet	Bartholomew places the order
+N	greet						Three sardines for tonight's stew. The morning boats are already out, so you will have to fish for them yourself.
+O	fresh					How fresh do they need to be?
+O	go					Three sardines. On it.
+N	fresh		l	greet			Caught today. Yesterday's sardine is bait, not supper.
+N	go						Good. The galley door is open until the stew goes on.
+C	order_delivered	0	thanks	Bartholomew takes the sardines
+N	thanks			pay			Three, and still wet. That is a proper order.
+N	pay						Here is your coin. Same again tomorrow, if the notice board still has it up.

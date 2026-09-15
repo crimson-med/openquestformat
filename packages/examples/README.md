@@ -11,19 +11,22 @@ the compact and the JSON form, and a serializer must reproduce the compact bytes
 normalization. Nothing here is generated, so edits are deliberate and reviewable.
 
 `quests/templates/` holds small quests that each isolate one pattern the model supports, valid and
-warning free, in `.oqf` and `.json` pairs. The editor offers them under "New from template".
+warning free, in `.oqf` and `.json` pairs. Every template with a `talk` step also ships its
+conversations as an `.oqd` and `.dialogue.json` pair, one conversation per talk step, bound from the
+step's `dialogue` cell; `engine-hooks` is the only template without dialogue. The editor offers them
+under "New from template".
 
-| Template | Pattern |
-|----------|---------|
-| `linear` | One step after another, a step reward and a quest-level reward. |
-| `branching` | A decision tree with four endings, one failed. Choices are dialogue exits (`talk actor conversation#node`), with `branching.oqd` and `branching.dialogue.json` holding the conversations. |
-| `repeatable` | A quest flagged `r`, gated by a quest `unlock`, retaken after every outcome. |
-| `loop` | Two `repeat` steps that unlock each other: a failed cast sends the player to mend the line, and the loop exits when the cast succeeds. |
-| `recurring-step` | One `repeat` step with no cycle, re-armed whenever its flag goes false and true again. |
-| `parallel` | Several steps active at once, an `and` join, an optional bonus, and a step unlocked by another step's counter. |
-| `failure` | An `activate` gate, fail objectives on the road and on a timer, and three failed outcomes. |
-| `chain` | Three quests in one file: unlocked by another quest's outcome, by its status, and a step reading a step of another quest. |
-| `engine-hooks` | What the engine owns: `var.*` reads, a `custom` objective, `unlock`, `flag`, `event` and `custom` rewards, payloads and extension keys. |
+| Template | Pattern | Dialogue |
+|----------|---------|----------|
+| `linear` | One step after another, a step reward and a quest-level reward. | Maren asks for her net, then takes it back. |
+| `branching` | A decision tree with four endings, one failed. Choices are dialogue exits (`talk actor conversation#node`). | The keeper's question and the smuggler's offer, each choice a bound exit. |
+| `repeatable` | A quest flagged `r`, gated by a quest `unlock`, retaken after every outcome. | The cook places the order, then takes the sardines. |
+| `loop` | Two `repeat` steps that unlock each other: a failed cast sends the player to mend the line, and the loop exits when the cast succeeds. | Wen tells of the eel, then sees it landed. |
+| `recurring-step` | One `repeat` step with no cycle, re-armed whenever its flag goes false and true again. | Ines offers bell duty, then takes it back. |
+| `parallel` | Several steps active at once, an `and` join, an optional bonus, and a step unlocked by another step's counter. | Pim lists what the square needs, Suli agrees to play, Pim opens the festival. |
+| `failure` | An `activate` gate, fail objectives on the road and on a timer, and three failed outcomes. | Tobin's offer sets `escort_accepted` or `escort_declined` from a choice, so the gate and the refusal come from the dialogue alone; Lysa closes the sale. |
+| `chain` | Three quests in one file: unlocked by another quest's outcome, by its status, and a step reading a step of another quest. | Rosa asks about the voyage, then signs the log. |
+| `engine-hooks` | What the engine owns: `var.*` reads, a `custom` objective, `unlock`, `flag`, `event` and `custom` rewards, payloads and extension keys. | None, there is no talk step. |
 
 To add a fixture, write the file into `quests/` (or `quests/broken/` for an invalid one), then add an
 entry to `EXAMPLES` in `src/index.ts` so tests can reach it by name. Use real TAB characters between

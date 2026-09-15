@@ -1,0 +1,11 @@
+OQD1
+A	harbormaster|Harbormaster Ines
+C	bell_duty	0	greet	Ines offers bell duty
+N	greet						The storm bell needs a runner. When it rings, get to the tower and see that it is answered. It will ring more than once.
+O	pay					What does it pay?
+O	accept					I will take the duty.
+N	pay		l	greet			Three coins a bell. Not much, but the bell does not care about the weather.
+N	accept						Good. Keep an ear out.
+C	bell_retire	0	greet	Ines takes the duty back
+N	greet			farewell			Handing it back? Fair enough, you have run enough stairs.
+N	farewell						The next runner will hear about you. Go dry your boots.

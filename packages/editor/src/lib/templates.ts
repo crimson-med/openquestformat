@@ -12,13 +12,20 @@ import ledgerDialogue from '../../../examples/quests/harbormasters-ledger.oqd?ra
 import ledgerQuest from '../../../examples/quests/harbormasters-ledger.oqf?raw'
 import branchingDialogue from '../../../examples/quests/templates/branching.oqd?raw'
 import branchingQuest from '../../../examples/quests/templates/branching.oqf?raw'
+import chainDialogue from '../../../examples/quests/templates/chain.oqd?raw'
 import chainQuest from '../../../examples/quests/templates/chain.oqf?raw'
 import engineHooksQuest from '../../../examples/quests/templates/engine-hooks.oqf?raw'
+import failureDialogue from '../../../examples/quests/templates/failure.oqd?raw'
 import failureQuest from '../../../examples/quests/templates/failure.oqf?raw'
+import linearDialogue from '../../../examples/quests/templates/linear.oqd?raw'
 import linearQuest from '../../../examples/quests/templates/linear.oqf?raw'
+import loopDialogue from '../../../examples/quests/templates/loop.oqd?raw'
 import loopQuest from '../../../examples/quests/templates/loop.oqf?raw'
+import parallelDialogue from '../../../examples/quests/templates/parallel.oqd?raw'
 import parallelQuest from '../../../examples/quests/templates/parallel.oqf?raw'
+import recurringStepDialogue from '../../../examples/quests/templates/recurring-step.oqd?raw'
 import recurringStepQuest from '../../../examples/quests/templates/recurring-step.oqf?raw'
+import repeatableDialogue from '../../../examples/quests/templates/repeatable.oqd?raw'
 import repeatableQuest from '../../../examples/quests/templates/repeatable.oqf?raw'
 
 export interface QuestTemplate {
@@ -35,6 +42,7 @@ export const TEMPLATES: QuestTemplate[] = [
     title: 'Simple linear quest',
     description: 'One step after another, ending in a single outcome.',
     quest: linearQuest,
+    dialogue: linearDialogue,
   },
   {
     id: 'branching',
@@ -48,36 +56,42 @@ export const TEMPLATES: QuestTemplate[] = [
     title: 'Repeatable quest',
     description: 'A daily quest, gated by a quest unlock, taken again after every outcome.',
     quest: repeatableQuest,
+    dialogue: repeatableDialogue,
   },
   {
     id: 'loop',
     title: 'Looped quest',
     description: 'Two repeat steps that cycle until the player succeeds.',
     quest: loopQuest,
+    dialogue: loopDialogue,
   },
   {
     id: 'recurring-step',
     title: 'Recurring step',
     description: 'One repeat step that re-arms whenever its flag toggles.',
     quest: recurringStepQuest,
+    dialogue: recurringStepDialogue,
   },
   {
     id: 'parallel',
     title: 'Parallel objectives',
     description: 'Steps active at once, an and join, an optional bonus and a counter milestone.',
     quest: parallelQuest,
+    dialogue: parallelDialogue,
   },
   {
     id: 'failure',
     title: 'Fail states',
     description: 'An accept gate, fail objectives and several failed outcomes.',
     quest: failureQuest,
+    dialogue: failureDialogue,
   },
   {
     id: 'chain',
     title: 'Quest chain',
     description: 'Three quests unlocked by outcomes, status and steps of each other.',
     quest: chainQuest,
+    dialogue: chainDialogue,
   },
   {
     id: 'engine-hooks',

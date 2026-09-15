@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "angler",
+      "name": "Old Angler Wen"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "eel_tale",
+      "actor": "angler",
+      "title": "Wen tells of the eel",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "There is an eel under the deep pier that has snapped every line I ever cast. Forty years of trying.",
+          "choices": [
+            {
+              "text": "What does it take?",
+              "next": "how"
+            },
+            {
+              "text": "I will land it.",
+              "next": "go"
+            }
+          ]
+        },
+        {
+          "id": "how",
+          "text": "Patience, and twine to mend what it breaks. The eel takes the hook every time. The line is what fails.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "go",
+          "text": "Then bring twine. You will need more than you think."
+        }
+      ]
+    },
+    {
+      "id": "eel_landed",
+      "actor": "angler",
+      "title": "Wen sees the eel",
+      "start": "look",
+      "nodes": [
+        {
+          "id": "look",
+          "text": "Well. There it is. Forty years, and a stranger lands it in an afternoon.",
+          "next": "farewell"
+        },
+        {
+          "id": "farewell",
+          "text": "Take the trophy, and the coin. I will tell it differently at the tavern."
+        }
+      ]
+    }
+  ]
+}

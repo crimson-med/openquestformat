@@ -1,0 +1,11 @@
+OQD1
+A	angler|Old Angler Wen
+C	eel_tale	0	greet	Wen tells of the eel
+N	greet						There is an eel under the deep pier that has snapped every line I ever cast. Forty years of trying.
+O	how					What does it take?
+O	go					I will land it.
+N	how		l	greet			Patience, and twine to mend what it breaks. The eel takes the hook every time. The line is what fails.
+N	go						Then bring twine. You will need more than you think.
+C	eel_landed	0	look	Wen sees the eel
+N	look			farewell			Well. There it is. Forty years, and a stranger lands it in an afternoon.
+N	farewell						Take the trophy, and the coin. I will tell it differently at the tavern.

@@ -6,7 +6,7 @@ T	tutorial
 Q	lost_net	1		0		The Lost Net	Maren lost her net on the reef. Swim out, bring it back, and collect a reward.
 R	coins_found	currency	coins	5
 R	xp_finished	xp	xp	25	returned
-S	talk_maren	s			talk fisher					0	0	Speak with Maren	Maren is pacing the north dock. Her best net snagged on the reef this morning.
+S	talk_maren	s			talk fisher				oqf:maren_intro	0	0	Speak with Maren	Maren is pacing the north dock. Her best net snagged on the reef this morning.
 S	swim_reef		step.talk_maren		reach reef					1		Swim out to the reef
 S	collect_net		step.swim_reef		collect net			0		1		Untangle the net from the coral
-S	return_net		step.collect_net		talk fisher		returned|Net returned			0	0	Bring the net back to Maren
+S	return_net		step.collect_net		talk fisher		returned|Net returned		oqf:maren_return	0	0	Bring the net back to Maren

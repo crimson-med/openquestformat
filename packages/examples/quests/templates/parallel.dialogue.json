@@ -1,0 +1,96 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "organizer",
+      "name": "Festival organizer Pim"
+    },
+    {
+      "id": "bandleader",
+      "name": "Bandleader Suli"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "festival_plan",
+      "actor": "organizer",
+      "title": "Pim lists what the square needs",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "The festival is in three days and the square is bare. I need lanterns, bunting and a band, in whatever order you can manage.",
+          "choices": [
+            {
+              "text": "Anything else?",
+              "next": "pies"
+            },
+            {
+              "text": "I will get started.",
+              "next": "go"
+            }
+          ]
+        },
+        {
+          "id": "pies",
+          "text": "Fish pies, if you can. Nobody dances hungry. That is a bonus, not a condition.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "go",
+          "text": "Suli is by the fountain if you want to start with the band."
+        }
+      ]
+    },
+    {
+      "id": "band_hire",
+      "actor": "bandleader",
+      "title": "Suli agrees to play",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "Pim sent you? We will play, if the square has somewhere to stand and the pay is honest.",
+          "choices": [
+            {
+              "text": "What do you play?",
+              "next": "play"
+            },
+            {
+              "text": "Consider it booked.",
+              "next": "booked"
+            }
+          ]
+        },
+        {
+          "id": "play",
+          "text": "Whatever keeps feet moving. Reels, mostly.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "booked",
+          "text": "Then we start tuning. Save us a pie."
+        }
+      ]
+    },
+    {
+      "id": "festival_open",
+      "actor": "organizer",
+      "title": "Pim opens the festival",
+      "start": "look",
+      "nodes": [
+        {
+          "id": "look",
+          "text": "Lanterns up, bunting hung, and I can hear Suli tuning from here.",
+          "next": "open"
+        },
+        {
+          "id": "open",
+          "text": "That is a festival. Ring the bell, we are open."
+        }
+      ]
+    }
+  ]
+}
