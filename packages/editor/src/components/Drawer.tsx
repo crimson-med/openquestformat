@@ -28,6 +28,7 @@ export function Drawer({
 }) {
   const state = useEditorState()
   const counts = countFindings(state.findings)
+  const total = counts.errors + counts.warnings
 
   const tabButton = (value: DrawerTab, label: ReactNode) => (
     <button
@@ -45,7 +46,13 @@ export function Drawer({
   return (
     <section className={open ? 'drawer open' : 'drawer'}>
       <header className="drawer-head">
-        <nav className="tabs">
+        {!open && counts.errors > 0 ? (
+          <span
+            className="drawer-dot"
+            title={`${counts.errors} error${counts.errors === 1 ? '' : 's'}`}
+          />
+        ) : null}
+        <nav className="tabs" aria-label="Drawer panels">
           {tabButton(
             'validation',
             <>
@@ -54,15 +61,21 @@ export function Drawer({
                 className={
                   counts.errors > 0 ? 'pill error' : counts.warnings > 0 ? 'pill warning' : 'pill'
                 }
+                title={`${counts.errors} error${counts.errors === 1 ? '' : 's'}, ${counts.warnings} warning${counts.warnings === 1 ? '' : 's'}`}
               >
-                {counts.errors + counts.warnings}
+                {total}
               </span>
             </>,
           )}
           {tabButton('source', 'Source')}
           {tabButton('play', 'Dialogue play')}
         </nav>
-        <button type="button" className="ghost" onClick={() => onOpen(!open)}>
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => onOpen(!open)}
+          title={open ? 'Hide the drawer' : 'Show the drawer'}
+        >
           {open ? 'Hide' : 'Show'}
         </button>
       </header>

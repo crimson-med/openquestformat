@@ -26,19 +26,19 @@
   gap: 6px;
 }
 
+/* Same label as the inspector's .field-label. */
 .strings-group > label {
   font-size: 13px;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--text);
 }
 
 .strings-bar .picker-select {
   width: auto;
-  padding: 6px 10px;
 }
 
 .strings-bar .input.code {
   width: 88px;
-  padding: 6px 10px;
   font-family: var(--mono);
 }
 
@@ -158,7 +158,7 @@
 }
 
 .strings-table .input {
-  padding: 6px 8px;
+  padding: 0 8px;
 }
 
 .strings-empty {

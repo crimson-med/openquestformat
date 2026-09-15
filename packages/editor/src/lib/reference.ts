@@ -1,9 +1,9 @@
 /**
  * The reference quest, compiled into the bundle.
  *
- * Both files come straight from `packages/examples`, so "Load reference quest"
- * always shows the fixture every other package tests against, not a copy that
- * can drift.
+ * Both files come straight from `packages/examples`, so a host that loads the
+ * reference always gets the fixture every other package tests against, not a
+ * copy that can drift. The editor itself reaches it through the templates.
  */
 import type { OqfDocument } from '@oqf/core'
 import { parseCompact } from '@oqf/core'
