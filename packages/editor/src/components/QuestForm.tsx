@@ -13,6 +13,7 @@ import { FindingList } from './FindingList'
 import {
   CheckField,
   ConditionField,
+  ManageButton,
   NumberField,
   PickerField,
   RequiredField,
@@ -79,6 +80,7 @@ export function QuestForm({ quest }: { quest: Quest }) {
             label: ref.name ?? ref.id,
           }))}
           emptyNote="No tags in this file's dictionary yet."
+          action={<ManageButton />}
           onChange={(values) => set('tags', values)}
         />
         <FileField

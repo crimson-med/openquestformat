@@ -10,6 +10,7 @@
 import { type Condition, OBJECTIVE_KINDS, STEP_STATES } from '@oqf/core'
 import { findQuest, outcomeNames } from '../store/selectors'
 import type { EditorState } from '../store/types'
+import { ENTRY_NOUN, type EntryKind } from './dictionaries'
 
 export interface Vocabulary {
   /** Step ids of the current quest, for `step.` and `count.`. */
@@ -39,6 +40,8 @@ export interface Suggestion {
   /** Short category, for example "step", "flag", "keyword". */
   detail: string
   range: { start: number; end: number }
+  /** Set on a "Create ..." suggestion: accepting it also adds this dictionary entry. */
+  create?: { kind: EntryKind; id: string }
 }
 
 export type SuggestMode = 'condition' | 'completion'
@@ -56,6 +59,15 @@ const AFTER_STEP_PATH = /(^|[\s(])step\.[A-Za-z0-9_#.-]+\s+$/
 /** A `step.x` path, an equality operator and optional whitespace, right before the token. */
 const AFTER_STEP_COMPARISON = /(^|[\s(])step\.[A-Za-z0-9_#.-]+\s*(==|!=)\s*$/
 const AFTER_COUNT_PATH = /(^|[\s(])count\.[A-Za-z0-9_#.-]+\s+$/
+/** Objective kinds whose reference is a dictionary entry, and which dictionary. */
+const REF_DICTIONARY: Record<string, EntryKind> = {
+  talk: 'actors',
+  kill: 'actors',
+  reach: 'locations',
+  collect: 'items',
+}
+/** What a new dictionary id may look like: a name, not a count. */
+const ENTRY_ID = /^[A-Za-z_][A-Za-z0-9_.]*$/
 
 function collectPaths(condition: Condition | undefined, into: (path: string) => void): void {
   if (condition === undefined || condition === null || typeof condition !== 'object') return
@@ -243,6 +255,37 @@ function completionCandidates(token: string, before: string, vocabulary: Vocabul
   return candidates
 }
 
+/**
+ * A "Create actor x" offer when the token is the reference of a `talk`, `kill`,
+ * `reach` or `collect` objective and no dictionary entry has that id yet. Only
+ * offered once nothing in the vocabulary matches, so it never crowds a prefix.
+ */
+function createSuggestion(
+  token: string,
+  before: string,
+  vocabulary: Vocabulary,
+  range: Suggestion['range'],
+): Suggestion | undefined {
+  const words = before.split(/\s+/).filter((entry) => entry !== '')
+  if (words.length !== 1 || !ENTRY_ID.test(token)) return undefined
+  const kind: EntryKind | undefined = REF_DICTIONARY[words[0].toLowerCase()]
+  if (kind === undefined) return undefined
+  const known: string[] =
+    kind === 'actors'
+      ? vocabulary.actors
+      : kind === 'items'
+        ? vocabulary.items
+        : vocabulary.locations
+  if (known.includes(token)) return undefined
+  return {
+    label: `Create ${ENTRY_NOUN[kind]} ${token}`,
+    insert: token,
+    detail: 'create',
+    range,
+    create: { kind, id: token },
+  }
+}
+
 function insideString(text: string, caret: number): boolean {
   let inside = false
   for (let at = 0; at < caret; at += 1) {
@@ -285,10 +328,10 @@ export function suggest(
     else if (entry.match.toLowerCase().startsWith(lowered)) loose.push(entry)
   }
   const range = { start, end: at }
-  return [...exact, ...loose].slice(0, LIMIT).map(({ label, insert, detail }) => ({
-    label,
-    insert,
-    detail,
-    range,
-  }))
+  const list = [...exact, ...loose]
+    .slice(0, LIMIT)
+    .map(({ label, insert, detail }) => ({ label, insert, detail, range }))
+  if (list.length > 0 || mode !== 'completion') return list
+  const create = createSuggestion(token, before, vocabulary, range)
+  return create === undefined ? list : [create]
 }

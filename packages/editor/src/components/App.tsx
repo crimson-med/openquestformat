@@ -1,6 +1,7 @@
 /**
  * The three panes: graph, inspector, drawer. Everything else is a child of one
- * of them.
+ * of them. The Strings and Dictionaries views replace the graph and inspector
+ * with one full-width pane; the drawer stays.
  */
 import { ReactFlowProvider } from '@xyflow/react'
 import { useEffect, useMemo, useState } from 'react'
@@ -20,20 +21,33 @@ import {
 } from '../store/selectors'
 import { CommandPalette } from './CommandPalette'
 import { DialogueGraph } from './DialogueGraph'
+import { DictionariesPanel } from './DictionariesPanel'
 import { Drawer, type DrawerTab } from './Drawer'
 import { EmptyState } from './EmptyState'
 import { Inspector } from './Inspector'
 import { PlaytestProvider } from './PlaytestContext'
 import { QuestGraph } from './QuestGraph'
 import { StringsProvider } from './StringsContext'
+import { StringsPanel } from './StringsPanel'
 import { type Tab, Toolbar } from './Toolbar'
+import { ViewContext } from './ViewContext'
 import { useFileActions } from './useFileActions'
 
 const DRAWER_TABS: { tab: DrawerTab; title: string }[] = [
   { tab: 'validation', title: 'Validation' },
   { tab: 'source', title: 'Source' },
   { tab: 'play', title: 'Play' },
-  { tab: 'strings', title: 'Strings' },
+]
+
+const VIEWS: { tab: Tab; title: string; keywords: string[] }[] = [
+  { tab: 'quests', title: 'Switch to Quests', keywords: ['tab', 'graph'] },
+  { tab: 'dialogue', title: 'Switch to Dialogue', keywords: ['tab', 'conversation'] },
+  { tab: 'strings', title: 'Switch to Strings', keywords: ['tab', 'translation', 'i18n'] },
+  {
+    tab: 'dictionaries',
+    title: 'Switch to Dictionaries',
+    keywords: ['tab', 'actors', 'locations', 'items', 'tags', 'speakers'],
+  },
 ]
 
 /** True when a keystroke belongs to a field rather than to the canvas. */
@@ -168,9 +182,13 @@ function AppContent() {
 
   const canvasPicker = questPicker ?? conversationPicker
 
-  /** Switching view moves the inspector to that view, so the two never disagree. */
+  /**
+   * Switching to a graph moves the inspector to that graph, so the two never
+   * disagree. The Strings and Dictionaries views leave the selection alone.
+   */
   const switchTab = (next: Tab) => {
     setTab(next)
+    if (next === 'strings' || next === 'dictionaries') return
     const kind = state.selection.kind
     if (next === 'quests' && (kind === 'conversation' || kind === 'node' || kind === 'choice')) {
       if (questId !== undefined) {
@@ -309,20 +327,15 @@ function AppContent() {
     }
 
     list.push(
-      {
-        id: 'view/quests',
-        title: 'Switch to Quests',
-        group: 'View',
-        keywords: ['tab', 'graph'],
-        run: () => switchTab('quests'),
-      },
-      {
-        id: 'view/dialogue',
-        title: 'Switch to Dialogue',
-        group: 'View',
-        keywords: ['tab', 'conversation'],
-        run: () => switchTab('dialogue'),
-      },
+      ...VIEWS.map(
+        (entry): Command => ({
+          id: `view/${entry.tab}`,
+          title: entry.title,
+          group: 'View',
+          keywords: entry.keywords,
+          run: () => switchTab(entry.tab),
+        }),
+      ),
       {
         id: 'view/drawer',
         title: drawerOpen ? 'Hide drawer' : 'Show drawer',
@@ -451,93 +464,106 @@ function AppContent() {
   }, [state, tab, drawerOpen, direction, quest, conversation, dispatch])
 
   return (
-    <div className="app">
-      <Toolbar tab={tab} onTab={switchTab} files={files} onCommands={() => setPaletteOpen(true)} />
-      <CommandPalette
-        open={paletteOpen}
-        commands={commands}
-        onClose={() => setPaletteOpen(false)}
-      />
-      {notice === undefined ? null : (
-        <output className="notice">
-          {notice}
-          <button type="button" className="ghost" onClick={() => setNotice(undefined)}>
-            Dismiss
-          </button>
-        </output>
-      )}
-      <main className="panes">
-        <section className="canvas">
-          {canvasPicker === null ? null : <div className="canvas-head">{canvasPicker}</div>}
-          {tab === 'quests' ? (
-            quest === undefined ? (
-              <EmptyState
-                title="Nothing open"
-                body="Open a file or load the reference quest."
-                actions={
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const reference = loadReference()
-                        dispatch({
-                          type: 'doc/load',
-                          quests: reference.quests,
-                          dialogues: reference.dialogues,
-                        })
-                      }}
-                    >
-                      Load reference quest
+    <ViewContext.Provider value={{ tab, setTab: switchTab }}>
+      <div className="app">
+        <Toolbar
+          tab={tab}
+          onTab={switchTab}
+          files={files}
+          onCommands={() => setPaletteOpen(true)}
+        />
+        <CommandPalette
+          open={paletteOpen}
+          commands={commands}
+          onClose={() => setPaletteOpen(false)}
+        />
+        {notice === undefined ? null : (
+          <output className="notice">
+            {notice}
+            <button type="button" className="ghost" onClick={() => setNotice(undefined)}>
+              Dismiss
+            </button>
+          </output>
+        )}
+        {tab === 'strings' || tab === 'dictionaries' ? (
+          <section className="view">
+            {tab === 'strings' ? <StringsPanel /> : <DictionariesPanel onShow={setTab} />}
+          </section>
+        ) : (
+          <main className="panes">
+            <section className="canvas">
+              {canvasPicker === null ? null : <div className="canvas-head">{canvasPicker}</div>}
+              {tab === 'quests' ? (
+                quest === undefined ? (
+                  <EmptyState
+                    title="Nothing open"
+                    body="Open a file or load the reference quest."
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const reference = loadReference()
+                            dispatch({
+                              type: 'doc/load',
+                              quests: reference.quests,
+                              dialogues: reference.dialogues,
+                            })
+                          }}
+                        >
+                          Load reference quest
+                        </button>
+                        <button type="button" onClick={() => dispatch({ type: 'quest/add' })}>
+                          Start an empty quest
+                        </button>
+                      </>
+                    }
+                  />
+                ) : (
+                  <ReactFlowProvider>
+                    <QuestGraph
+                      key={`${quest.id}-${direction}`}
+                      quest={quest}
+                      direction={direction}
+                      onDirection={changeDirection}
+                    />
+                  </ReactFlowProvider>
+                )
+              ) : conversation === undefined ? (
+                <EmptyState
+                  title="No conversations"
+                  body="Open an .oqd file or add a conversation to start writing dialogue."
+                  actions={
+                    <button type="button" onClick={() => dispatch({ type: 'conversation/add' })}>
+                      Add a conversation
                     </button>
-                    <button type="button" onClick={() => dispatch({ type: 'quest/add' })}>
-                      Start an empty quest
-                    </button>
-                  </>
-                }
-              />
-            ) : (
-              <ReactFlowProvider>
-                <QuestGraph
-                  key={`${quest.id}-${direction}`}
-                  quest={quest}
-                  direction={direction}
-                  onDirection={changeDirection}
+                  }
                 />
-              </ReactFlowProvider>
-            )
-          ) : conversation === undefined ? (
-            <EmptyState
-              title="No conversations"
-              body="Open an .oqd file or add a conversation to start writing dialogue."
-              actions={
-                <button type="button" onClick={() => dispatch({ type: 'conversation/add' })}>
-                  Add a conversation
-                </button>
-              }
-            />
-          ) : (
-            <ReactFlowProvider>
-              <DialogueGraph
-                key={`${conversation.id}-${direction}`}
-                conversation={conversation}
-                direction={direction}
-                onDirection={changeDirection}
-              />
-            </ReactFlowProvider>
-          )}
-        </section>
-        <aside className="inspector">
-          <Inspector />
-        </aside>
-      </main>
-      <Drawer
-        tab={drawerTab}
-        onTab={setDrawerTab}
-        open={drawerOpen}
-        onOpen={setDrawerOpen}
-        conversation={conversationId}
-      />
-    </div>
+              ) : (
+                <ReactFlowProvider>
+                  <DialogueGraph
+                    key={`${conversation.id}-${direction}`}
+                    conversation={conversation}
+                    direction={direction}
+                    onDirection={changeDirection}
+                  />
+                </ReactFlowProvider>
+              )}
+            </section>
+            <aside className="inspector">
+              <Inspector />
+            </aside>
+          </main>
+        )}
+        <Drawer
+          tab={drawerTab}
+          onTab={setDrawerTab}
+          open={drawerOpen}
+          onOpen={setDrawerOpen}
+          conversation={conversationId}
+        />
+      </div>
+    </ViewContext.Provider>
   )
 }
 

@@ -8,7 +8,14 @@ import { useDispatch, useEditorState } from '../store/context'
 import { countFindings } from '../store/findings'
 import type { FileActions } from './useFileActions'
 
-export type Tab = 'quests' | 'dialogue'
+export type Tab = 'quests' | 'dialogue' | 'strings' | 'dictionaries'
+
+const TABS: { tab: Tab; title: string }[] = [
+  { tab: 'quests', title: 'Quests' },
+  { tab: 'dialogue', title: 'Dialogue' },
+  { tab: 'strings', title: 'Strings' },
+  { tab: 'dictionaries', title: 'Dictionaries' },
+]
 
 export function Toolbar({
   tab,
@@ -45,20 +52,16 @@ export function Toolbar({
       </div>
 
       <nav className="tabs" aria-label="Editor views">
-        <button
-          type="button"
-          className={tab === 'quests' ? 'tab on' : 'tab'}
-          onClick={() => onTab('quests')}
-        >
-          Quests
-        </button>
-        <button
-          type="button"
-          className={tab === 'dialogue' ? 'tab on' : 'tab'}
-          onClick={() => onTab('dialogue')}
-        >
-          Dialogue
-        </button>
+        {TABS.map((entry) => (
+          <button
+            key={entry.tab}
+            type="button"
+            className={tab === entry.tab ? 'tab on' : 'tab'}
+            onClick={() => onTab(entry.tab)}
+          >
+            {entry.title}
+          </button>
+        ))}
       </nav>
 
       <div className="counts">

@@ -6,9 +6,17 @@
  * on every change rather than stored as an edit, so they can never drift from
  * the documents they describe.
  */
-import { type Quest, type Reward, type Step, emptyDocument } from '@oqf/core'
+import { type Quest, type Ref, type Reward, type Step, emptyDocument } from '@oqf/core'
 import { type Conversation, type DialogueNode, emptyDialogueDocument } from '@oqf/dialogue'
 import { linkSteps, unlinkSteps } from '../lib/connections'
+import {
+  type EntryKind,
+  addEntry,
+  entriesOf,
+  removeEntry,
+  renameEntry,
+  renameUsages,
+} from '../lib/dictionaries'
 import { type Position, writePosition } from '../lib/position'
 import type { Action, DictionaryKind } from './actions'
 import { isMutating } from './actions'
@@ -143,6 +151,15 @@ function indexOfId<T extends { id: string }>(items: T[], id: string): number {
   return items.findIndex((item) => item.id === id)
 }
 
+/** Writes one dictionary back to the document that owns it. */
+function writeEntries(docs: Documents, kind: EntryKind, refs: Ref[]): Documents {
+  if (kind === 'speakers') return { ...docs, dialogues: { ...docs.dialogues, speakers: refs } }
+  return {
+    ...docs,
+    quests: { ...docs.quests, dictionaries: { ...docs.quests.dictionaries, [kind]: refs } },
+  }
+}
+
 function applyEdit(state: EditorState, action: Action): Documents {
   const docs: Documents = {
     quests: state.quests,
@@ -173,6 +190,20 @@ function applyEdit(state: EditorState, action: Action): Documents {
     }
     case 'speakers/set':
       return { ...docs, dialogues: { ...docs.dialogues, speakers: action.speakers } }
+    case 'dict/add': {
+      const refs = entriesOf(docs, action.kind)
+      const next = addEntry(refs, action.id, action.name)
+      return next === refs ? docs : writeEntries(docs, action.kind, next)
+    }
+    case 'dict/rename': {
+      const refs = entriesOf(docs, action.kind)
+      const next = renameEntry(refs, action.id, action.to, action.name)
+      if (next === refs) return docs
+      const renamed = renameUsages(docs, action.kind, action.id, action.to)
+      return writeEntries({ ...docs, ...renamed }, action.kind, next)
+    }
+    case 'dict/remove':
+      return writeEntries(docs, action.kind, removeEntry(entriesOf(docs, action.kind), action.id))
 
     case 'quest/add': {
       const id = uniqueId(

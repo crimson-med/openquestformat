@@ -1,0 +1,131 @@
+/* Dictionaries view: the kind switch, the add form and the entries table. */
+
+.dictionaries {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 20px 20px;
+}
+
+.dict-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 16px 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.dict-kinds button {
+  font-family: var(--sans);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dict-kinds button .pill {
+  font-family: var(--mono);
+}
+
+.dict-spacer {
+  flex: 1;
+}
+
+.dict-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.dict-add .input {
+  width: 260px;
+  max-width: 100%;
+}
+
+.dict-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: var(--field);
+}
+
+.dict-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.dict-table th,
+.dict-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+
+.dict-table th {
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dict-table col.id {
+  width: 28%;
+}
+
+.dict-table col.usage {
+  width: 180px;
+}
+
+.dict-table col.actions {
+  width: 96px;
+}
+
+.dict-table td.actions {
+  text-align: right;
+}
+
+.dict-table tr.unused td {
+  color: var(--muted);
+}
+
+.dict-table .input {
+  padding: 6px 8px;
+}
+
+.dict-table .input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.dict-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dict-usage-toggle {
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.dict-usages td {
+  padding: 6px 10px 10px 24px;
+  background: var(--panel-2);
+}
+
+.dict-usages .row-main {
+  padding: 5px 6px;
+}
+
+.dict-empty {
+  padding: 24px 12px;
+  text-align: center;
+}

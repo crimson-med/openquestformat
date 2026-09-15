@@ -1302,3 +1302,24 @@ textarea.input {
     grid-template-columns: 1fr;
   }
 }
+
+/* Full-width views (Strings, Dictionaries) in place of the canvas and inspector */
+
+.view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--panel);
+}
+
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.field-head .ghost {
+  padding: 0 6px;
+  font-size: 12px;
+}

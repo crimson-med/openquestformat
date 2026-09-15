@@ -15,6 +15,8 @@ import {
 } from '@oqf/core'
 import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { Suggestion } from '../lib/suggest'
+import { useDispatch } from '../store/context'
+import { useView } from './ViewContext'
 import '../styles/suggest.css'
 
 /** Offers completions for the token ending at `caret`. See lib/suggest.ts. */
@@ -28,23 +30,51 @@ export function Field({
   label,
   hint,
   error,
+  action,
   children,
 }: {
   label: string
   hint?: string
   error?: string
+  /** A small control beside the label, for example a Manage link. */
+  action?: ReactNode
   children: ReactNode
 }) {
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: the control is the caller's child
     <label className="field">
-      <span className="field-label">{label}</span>
+      {action === undefined ? (
+        <span className="field-label">{label}</span>
+      ) : (
+        <span className="field-head">
+          <span className="field-label">{label}</span>
+          {action}
+        </span>
+      )}
       {children}
       {hint !== undefined && error === undefined ? (
         <span className="field-hint">{hint}</span>
       ) : null}
       {error !== undefined ? <span className="field-error">{error}</span> : null}
     </label>
+  )
+}
+
+/** A ghost link to the Dictionaries view, for pickers fed by a dictionary. */
+export function ManageButton() {
+  const { setTab } = useView()
+  return (
+    <button
+      type="button"
+      className="ghost"
+      title="Open the Dictionaries view"
+      onClick={(event) => {
+        event.preventDefault()
+        setTab('dictionaries')
+      }}
+    >
+      Manage
+    </button>
   )
 }
 
@@ -206,6 +236,7 @@ export function SelectField({
   onChange,
   empty,
   hint,
+  action,
 }: {
   label: string
   value: string | undefined
@@ -213,9 +244,10 @@ export function SelectField({
   onChange: (value: string | undefined) => void
   empty?: string
   hint?: string
+  action?: ReactNode
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} action={action}>
       <select
         className="input"
         value={value ?? ''}
@@ -259,6 +291,7 @@ function ParsedField<T>({
   suggest?: SuggestFn
 }) {
   const listId = useId()
+  const dispatch = useDispatch()
   const inputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState(canonical)
   const [error, setError] = useState<string | undefined>(undefined)
@@ -324,6 +357,10 @@ function ParsedField<T>({
     const at = entry.range.start + entry.insert.length
     setPendingCaret(at)
     update(next, at)
+    // A "Create ..." pick also declares the entry, so the reference resolves at once.
+    if (entry.create !== undefined) {
+      dispatch({ type: 'dict/add', kind: entry.create.kind, id: entry.create.id })
+    }
   }
 
   return (
@@ -495,6 +532,7 @@ export function PickerField({
   onChange,
   hint,
   emptyNote,
+  action,
 }: {
   label: string
   selected: string[]
@@ -502,9 +540,10 @@ export function PickerField({
   onChange: (values: string[]) => void
   hint?: string
   emptyNote?: string
+  action?: ReactNode
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} action={action}>
       {options.length === 0 ? (
         <p className="note">{emptyNote ?? 'Nothing to pick yet.'}</p>
       ) : (

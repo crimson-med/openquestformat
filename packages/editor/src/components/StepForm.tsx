@@ -15,6 +15,7 @@ import {
   CompletionField,
   ConditionField,
   Field,
+  ManageButton,
   PickerField,
   RequiredField,
   Section,
@@ -178,6 +179,7 @@ export function StepForm({ quest, step }: { quest: Quest; step: Step }) {
             value: ref.id,
             label: ref.name === undefined ? ref.id : `${ref.name} (${ref.id})`,
           }))}
+          action={<ManageButton />}
           onChange={(value) => set('location', value)}
         />
         <PickerField
@@ -188,6 +190,7 @@ export function StepForm({ quest, step }: { quest: Quest; step: Step }) {
             label: ref.name ?? ref.id,
           }))}
           emptyNote="No actors in this file's dictionary yet."
+          action={<ManageButton />}
           onChange={(values) => set('actors', values)}
         />
       </Section>
