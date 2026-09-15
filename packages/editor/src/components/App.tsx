@@ -1,10 +1,11 @@
 /**
  * The three panes: graph, inspector, drawer. Everything else is a child of one
  * of them. The Strings and Dictionaries views replace the graph and inspector
- * with one full-width pane; the drawer stays.
+ * with one full-width pane; the drawer stays. Play mode, on the Quests view,
+ * replaces the inspector with the quest playtest and keeps the graph.
  */
 import { ReactFlowProvider } from '@xyflow/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Command } from '../lib/commands'
 import { type Direction, browserStore, readDirection, writeDirection } from '../lib/direction'
 import { downloadText } from '../lib/download'
@@ -25,8 +26,9 @@ import { DictionariesPanel } from './DictionariesPanel'
 import { Drawer, type DrawerTab } from './Drawer'
 import { EmptyState } from './EmptyState'
 import { Inspector } from './Inspector'
-import { PlaytestProvider } from './PlaytestContext'
+import { PlaytestProvider, usePlaytest } from './PlaytestContext'
 import { QuestGraph } from './QuestGraph'
+import { QuestPlayPanel } from './QuestPlayPanel'
 import { StringsProvider } from './StringsContext'
 import { StringsPanel } from './StringsPanel'
 import { type Tab, Toolbar } from './Toolbar'
@@ -36,7 +38,7 @@ import { useFileActions } from './useFileActions'
 const DRAWER_TABS: { tab: DrawerTab; title: string }[] = [
   { tab: 'validation', title: 'Validation' },
   { tab: 'source', title: 'Source' },
-  { tab: 'play', title: 'Play' },
+  { tab: 'play', title: 'Dialogue play' },
 ]
 
 const VIEWS: { tab: Tab; title: string; keywords: string[] }[] = [
@@ -60,9 +62,11 @@ function editingText(target: EventTarget | null): boolean {
 function AppContent() {
   const state = useEditorState()
   const dispatch = useDispatch()
+  const playtest = usePlaytest()
   const [tab, setTab] = useState<Tab>('quests')
   const [drawerTab, setDrawerTab] = useState<DrawerTab>('validation')
   const [drawerOpen, setDrawerOpen] = useState(true)
+  const [playing, setPlaying] = useState(false)
   const [notice, setNotice] = useState<string | undefined>(undefined)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [direction, setDirection] = useState<Direction>(() => readDirection(browserStore()))
@@ -70,12 +74,40 @@ function AppContent() {
     setDirection(next)
     writeDirection(browserStore(), next)
   }
-  const files = useFileActions(setNotice)
 
   const questId = activeQuestId(state)
   const quest = findQuest(state, questId)
   const conversationId = activeConversationId(state)
   const conversation = findConversation(state, conversationId)
+
+  /** Play mode shows on the Quests view with a quest loaded, nowhere else. */
+  const canPlay = tab === 'quests' && quest !== undefined
+  const stopPlaying = playtest.stop
+  const leavePlay = () => {
+    setPlaying(false)
+    stopPlaying()
+  }
+  /** Entering collapses the drawer; leaving stops the session and leaves the drawer alone. */
+  const togglePlay = () => {
+    if (playing) {
+      leavePlay()
+      return
+    }
+    if (!canPlay) return
+    setPlaying(true)
+    setDrawerOpen(false)
+  }
+  // The keydown listener is attached once per document; the ref hands it the current toggle.
+  const togglePlayRef = useRef(togglePlay)
+  togglePlayRef.current = togglePlay
+  const files = useFileActions(setNotice, leavePlay)
+
+  useEffect(() => {
+    if (playing && quest === undefined) {
+      setPlaying(false)
+      stopPlaying()
+    }
+  }, [playing, quest, stopPlaying])
 
   useEffect(() => {
     if (notice === undefined) return
@@ -110,6 +142,11 @@ function AppContent() {
         } catch (failure) {
           setNotice(failure instanceof Error ? failure.message : String(failure))
         }
+        return
+      }
+      if (meta && event.key.toLowerCase() === 'p') {
+        event.preventDefault()
+        togglePlayRef.current()
         return
       }
       if (editingText(event.target)) return
@@ -188,6 +225,7 @@ function AppContent() {
    */
   const switchTab = (next: Tab) => {
     setTab(next)
+    if (next !== 'quests' && playing) leavePlay()
     if (next === 'strings' || next === 'dictionaries') return
     const kind = state.selection.kind
     if (next === 'quests' && (kind === 'conversation' || kind === 'node' || kind === 'choice')) {
@@ -336,6 +374,18 @@ function AppContent() {
           run: () => switchTab(entry.tab),
         }),
       ),
+    )
+    if (playing || canPlay) {
+      list.push({
+        id: 'view/play',
+        title: playing ? 'Stop playing' : 'Play quest',
+        group: 'View',
+        keywords: ['playtest', 'run', 'runtime'],
+        shortcut: '⌘P',
+        run: togglePlay,
+      })
+    }
+    list.push(
       {
         id: 'view/drawer',
         title: drawerOpen ? 'Hide drawer' : 'Show drawer',
@@ -461,7 +511,7 @@ function AppContent() {
       })
     }
     return list
-  }, [state, tab, drawerOpen, direction, quest, conversation, dispatch])
+  }, [state, tab, drawerOpen, direction, quest, conversation, dispatch, playing, canPlay])
 
   return (
     <ViewContext.Provider value={{ tab, setTab: switchTab }}>
@@ -471,6 +521,9 @@ function AppContent() {
           onTab={switchTab}
           files={files}
           onCommands={() => setPaletteOpen(true)}
+          canPlay={canPlay}
+          playing={playing}
+          onPlay={togglePlay}
         />
         <CommandPalette
           open={paletteOpen}
@@ -490,7 +543,7 @@ function AppContent() {
             {tab === 'strings' ? <StringsPanel /> : <DictionariesPanel onShow={setTab} />}
           </section>
         ) : (
-          <main className="panes">
+          <main className={playing && canPlay ? 'panes panes-playing' : 'panes'}>
             <section className="canvas">
               {canvasPicker === null ? null : <div className="canvas-head">{canvasPicker}</div>}
               {tab === 'quests' ? (
@@ -550,9 +603,15 @@ function AppContent() {
                 </ReactFlowProvider>
               )}
             </section>
-            <aside className="inspector">
-              <Inspector />
-            </aside>
+            {playing && canPlay ? (
+              <aside className="inspector play-aside">
+                <QuestPlayPanel />
+              </aside>
+            ) : (
+              <aside className="inspector">
+                <Inspector />
+              </aside>
+            )}
           </main>
         )}
         <Drawer
@@ -569,7 +628,8 @@ function AppContent() {
 
 /**
  * The panes, inside the language tables the Strings tab and the graphs share
- * and the playtest session the Play tab and the quest graph share.
+ * and the playtest session play mode, the dialogue play tab and the quest
+ * graph share.
  */
 export function App() {
   return (

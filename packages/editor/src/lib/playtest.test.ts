@@ -12,6 +12,7 @@ import {
   nextEvents,
   objectiveCount,
   parsePayload,
+  readsWorld,
   stepRole,
   suggestEvents,
 } from './playtest'
@@ -587,5 +588,24 @@ describe('nextEvents', () => {
       ['escort', 'available', true],
     ])
     expect(split.later.map((group) => group.step)).toEqual(['meet_merchant', 'close_sale'])
+  })
+})
+
+describe('readsWorld', () => {
+  it('reads nothing on a quest whose conditions only name steps', () => {
+    expect(readsWorld(branching.quests[0])).toEqual({ flags: false, vars: false })
+  })
+
+  it('finds flags read by a step activate or unlock', () => {
+    expect(readsWorld(failure.quests[0])).toEqual({ flags: true, vars: false })
+  })
+
+  it('finds variables read by the quest unlock and a step unlock', () => {
+    expect(readsWorld(engineHooks.quests[0])).toEqual({ flags: false, vars: true })
+  })
+
+  it('finds a flag read by the quest unlock alone', () => {
+    const quest = { ...repeatable.quests[0], steps: [] }
+    expect(readsWorld(quest)).toEqual({ flags: true, vars: false })
   })
 })

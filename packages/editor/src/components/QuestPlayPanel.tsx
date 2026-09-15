@@ -1,14 +1,13 @@
 /**
  * Play the focused quest through the runtime without leaving the editor.
  *
- * The panel answers one question, what can I do now and what did that do:
- * the Next column lists the events that move the quest as it stands, the
- * World column holds the flags and variables conditions read, and the
- * Timeline shows every input with the transitions, rewards and outcome it
- * caused nested under it. The graph shows the same state on every step card.
+ * One column, top to bottom: where the quest stands, what can move it now
+ * (Next), the rest of the events and the world the conditions read behind
+ * disclosures, and the Timeline of every input with what the runtime did
+ * under it. The graph shows the same state on every step card.
  */
 import type { Payload, StepState } from '@oqf/core'
-import { type FormEvent, useEffect, useMemo, useRef } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type EventSuggestion,
   type NextEventGroup,
@@ -21,12 +20,16 @@ import {
   objectiveCount,
   parsePayload,
   parseScalar,
+  readsWorld,
   suggestEvents,
 } from '../lib/playtest'
 import { useDispatch, useEditorState } from '../store/context'
 import { activeQuestId, findQuest } from '../store/selectors'
 import '../styles/playtest.css'
 import { usePlaytest } from './PlaytestContext'
+
+const INTRO =
+  'Run this quest through the runtime. Fire events, watch the steps change on the graph.'
 
 function field(event: FormEvent<HTMLFormElement>, name: string): HTMLInputElement | undefined {
   const input = event.currentTarget.elements.namedItem(name)
@@ -93,6 +96,7 @@ function NextGroup({
   )
 }
 
+/** One line per effect. A step transition carries the step title as its tooltip. */
 function Effect({
   effect,
   titles,
@@ -110,11 +114,10 @@ function Effect({
       )
     case 'step':
       return (
-        <li className="tl-effect step">
+        <li className="tl-effect step" title={titles.get(effect.step)}>
           <span className="mono">{effect.step}</span>
           <span className="tl-from mono">{effect.from}</span>
           <StateChip state={effect.to} />
-          <span className="tl-title muted">{titles.get(effect.step) ?? ''}</span>
         </li>
       )
     case 'reward':
@@ -123,7 +126,7 @@ function Effect({
           <span className="tl-label">reward</span>
           <span className="mono">{effect.grant.reward}</span>
           <span className="muted mono">
-            {effect.grant.kind} {effect.grant.ref} x{effect.grant.amount}
+            {effect.grant.kind} {effect.grant.ref} {effect.grant.amount}
           </span>
         </li>
       )
@@ -183,8 +186,21 @@ export function QuestPlayPanel() {
   const cards = useMemo(() => groupTranscript(transcript), [transcript, playtest.version])
   const outcome = questId === undefined ? undefined : lastOutcome(transcript, questId)
 
+  const flagNames = Object.keys(snapshot?.flags ?? {}).sort()
+  const varNames = Object.keys(snapshot?.vars ?? {}).sort()
+  const world = useMemo(
+    () => (quest === undefined ? { flags: false, vars: false } : readsWorld(quest)),
+    [quest],
+  )
+  // World opens on its own when the conditions read it or something is set; the author may close it.
+  const worldWanted = world.flags || world.vars || flagNames.length > 0 || varNames.length > 0
+  const [worldOpen, setWorldOpen] = useState(worldWanted)
+  useEffect(() => {
+    if (worldWanted) setWorldOpen(true)
+  }, [worldWanted])
+
   const timeline = useRef<HTMLElement | null>(null)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new card scrolls the column
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new card scrolls the timeline
   useEffect(() => {
     const column = timeline.current
     if (column !== null) column.scrollTop = column.scrollHeight
@@ -227,73 +243,64 @@ export function QuestPlayPanel() {
     if (value !== undefined) value.value = ''
   }
 
-  const flagNames = Object.keys(snapshot?.flags ?? {}).sort()
-  const varNames = Object.keys(snapshot?.vars ?? {}).sort()
-  const quests = state.quests.quests
-  const passes = snapshot?.passes ?? 0
+  if (quest === undefined) {
+    return (
+      <div className="quest-play">
+        <p className="note">No quest to play.</p>
+      </div>
+    )
+  }
 
-  const acceptLabel = quest?.repeat === true || passes > 0 ? 'Accept again' : 'Accept'
+  if (!running || snapshot === undefined) {
+    return (
+      <div className="quest-play">
+        <section className="play-intro">
+          <h3>{String(quest.title)}</h3>
+          <p>{INTRO}</p>
+          <button type="button" className="primary" onClick={start}>
+            Start
+          </button>
+        </section>
+      </div>
+    )
+  }
+
+  const passes = snapshot.passes
+  const acceptLabel = quest.repeat === true || passes > 0 ? 'Accept again' : 'Accept'
+  const canAccept = snapshot.status !== 'closed' || quest.repeat === true
 
   return (
-    <div className="quest-play play-columns">
-      <header className="play-head">
-        {quests.length > 1 ? (
-          <select
-            className="picker-select play-picker mono"
-            value={questId ?? ''}
-            aria-label="Quest to play"
-            onChange={(event) =>
-              dispatch({ type: 'select', selection: { kind: 'quest', quest: event.target.value } })
-            }
-          >
-            {quests.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.id}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <span className="play-target mono">{questId ?? 'no quest'}</span>
-        )}
-        <span className={`status-pill ${snapshot?.status ?? 'idle'}`}>
-          {snapshot?.status ?? 'not running'}
-        </span>
-        {snapshot?.outcome !== null && snapshot?.outcome !== undefined ? (
+    <div className="quest-play">
+      <header className="play-status">
+        <span className={`status-pill ${snapshot.status}`}>{snapshot.status}</span>
+        {snapshot.outcome === null ? null : (
           <span className="play-stat">
             outcome <strong>{snapshot.outcome}</strong>
           </span>
-        ) : null}
-        {snapshot !== undefined ? (
-          <span className="play-stat">
-            passes <strong>{passes}</strong>
-          </span>
-        ) : null}
-        {snapshot?.error !== undefined ? (
-          <span className="field-error">{snapshot.error}</span>
-        ) : null}
+        )}
+        <span className="play-stat">
+          passes <strong>{passes}</strong>
+        </span>
+        <span className="play-stat">
+          rewards <strong>{snapshot.rewards.length}</strong>
+        </span>
         <div className="play-controls">
-          <button type="button" onClick={start} disabled={quest === undefined}>
-            {running ? 'Restart' : 'Start'}
+          <button type="button" onClick={start}>
+            Restart
           </button>
-          <button
-            type="button"
-            disabled={!running}
-            onClick={() => playtest.update((current) => current.reset())}
-          >
+          <button type="button" onClick={() => playtest.update((current) => current.reset())}>
             Reset
           </button>
-          <button type="button" disabled={!running} onClick={playtest.stop}>
-            Stop
-          </button>
         </div>
+        {snapshot.error === undefined ? null : (
+          <span className="field-error">{snapshot.error}</span>
+        )}
       </header>
 
-      <section className="play-col play-next">
-        <h4>Next</h4>
-        {!running ? (
-          <p className="note">Press Start to offer and accept this quest in a fresh runtime.</p>
-        ) : open ? (
-          split.now.length === 0 ? (
+      {open ? (
+        <section className="play-section">
+          <h4>Next</h4>
+          {split.now.length === 0 ? (
             <p className="note">No step is active. Unlock one with a flag or a variable.</p>
           ) : (
             <ul className="next-groups">
@@ -301,66 +308,63 @@ export function QuestPlayPanel() {
                 <NextGroup key={group.step} group={group} fire={fire} disabled={false} />
               ))}
             </ul>
-          )
-        ) : (
-          <div className="play-outcome">
-            <p>
-              {outcome !== undefined ? (
-                <>
-                  Outcome <strong>{outcome.name}</strong> reached
-                  {outcome.failed ? <span className="fail-chip">failed</span> : null}
-                </>
-              ) : snapshot?.status === 'offered' ? (
-                'The quest is offered and waits to be accepted.'
-              ) : (
-                'The quest is unseen. Accept to offer and open it.'
-              )}
-            </p>
-            <div className="play-controls">
-              <button type="button" onClick={start}>
-                Restart
-              </button>
-              {snapshot?.status !== 'closed' ? (
-                <button
-                  type="button"
-                  onClick={() => playtest.update((current) => current.accept())}
-                >
-                  {acceptLabel}
-                </button>
-              ) : null}
-            </div>
-          </div>
-        )}
-        <details className="play-other">
-          <summary>
-            Other events
-            {split.later.length > 0 ? <span className="pill">{split.later.length}</span> : null}
-          </summary>
-          {split.later.length === 0 ? null : (
-            <ul className="next-groups">
-              {split.later.map((group) => (
-                <NextGroup key={group.step} group={group} fire={fire} disabled={!open} compact />
-              ))}
-            </ul>
           )}
-          <form className="event-form" onSubmit={submitEvent}>
-            <input className="input mono" name="name" placeholder="item.collected" />
-            <input className="input mono" name="payload" placeholder="item=fish.rare;amount=1" />
-            <button type="submit" disabled={!running}>
-              Emit
+        </section>
+      ) : (
+        <section className="play-intro play-closed">
+          <p>
+            {outcome !== undefined ? (
+              <>
+                {outcome.failed ? 'Failed outcome' : 'Outcome'} <strong>{outcome.name}</strong>{' '}
+                reached
+              </>
+            ) : snapshot.status === 'offered' ? (
+              'The quest is offered and waits to be accepted.'
+            ) : (
+              'The quest is unseen. Accept to offer and open it.'
+            )}
+          </p>
+          <div className="play-intro-actions">
+            <button type="button" className="primary" onClick={start}>
+              Restart
             </button>
-          </form>
-        </details>
-      </section>
+            {canAccept ? (
+              <button type="button" onClick={() => playtest.update((current) => current.accept())}>
+                {acceptLabel}
+              </button>
+            ) : null}
+          </div>
+        </section>
+      )}
 
-      <section className="play-col play-world">
-        <h4>World</h4>
+      <details className="play-section play-other">
+        <summary>Other events ({split.later.length})</summary>
+        {split.later.length === 0 ? null : (
+          <ul className="next-groups">
+            {split.later.map((group) => (
+              <NextGroup key={group.step} group={group} fire={fire} disabled={!open} compact />
+            ))}
+          </ul>
+        )}
+        <form className="event-form" onSubmit={submitEvent}>
+          <input className="input mono" name="name" placeholder="item.collected" />
+          <input className="input mono" name="payload" placeholder="item=fish.rare;amount=1" />
+          <button type="submit">Emit</button>
+        </form>
+      </details>
+
+      <details
+        className="play-section play-world"
+        open={worldOpen}
+        onToggle={(event) => setWorldOpen(event.currentTarget.open)}
+      >
+        <summary>World</summary>
         <h5>Flags</h5>
         {flagNames.length === 0 ? null : (
           <table className="world-table">
             <tbody>
               {flagNames.map((name) => {
-                const value = snapshot?.flags[name]
+                const value = snapshot.flags[name]
                 return (
                   <tr key={name}>
                     <td className="mono">{name}</td>
@@ -396,9 +400,7 @@ export function QuestPlayPanel() {
         )}
         <form className="add-form" onSubmit={submitFlag}>
           <input className="input mono" name="flag" placeholder="otter_agreed" />
-          <button type="submit" disabled={!running}>
-            Add
-          </button>
+          <button type="submit">Add</button>
         </form>
 
         <h5>Variables</h5>
@@ -406,7 +408,7 @@ export function QuestPlayPanel() {
           <table className="world-table">
             <tbody>
               {varNames.map((name) => {
-                const value = snapshot?.vars[name] ?? ''
+                const value = snapshot.vars[name] ?? ''
                 return (
                   <tr key={name}>
                     <td className="mono">{name}</td>
@@ -443,17 +445,16 @@ export function QuestPlayPanel() {
         <form className="add-form" onSubmit={submitVar}>
           <input className="input mono" name="name" placeholder="time.isNight" />
           <input className="input mono" name="value" placeholder="true" />
-          <button type="submit" disabled={!running}>
-            Add
-          </button>
+          <button type="submit">Add</button>
         </form>
-      </section>
+      </details>
 
-      <section className="play-col play-timeline" ref={timeline}>
+      <section className="play-section play-timeline" ref={timeline}>
         <h4>Timeline</h4>
-        {snapshot === undefined || quest === undefined ? null : (
-          <div className="step-chips">
-            {snapshot.steps.map((step) => {
+        <div className="step-chips">
+          {snapshot.steps
+            .filter((step) => step.state !== 'locked')
+            .map((step) => {
               const threshold = objectiveCount(quest.steps.find((entry) => entry.id === step.id))
               return (
                 <button
@@ -477,8 +478,7 @@ export function QuestPlayPanel() {
                 </button>
               )
             })}
-          </div>
-        )}
+        </div>
         {cards.length === 0 ? (
           <p className="note">What the runtime does with each event shows up here.</p>
         ) : (

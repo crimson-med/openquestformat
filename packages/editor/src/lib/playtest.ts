@@ -8,12 +8,14 @@
  * scratch, never document state, so it is neither saved nor undone.
  */
 import {
+  type Condition,
   type OqfDocument,
   type Payload,
   type Quest,
   type Scalar,
   type Step,
   type StepState,
+  conditionVariables,
   formatCompletion,
 } from '@oqf/core'
 import {
@@ -459,6 +461,27 @@ export function lastOutcome(
     }
   }
   return undefined
+}
+
+/**
+ * Which world namespaces the quest's conditions read: `flag.*` and `var.*`
+ * paths in the quest unlock and in every step's unlock, activate, complete
+ * and fail. The play panel opens its World section when either is true.
+ */
+export function readsWorld(quest: Quest): { flags: boolean; vars: boolean } {
+  const result = { flags: false, vars: false }
+  const conditions: (Condition | undefined)[] = [quest.unlock]
+  for (const step of quest.steps) {
+    conditions.push(step.unlock, step.activate, step.complete, step.fail)
+  }
+  for (const condition of conditions) {
+    if (condition === undefined) continue
+    for (const path of conditionVariables(condition)) {
+      if (path.startsWith('flag.')) result.flags = true
+      else if (path.startsWith('var.')) result.vars = true
+    }
+  }
+  return result
 }
 
 /** The one role that names a step, the same pick the graph card makes. Endings win. */

@@ -45,15 +45,17 @@ fixture, quest and dialogue both.
   fixes (mark repeat, add an outcome, add a missing dictionary entry or reward,
   remove a dangling reference, bind a conversation), each a single undo step.
 - **Source.** The live compact text, and the JSON and markdown forms, read only.
-- **Play.** A Quest | Dialogue switch. Quest play runs the pack through
-  `@oqf/runtime`. The Next column lists only the events that can move the
-  quest right now, one button per objective of an active step, with the rest
-  under Other events beside a free-form event form. World holds the flags and
-  game variables the conditions read. Timeline groups what the runtime did
-  under the event that caused it, with a chip per step showing its state, and
-  the graph shows the same states on the nodes. Dialogue play drives the
-  built-in provider against a flags map you toggle by hand, prints the events
-  it emits, and feeds them to the running quest session.
+- **Play.** A mode, entered from the toolbar's Play button or cmd or ctrl P,
+  that replaces the inspector with the quest playtest while the graph stays
+  live. It runs the pack through `@oqf/runtime`. Next lists only the events
+  that can move the quest right now, one button per objective of an active
+  step, with the rest under Other events beside a free-form event form. World
+  holds the flags and game variables the conditions read. Timeline groups what
+  the runtime did under the event that caused it, with a chip per step that
+  has moved, and the graph shows the same states on the nodes. The drawer's
+  Dialogue play tab plays a conversation: it drives the built-in provider
+  against a flags map you toggle by hand, prints the events it emits, and
+  feeds them to the running quest session.
 - **Strings.** A top-level view, next to Quests and Dialogue: every
   player-facing text in the pack beside its translation in a chosen language. Extract literals to keys, inject a language back, import
   and export tables as JSON, CSV, PO or XLIFF, see missing and orphan keys, and
@@ -77,7 +79,8 @@ fixture, quest and dialogue both.
 
 Shortcuts: undo and redo with cmd or ctrl Z, delete the selected step or node
 with Delete, export the quests with cmd or ctrl S, a command palette on cmd or
-ctrl K, `n` to add a step or node. Fit view keeps a readable zoom, and the
+ctrl K, play or stop playing the quest with cmd or ctrl P, `n` to add a step
+or node. Fit view keeps a readable zoom, and the
 minimap hides when the canvas is narrow.
 
 ## Templates

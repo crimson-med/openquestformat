@@ -296,6 +296,13 @@ button.primary {
   color: var(--head-text);
 }
 
+.toolbar button.play-toggle.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
 .toolbar .menu.primary > summary {
   background: var(--accent);
   border-color: var(--accent);
@@ -497,6 +504,11 @@ button.primary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
   min-height: 0;
+}
+
+/* Play mode: the right column holds the playtest and gets more room. */
+.panes.panes-playing {
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 46%);
 }
 
 .canvas {

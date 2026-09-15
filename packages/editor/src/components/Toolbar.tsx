@@ -22,11 +22,18 @@ export function Toolbar({
   onTab,
   files,
   onCommands,
+  canPlay,
+  playing,
+  onPlay,
 }: {
   tab: Tab
   onTab: (tab: Tab) => void
   files: FileActions
   onCommands: () => void
+  /** True on the Quests view with a quest loaded: the only place Play shows. */
+  canPlay: boolean
+  playing: boolean
+  onPlay: () => void
 }) {
   const state = useEditorState()
   const dispatch = useDispatch()
@@ -63,6 +70,17 @@ export function Toolbar({
           </button>
         ))}
       </nav>
+
+      {canPlay ? (
+        <button
+          type="button"
+          className={playing ? 'play-toggle on' : 'play-toggle'}
+          onClick={onPlay}
+          title={playing ? 'Stop playing, cmd or ctrl P' : 'Play this quest, cmd or ctrl P'}
+        >
+          {playing ? '■ Stop' : '▶ Play'}
+        </button>
+      ) : null}
 
       <div className="counts">
         <span className={counts.errors > 0 ? 'count error' : 'count'}>

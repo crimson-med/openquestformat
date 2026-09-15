@@ -18,7 +18,11 @@ import { loadReference } from '../lib/reference'
 import { type QuestTemplate, loadTemplate } from '../lib/templates'
 import { useDispatch, useEditorState } from '../store/context'
 
-export function useFileActions(onNotice: (message: string | undefined) => void) {
+/** `onLoad` runs before any action that replaces the document: open, template, reference, reset. */
+export function useFileActions(
+  onNotice: (message: string | undefined) => void,
+  onLoad?: () => void,
+) {
   const state = useEditorState()
   const dispatch = useDispatch()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -46,6 +50,7 @@ export function useFileActions(onNotice: (message: string | undefined) => void) 
         onNotice(['Nothing to open.', ...pack.notices].join(' '))
         return
       }
+      onLoad?.()
       dispatch({
         type: 'doc/load',
         quests: hasQuests ? pack.quests : state.quests,
@@ -81,6 +86,7 @@ export function useFileActions(onNotice: (message: string | undefined) => void) 
   const fromTemplate = (template: QuestTemplate) => {
     try {
       const loaded = loadTemplate(template)
+      onLoad?.()
       dispatch({
         type: 'doc/load',
         quests: loaded.quests,
@@ -123,6 +129,7 @@ export function useFileActions(onNotice: (message: string | undefined) => void) 
   const loadReferenceQuest = () => {
     try {
       const reference = loadReference()
+      onLoad?.()
       dispatch({
         type: 'doc/load',
         quests: reference.quests,
@@ -139,6 +146,7 @@ export function useFileActions(onNotice: (message: string | undefined) => void) 
   }
 
   const reset = () => {
+    onLoad?.()
     dispatch({ type: 'doc/reset' })
     onNotice('Cleared. Nothing is loaded.')
   }

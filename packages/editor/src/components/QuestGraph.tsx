@@ -230,7 +230,7 @@ export function QuestGraph({
       fitViewOptions={{ minZoom: 0.55, maxZoom: 1 }}
       panOnScroll
       colorMode="light"
-      proOptions={{ hideAttribution: false }}
+      proOptions={{ hideAttribution: true }}
       minZoom={0.2}
     >
       <Background gap={24} size={1} />

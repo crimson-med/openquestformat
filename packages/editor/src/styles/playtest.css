@@ -1,13 +1,135 @@
-/* Playtest: the Play tab in both modes, and the run state overlay on step cards. */
+/* Playtest: play mode in the inspector's place, the Dialogue play tab, and
+   the run state overlay on step cards. */
 
-.play-mode {
-  display: inline-flex;
-  margin-bottom: 12px;
-  flex: none;
+/* Play mode: the aside is one column, top to bottom, and the timeline takes
+   what is left. The panel scrolls when the sections above it outgrow it. */
+
+.play-aside {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* The drawer body becomes a column so the panel can take the rest of the
-   drawer's height and scroll each of its columns on its own. */
+.quest-play {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.play-intro {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 16px;
+  text-align: center;
+}
+
+.play-intro h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.play-intro p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.play-intro p strong {
+  color: var(--role-start);
+}
+
+.play-intro button.primary {
+  padding: 10px 28px;
+  font-size: 15px;
+}
+
+.play-intro.play-closed {
+  padding: 20px 16px;
+  background: var(--field);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
+
+.play-intro-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.play-status {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.play-status .play-controls button {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.play-status .field-error {
+  flex-basis: 100%;
+}
+
+.play-section {
+  flex: none;
+  font-size: 13px;
+}
+
+.play-section h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.play-section > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.play-section[open] > summary {
+  margin-bottom: 8px;
+}
+
+.play-section h5 {
+  margin: 10px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.play-section h5:first-of-type {
+  margin-top: 0;
+}
+
+.quest-play .play-other {
+  margin-top: 0;
+}
+
+.quest-play .play-timeline {
+  flex: 1;
+  min-height: 160px;
+  overflow: auto;
+}
+
+/* The drawer body becomes a column so the dialogue panel can take the rest
+   of the drawer's height and scroll each of its columns on its own. */
 
 .drawer-body:has(> .play-columns) {
   display: flex;
@@ -15,7 +137,7 @@
   min-height: 0;
 }
 
-/* Layout shared by the quest and dialogue modes: a header strip, then three columns. */
+/* Dialogue play in the drawer: a header strip, then three columns. */
 
 .play-columns,
 .play.play-columns {
@@ -296,22 +418,6 @@
   margin-left: 0;
 }
 
-.play-outcome {
-  padding: 10px 12px;
-  background: var(--field);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius);
-  font-size: 13px;
-}
-
-.play-outcome p {
-  margin: 0 0 10px;
-}
-
-.play-outcome .play-controls {
-  margin-left: 0;
-}
-
 .play-other {
   margin-top: 10px;
   font-size: 13px;
@@ -516,11 +622,15 @@
   gap: 3px;
 }
 
+/* One line per effect; a long one clips rather than wraps. */
 .tl-effect {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tl-from {
@@ -529,10 +639,6 @@
 
 .tl-from::after {
   content: " to";
-}
-
-.tl-title {
-  font-size: 12px;
 }
 
 .tl-effect.outcome strong {
