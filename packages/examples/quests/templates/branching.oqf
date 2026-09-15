@@ -16,5 +16,5 @@ S	deliver_report		step.choose_report		reach harbor_office		reported|Crate report
 S	pry_open		step.choose_keep		interact crate_lock	event guard.spotted				0		Pry the crate open before the guard passes
 S	caught		step.pry_open == "failed"				!confiscated|Caught by the harbor guard			0		Caught with the crate
 S	sell_contents		step.pry_open		talk smuggler contraband_offer#sell		sold|Sold to the smuggler		oqf:contraband_offer	2	1	Sell the contents to the smuggler
-S	refuse_deal		step.pry_open		talk smuggler contraband_offer#refuse				oqf:contraband_offer	2	1	Refuse the smuggler's offer
+S	refuse_deal		step.pry_open		talk smuggler contraband_offer#refuse	talk smuggler contraband_offer#sell			oqf:contraband_offer	2	1	Refuse the smuggler's offer
 S	return_owner		step.refuse_deal		talk captain		returned|Returned to its owner			3	2	Return the crate to Captain Rosa

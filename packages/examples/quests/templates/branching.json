@@ -225,6 +225,11 @@
             "actor": "smuggler",
             "dialogue": "contraband_offer#refuse"
           },
+          "failObjective": {
+            "kind": "talk",
+            "actor": "smuggler",
+            "dialogue": "contraband_offer#sell"
+          },
           "dialogue": {
             "provider": "oqf",
             "ref": "contraband_offer"
