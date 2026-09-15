@@ -64,6 +64,8 @@ export type Action =
       node: string
       choice: number
     } & FieldPatch<Choice>)
+  /** Several edits applied in order as one undoable step. */
+  | { type: 'batch'; actions: Action[] }
 
 /** Action types that leave the documents untouched, so they never push history. */
 const NON_MUTATING = new Set(['select', 'undo', 'redo', 'doc/load', 'doc/reset', 'doc/markSaved'])

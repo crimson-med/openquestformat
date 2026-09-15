@@ -10,6 +10,8 @@ export { QuestEditor } from './components/QuestEditor'
 export type { QuestEditorProps } from './components/QuestEditor'
 export { detectFormat, openFile, serializeDialogues, serializeQuests } from './lib/files'
 export type { DialogueFormat, FileKind, OpenedFile, QuestFormat } from './lib/files'
+export { fixAction, fixesFor } from './lib/fixes'
+export type { Fix } from './lib/fixes'
 export {
   conversationPositions,
   layoutConversation,

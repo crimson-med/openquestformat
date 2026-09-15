@@ -1,10 +1,13 @@
-import { useDispatch } from '../store/context'
 /**
  * The findings list. Clicking one selects whatever it is about, so a warning
- * is one click from the field that caused it.
+ * is one click from the field that caused it. A finding the editor knows how
+ * to repair carries fix buttons that apply the repair as one undoable edit.
  */
+import { fixAction, fixesFor } from '../lib/fixes'
+import { useDispatch, useEditorState } from '../store/context'
 import type { EditorFinding } from '../store/findings'
 import type { Selection } from '../store/types'
+import '../styles/fixes.css'
 
 function selectionFor(finding: EditorFinding): Selection | undefined {
   if (finding.quest !== undefined && finding.step !== undefined) {
@@ -27,6 +30,7 @@ export function FindingList({
   findings: EditorFinding[]
   compact?: boolean
 }) {
+  const state = useEditorState()
   const dispatch = useDispatch()
   if (findings.length === 0) {
     return <p className="note">Nothing to report. The pack validates.</p>
@@ -35,6 +39,7 @@ export function FindingList({
     <ul className={compact === true ? 'findings compact' : 'findings'}>
       {findings.map((finding, index) => {
         const target = selectionFor(finding)
+        const fixes = fixesFor(finding, state)
         const where = [finding.quest ?? finding.conversation, finding.step ?? finding.node]
           .filter((part) => part !== undefined)
           .join(' / ')
@@ -57,6 +62,20 @@ export function FindingList({
                 </span>
               </span>
             </button>
+            {fixes.length === 0 ? null : (
+              <div className="fixes">
+                {fixes.map((fix) => (
+                  <button
+                    key={fix.id}
+                    type="button"
+                    className="fix"
+                    onClick={() => dispatch(fixAction(fix))}
+                  >
+                    {fix.title}
+                  </button>
+                ))}
+              </div>
+            )}
           </li>
         )
       })}
