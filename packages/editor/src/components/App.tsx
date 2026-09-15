@@ -41,7 +41,6 @@ import { useFileActions } from './useFileActions'
 const DRAWER_TABS: { tab: DrawerTab; title: string }[] = [
   { tab: 'validation', title: 'Validation' },
   { tab: 'source', title: 'Source' },
-  { tab: 'play', title: 'Dialogue play' },
 ]
 
 const VIEWS: { tab: Tab; title: string; keywords: string[] }[] = [
@@ -633,13 +632,7 @@ function AppContent() {
             )}
           </main>
         )}
-        <Drawer
-          tab={drawerTab}
-          onTab={setDrawerTab}
-          open={drawerOpen}
-          onOpen={setDrawerOpen}
-          conversation={conversationId}
-        />
+        <Drawer tab={drawerTab} onTab={setDrawerTab} open={drawerOpen} onOpen={setDrawerOpen} />
       </div>
     </ViewContext.Provider>
   )

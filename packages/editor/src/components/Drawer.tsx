@@ -1,30 +1,26 @@
 /**
- * The bottom drawer: what is wrong, what the file looks like, and a place to
- * play a conversation. Collapsible, because the canvas wants the room. The
- * quest playtest is not here: it is a mode of the panes that replaces the
- * inspector.
+ * The bottom drawer: what is wrong and what the file looks like. Collapsible,
+ * because the canvas wants the room. Play is not here: it is a mode of the
+ * panes that replaces the inspector.
  */
 import type { ReactNode } from 'react'
 import { useEditorState } from '../store/context'
 import { countFindings } from '../store/findings'
 import { FindingList } from './FindingList'
-import { PlayPanel } from './PlayPanel'
 import { SourcePanel } from './SourcePanel'
 
-export type DrawerTab = 'validation' | 'source' | 'play'
+export type DrawerTab = 'validation' | 'source'
 
 export function Drawer({
   tab,
   onTab,
   open,
   onOpen,
-  conversation,
 }: {
   tab: DrawerTab
   onTab: (tab: DrawerTab) => void
   open: boolean
   onOpen: (open: boolean) => void
-  conversation: string | undefined
 }) {
   const state = useEditorState()
   const counts = countFindings(state.findings)
@@ -68,7 +64,6 @@ export function Drawer({
             </>,
           )}
           {tabButton('source', 'Source')}
-          {tabButton('play', 'Dialogue play')}
         </nav>
         <button
           type="button"
@@ -83,7 +78,6 @@ export function Drawer({
         <div className="drawer-body">
           {tab === 'validation' ? <FindingList findings={state.findings} /> : null}
           {tab === 'source' ? <SourcePanel /> : null}
-          {tab === 'play' ? <PlayPanel conversation={conversation} /> : null}
         </div>
       ) : null}
     </section>

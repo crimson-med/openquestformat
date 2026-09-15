@@ -58,10 +58,11 @@ of the views, the graph legend and the shortcuts.
   step, with the rest under Other events beside a free-form event form. World
   holds the flags and game variables the conditions read. Timeline groups what
   the runtime did under the event that caused it, with a chip per step that
-  has moved, and the graph shows the same states on the nodes. The drawer's
-  Dialogue play tab plays a conversation: it drives the built-in provider
-  against a flags map you toggle by hand, prints the events it emits, and
-  feeds them to the running quest session.
+  has moved, and the graph shows the same states on the nodes. A step with a
+  bound conversation gets a Talk button that plays it inline against the
+  running quest, so ending the talk completes the right step. On the Dialogue
+  view, Play runs the current conversation against a flags map you toggle by
+  hand and lists the events it emits.
 - **Strings.** A top-level view, next to Quests and Dialogue: every
   player-facing text in the pack beside its translation in a chosen language. Extract literals to keys, inject a language back, import
   and export tables as JSON, CSV, PO or XLIFF, see missing and orphan keys, and
