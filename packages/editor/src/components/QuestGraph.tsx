@@ -20,17 +20,26 @@ import {
   applyNodeChanges,
 } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type EdgeSpec, edgeLabels, edgeSpec } from '../lib/connections'
 import type { Direction } from '../lib/direction'
 import { layoutQuest, questPositions } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForStep, worstLevel } from '../store/selectors'
 import '../styles/connections.css'
 import { DirectionToggle } from './DirectionToggle'
+import { EdgePopover } from './EdgePopover'
 import { usePlaytest } from './PlaytestContext'
 import { type StepFlowNode, StepNode } from './StepNode'
 import { useStringResolver } from './StringsContext'
 
 const NODE_TYPES = { step: StepNode }
+
+/** A dependency being drawn (add) or looked at (edit) in the popover. */
+type PendingEdge =
+  | { mode: 'add'; from: string; to: string }
+  | { mode: 'edit'; from: string; to: string; spec: EdgeSpec }
+
+const DEFAULT_SPEC: EdgeSpec = { field: 'unlock', state: 'done' }
 
 export function QuestGraph({
   quest,
@@ -99,21 +108,65 @@ export function QuestGraph({
     setNodes(build())
   }, [build])
 
-  const buildEdges = useCallback(
-    (): Edge[] =>
-      stepGraph(quest).edges.map(([from, to]) => ({
-        id: `${from}->${to}`,
+  const buildEdges = useCallback((): Edge[] => {
+    const labels = edgeLabels(quest)
+    return stepGraph(quest).edges.map(([from, to]) => {
+      const id = `${from}->${to}`
+      const label = labels[id] ?? ''
+      const spec = edgeSpec(quest, from, to) ?? DEFAULT_SPEC
+      return {
+        id,
         source: from,
         target: to,
         animated: false,
-      })),
-    [quest],
-  )
+        label: label === '' ? undefined : label,
+        className: `dep-${spec.field}`,
+      }
+    })
+  }, [quest])
 
   const [edges, setEdges] = useState<Edge[]>(buildEdges)
   useEffect(() => {
     setEdges(buildEdges())
   }, [buildEdges])
+
+  const [pending, setPending] = useState<PendingEdge | undefined>(undefined)
+  const pendingTarget = pending === undefined ? undefined : nodes.find((n) => n.id === pending.to)
+  const pendingFrom = pending === undefined ? undefined : nodes.find((n) => n.id === pending.from)
+  const popover =
+    pending === undefined || pendingTarget === undefined || pendingFrom === undefined ? null : (
+      <EdgePopover
+        key={`${pending.mode}:${pending.from}->${pending.to}`}
+        mode={pending.mode}
+        from={pending.from}
+        to={pending.to}
+        anchor={{
+          x: pendingTarget.position.x + (pendingTarget.measured?.width ?? 0) + 12,
+          y: pendingTarget.position.y,
+        }}
+        initial={pending.mode === 'edit' ? pending.spec : DEFAULT_SPEC}
+        onSubmit={(spec) => {
+          const edge = { quest: quest.id, from: pending.from, to: pending.to, ...spec }
+          if (pending.mode === 'add') dispatch({ type: 'step/link', ...edge })
+          else dispatch({ type: 'step/relink', ...edge })
+          setPending(undefined)
+        }}
+        onRemove={
+          pending.mode === 'edit'
+            ? () => {
+                dispatch({
+                  type: 'step/unlink',
+                  quest: quest.id,
+                  from: pending.from,
+                  to: pending.to,
+                })
+                setPending(undefined)
+              }
+            : undefined
+        }
+        onCancel={() => setPending(undefined)}
+      />
+    )
 
   const onNodesChange = useCallback((changes: NodeChange<StepFlowNode>[]) => {
     const kept = changes.filter((change) => change.type !== 'remove')
@@ -137,21 +190,22 @@ export function QuestGraph({
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={(connection) =>
-        dispatch({
-          type: 'step/link',
-          quest: quest.id,
-          from: connection.source,
-          to: connection.target,
-        })
+        setPending({ mode: 'add', from: connection.source, to: connection.target })
       }
       onEdgesDelete={(removed) => {
         for (const edge of removed) {
           dispatch({ type: 'step/unlink', quest: quest.id, from: edge.source, to: edge.target })
         }
+        setPending(undefined)
       }}
-      onEdgeClick={() =>
+      onEdgeClick={(_, edge) => {
+        // The quest stays selected so the Delete key never removes a step.
         dispatch({ type: 'select', selection: { kind: 'quest', quest: quest.id } })
-      }
+        const spec = edgeSpec(quest, edge.source, edge.target)
+        if (spec !== undefined) {
+          setPending({ mode: 'edit', from: edge.source, to: edge.target, spec })
+        }
+      }}
       isValidConnection={isValidConnection}
       deleteKeyCode={['Delete', 'Backspace']}
       onNodeDragStop={(_, node) =>
@@ -168,9 +222,10 @@ export function QuestGraph({
           selection: { kind: 'step', quest: quest.id, step: node.id },
         })
       }
-      onPaneClick={() =>
+      onPaneClick={() => {
         dispatch({ type: 'select', selection: { kind: 'quest', quest: quest.id } })
-      }
+        setPending(undefined)
+      }}
       fitView
       fitViewOptions={{ minZoom: 0.55, maxZoom: 1 }}
       panOnScroll
@@ -200,6 +255,7 @@ export function QuestGraph({
           }}
         />
       </Panel>
+      {popover}
     </ReactFlow>
   )
 }

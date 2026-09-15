@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { type Quest, type Step, formatCondition, parseCompact, parseCondition } from '@oqf/core'
 import { describe, expect, it } from 'vitest'
-import { linkSteps, unlinkSteps } from './connections'
+import { edgeLabels, edgeSpec, linkSteps, unlinkSteps } from './connections'
 
 function fixture(name: string): Quest {
   const text = readFileSync(
@@ -71,6 +71,148 @@ describe('linkSteps', () => {
     expect(linked.objective).toBe(step.objective)
     expect(linked.complete).toBe(step.complete)
     expect(linked.rewards).toBe(step.rewards)
+  })
+
+  it('writes a state other than done as a comparison', () => {
+    const linked = linkSteps(fresh(), 'steal', { state: 'failed' })
+    expect(linked.unlock).toEqual(parseCondition('step.steal == "failed"'))
+    expect(formatCondition(linked.unlock as never)).toBe('step.steal == "failed"')
+  })
+
+  it('keeps the bare spelling when the state is done', () => {
+    const linked = linkSteps(fresh(), 'steal', { field: 'unlock', state: 'done' })
+    expect(formatCondition(linked.unlock as never)).toBe('step.steal')
+  })
+
+  it('links into activate and keeps the start flag', () => {
+    const linked = linkSteps({ ...fresh(), start: true }, 'talk_ines', { field: 'activate' })
+    expect(linked.start).toBe(true)
+    expect('unlock' in linked).toBe(false)
+    expect(formatCondition(linked.activate as never)).toBe('step.talk_ines')
+  })
+
+  it('links into complete next to the objective', () => {
+    const step = stepOf(ledger, 'trade')
+    const linked = linkSteps(step, 'ask_gulls', { field: 'complete', state: 'active' })
+    expect(linked.objective).toBe(step.objective)
+    expect(formatCondition(linked.complete as never)).toBe(
+      'flag.otter_agreed and step.ask_gulls == "active"',
+    )
+  })
+
+  it('appends to an existing complete condition', () => {
+    const step: Step = { ...fresh(), complete: parseCondition('flag.ready') }
+    const linked = linkSteps(step, 'talk_ines', { field: 'complete' })
+    expect(formatCondition(linked.complete as never)).toBe('flag.ready and step.talk_ines')
+  })
+
+  it('links into fail with every state', () => {
+    for (const state of ['failed', 'active', 'available', 'skipped'] as const) {
+      const linked = linkSteps(fresh(), 'steal', { field: 'fail', state })
+      expect(formatCondition(linked.fail as never)).toBe(`step.steal == "${state}"`)
+    }
+  })
+
+  it('unlinks a dependency whichever field holds it', () => {
+    const linked = linkSteps(fresh(), 'steal', { field: 'fail', state: 'failed' })
+    expect(unlinkSteps(linked, 'steal')).toEqual(fresh())
+  })
+})
+
+describe('edgeLabels', () => {
+  it('labels the state when it is not done', () => {
+    const labels = edgeLabels(ledger)
+    expect(labels['steal->caught']).toBe('failed')
+    expect(labels['talk_ines->find_otter']).toBe('')
+    expect(labels['trade->have_ledger']).toBe('')
+    expect(labels['steal->have_ledger']).toBe('')
+  })
+
+  it('labels a counter read with its comparison', () => {
+    const labels = edgeLabels(parallel)
+    expect(labels['gather_lanterns->lanterns_halfway']).toBe('count >= 2')
+    expect(labels['meet_organizer->gather_lanterns']).toBe('')
+  })
+
+  it('labels a negative state check', () => {
+    const labels = edgeLabels(loop)
+    expect(labels['meet_angler->cast_line']).toBe('')
+    expect(labels['mend_line->cast_line']).toBe('not active')
+    expect(labels['cast_line->mend_line']).toBe('failed')
+    expect(labels['cast_line->land_eel']).toBe('')
+  })
+
+  it('labels the field when it is not unlock, with the state when both apply', () => {
+    const quest: Quest = {
+      ...ledger,
+      steps: [
+        stepOf(ledger, 'talk_ines'),
+        stepOf(ledger, 'ask_gulls'),
+        linkSteps(linkSteps(fresh('a'), 'talk_ines', { field: 'activate' }), 'ask_gulls', {
+          field: 'fail',
+          state: 'failed',
+        }),
+        linkSteps(fresh('b'), 'talk_ines', { field: 'complete' }),
+        { ...fresh('c'), unlock: parseCondition('not step.talk_ines') },
+        { ...fresh('d'), fail: parseCondition('2 <= count.talk_ines') },
+      ],
+    }
+    const labels = edgeLabels(quest)
+    expect(labels['talk_ines->a']).toBe('activate')
+    expect(labels['ask_gulls->a']).toBe('fail failed')
+    expect(labels['talk_ines->b']).toBe('complete')
+    expect(labels['talk_ines->c']).toBe('not done')
+    expect(labels['talk_ines->d']).toBe('fail count >= 2')
+  })
+
+  it('lists each distinct label once when several fields read the source', () => {
+    const quest: Quest = {
+      ...ledger,
+      steps: [
+        stepOf(ledger, 'talk_ines'),
+        {
+          ...fresh('a'),
+          unlock: parseCondition('step.talk_ines'),
+          fail: parseCondition('step.talk_ines == "failed"'),
+        },
+      ],
+    }
+    expect(edgeLabels(quest)['talk_ines->a']).toBe('fail failed')
+  })
+
+  it('has one entry per edge of the graph', () => {
+    expect(Object.keys(edgeLabels(ledger))).toHaveLength(9)
+  })
+})
+
+describe('edgeSpec', () => {
+  it('reads the field and state of a plain check', () => {
+    expect(edgeSpec(ledger, 'talk_ines', 'find_otter')).toEqual({ field: 'unlock', state: 'done' })
+    expect(edgeSpec(ledger, 'steal', 'caught')).toEqual({ field: 'unlock', state: 'failed' })
+  })
+
+  it('reads the field of a link into fail', () => {
+    const quest: Quest = {
+      ...ledger,
+      steps: [
+        stepOf(ledger, 'steal'),
+        linkSteps(fresh('a'), 'steal', { field: 'fail', state: 'skipped' }),
+      ],
+    }
+    expect(edgeSpec(quest, 'steal', 'a')).toEqual({ field: 'fail', state: 'skipped' })
+  })
+
+  it('falls back to done for reads that are not a state check', () => {
+    expect(edgeSpec(parallel, 'gather_lanterns', 'lanterns_halfway')).toEqual({
+      field: 'unlock',
+      state: 'done',
+    })
+    expect(edgeSpec(loop, 'mend_line', 'cast_line')).toEqual({ field: 'unlock', state: 'done' })
+  })
+
+  it('is undefined when there is no such edge', () => {
+    expect(edgeSpec(ledger, 'find_otter', 'talk_ines')).toBeUndefined()
+    expect(edgeSpec(ledger, 'talk_ines', 'ghost')).toBeUndefined()
   })
 })
 

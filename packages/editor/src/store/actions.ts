@@ -7,6 +7,7 @@
  */
 import type { OqfDocument, Outcome, Quest, Ref, Reward, Step } from '@oqf/core'
 import type { Choice, Conversation, DialogueDocument, DialogueNode } from '@oqf/dialogue'
+import type { DependencyField, DependencyState } from '../lib/connections'
 import type { Position } from '../lib/position'
 import type { Selection } from './types'
 
@@ -36,10 +37,26 @@ export type Action =
   | ({ type: 'step/set'; quest: string; step: string } & FieldPatch<Step>)
   | { type: 'step/position'; quest: string; step: string; position: Position }
   | { type: 'step/positions'; quest: string; positions: Record<string, Position> }
-  /** Make `to` depend on `from`: `to.unlock` gains `step.<from>`. */
-  | { type: 'step/link'; quest: string; from: string; to: string }
+  /** Make `to` depend on `from`: `to.<field>` (default `unlock`) gains `step.<from>` in `state` (default done). */
+  | {
+      type: 'step/link'
+      quest: string
+      from: string
+      to: string
+      field?: DependencyField
+      state?: DependencyState
+    }
   /** Drop every read of `from` from the conditions of `to`. */
   | { type: 'step/unlink'; quest: string; from: string; to: string }
+  /** Unlink then link again with a new field and state, as one undo entry. */
+  | {
+      type: 'step/relink'
+      quest: string
+      from: string
+      to: string
+      field: DependencyField
+      state: DependencyState
+    }
   | ({ type: 'outcome/set'; quest: string; step: string } & FieldPatch<Outcome>)
   | { type: 'reward/add'; quest: string; id?: string }
   | { type: 'reward/remove'; quest: string; reward: string }
