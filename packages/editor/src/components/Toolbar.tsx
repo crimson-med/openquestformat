@@ -10,6 +10,9 @@ import type { FileActions } from './useFileActions'
 
 export type Tab = 'quests' | 'dialogue' | 'strings' | 'dictionaries'
 
+/** The unsaved marker: a pill while there is room for it, a dot on the mark when there is not. */
+const UNSAVED_TITLE = 'There are changes you have not exported'
+
 const TABS: { tab: Tab; title: string }[] = [
   { tab: 'quests', title: 'Quests' },
   { tab: 'dialogue', title: 'Dialogue' },
@@ -51,15 +54,30 @@ export function Toolbar({
   return (
     <header className="toolbar" ref={root}>
       <div className="brand">
-        <span className="mark">OQF</span>
+        <span className="brand-mark">
+          <span className="mark">OQF</span>
+          {/* On the mark rather than in the subtitle, so it survives every width. */}
+          {state.dirty ? (
+            <span
+              className="unsaved-dot"
+              role="img"
+              aria-label="Unsaved changes"
+              title={UNSAVED_TITLE}
+            />
+          ) : null}
+        </span>
         <span className="brand-text">
           <strong>Quest editor</strong>
           <span className="muted">
             {questCount} quest{questCount === 1 ? '' : 's'}, {conversationCount} conversation
             {conversationCount === 1 ? '' : 's'}
-            {state.dirty ? ', unsaved' : ''}
           </span>
         </span>
+        {state.dirty ? (
+          <span className="unsaved-pill" title={UNSAVED_TITLE}>
+            Unsaved
+          </span>
+        ) : null}
       </div>
 
       <nav className="tabs" aria-label="Editor views">
@@ -81,13 +99,15 @@ export function Toolbar({
           className={playing ? 'play-toggle on' : 'play-toggle'}
           onClick={onPlay}
           title={playing ? 'Stop playing, cmd or ctrl P' : 'Play, cmd or ctrl P'}
+          aria-label={playing ? 'Stop playing' : 'Play'}
         >
-          {playing ? '■ Stop' : '▶ Play'}
+          <span aria-hidden="true">{playing ? '■' : '▶'}</span>
+          <span className="button-label">{playing ? 'Stop' : 'Play'}</span>
         </button>
       ) : null}
 
       <div className="actions">
-        <div className="group">
+        <div className="group history">
           <button
             type="button"
             className="icon-button"
@@ -172,7 +192,31 @@ export function Toolbar({
             <summary title="More" aria-label="More">
               ⋯
             </summary>
+            {/*
+              The collapsed entries are the toolbar's overflow: each one is
+              hidden here while its own button still fits in the header, and
+              revealed by the same breakpoint that drops that button.
+            */}
             <div className="menu-body">
+              <button
+                type="button"
+                className="collapsed history"
+                onClick={() => dispatch({ type: 'undo' })}
+                disabled={state.past.length === 0}
+              >
+                Undo
+              </button>
+              <button
+                type="button"
+                className="collapsed history"
+                onClick={() => dispatch({ type: 'redo' })}
+                disabled={state.future.length === 0}
+              >
+                Redo
+              </button>
+              <button type="button" className="collapsed utility" onClick={onCommands}>
+                Commands
+              </button>
               <button type="button" onClick={onHelp}>
                 Help
               </button>
@@ -183,7 +227,7 @@ export function Toolbar({
           </details>
         </div>
 
-        <div className="group">
+        <div className="group utility">
           <button
             type="button"
             className="ghost"

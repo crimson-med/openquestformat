@@ -2,6 +2,7 @@ import { parseCondition } from '@oqf/core'
 import { describe, expect, it } from 'vitest'
 import { readPosition } from '../lib/position'
 import type { Action } from './actions'
+import { countStrictOnly } from './findings'
 import { sampleDialogues, sampleQuests } from './fixtures'
 import { createState, reducer, uniqueId } from './reducer'
 import type { EditorState } from './types'
@@ -803,5 +804,79 @@ describe('validation', () => {
     expect(finding?.source).toBe('dialogue')
     expect(finding?.conversation).toBe('ines_intro')
     expect(finding?.node).toBe('thanks')
+  })
+})
+
+describe('strict validation', () => {
+  /** A pack whose second step waits on a flag no reward ever sets. */
+  function withUnknownFlag(): EditorState {
+    return run(start(), {
+      type: 'step/set',
+      quest: 'ledger',
+      step: 'find_it',
+      field: 'activate',
+      value: parseCondition('flag.helped == true'),
+    })
+  }
+
+  const codes = (state: EditorState) => state.findings.map((finding) => finding.code)
+
+  it('is off to begin with, so the strict-only codes stay hidden', () => {
+    const state = withUnknownFlag()
+    expect(state.strict).toBe(false)
+    expect(codes(state)).not.toContain('unknown-flag')
+    expect(countStrictOnly(state.findings)).toBe(0)
+  })
+
+  it('surfaces a strict-only finding from each validator when it is turned on', () => {
+    const on = reducer(withUnknownFlag(), { type: 'validation/strict', strict: true })
+    expect(on.strict).toBe(true)
+    // The quest reads an unset flag; the sample conversation is bound from no step.
+    expect(codes(on)).toContain('unknown-flag')
+    expect(codes(on)).toContain('unbound-conversation')
+    expect(countStrictOnly(on.findings)).toBe(2)
+  })
+
+  it('leaves history and the dirty mark alone', () => {
+    const before = start()
+    const on = reducer(before, { type: 'validation/strict', strict: true })
+    expect(on.dirty).toBe(false)
+    expect(on.past).toBe(before.past)
+    expect(on.future).toBe(before.future)
+    expect(on.past).toHaveLength(0)
+
+    const edited = run(before, { type: 'quest/add' })
+    const still = reducer(edited, { type: 'validation/strict', strict: true })
+    expect(still.dirty).toBe(true)
+    expect(still.past).toHaveLength(1)
+    expect(still.quests).toBe(edited.quests)
+  })
+
+  it('does nothing when the flag is already where it is asked to be', () => {
+    const state = start()
+    expect(reducer(state, { type: 'validation/strict', strict: false })).toBe(state)
+  })
+
+  it('drops the strict-only findings again when it is turned off', () => {
+    const on = reducer(withUnknownFlag(), { type: 'validation/strict', strict: true })
+    const off = reducer(on, { type: 'validation/strict', strict: false })
+    expect(off.strict).toBe(false)
+    expect(codes(off)).not.toContain('unknown-flag')
+    expect(countStrictOnly(off.findings)).toBe(0)
+  })
+
+  it('stays on across an edit, an undo, a load and a reset', () => {
+    const on = reducer(withUnknownFlag(), { type: 'validation/strict', strict: true })
+    const edited = run(on, { type: 'step/add', quest: 'ledger' })
+    expect(edited.strict).toBe(true)
+    expect(codes(edited)).toContain('unknown-flag')
+
+    const undone = reducer(edited, { type: 'undo' })
+    expect(undone.strict).toBe(true)
+    expect(codes(undone)).toContain('unknown-flag')
+    expect(reducer(undone, { type: 'redo' }).strict).toBe(true)
+
+    expect(reducer(on, { type: 'doc/load', quests: sampleQuests() }).strict).toBe(true)
+    expect(reducer(on, { type: 'doc/reset' }).strict).toBe(true)
   })
 })

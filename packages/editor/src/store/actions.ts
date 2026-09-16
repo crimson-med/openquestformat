@@ -26,6 +26,8 @@ export type Action =
   | { type: 'select'; selection: Selection }
   | { type: 'undo' }
   | { type: 'redo' }
+  /** Turns strict validation on or off. Changes no document, so it never undoes. */
+  | { type: 'validation/strict'; strict: boolean }
   | { type: 'dict/set'; kind: DictionaryKind; refs: Ref[] }
   | { type: 'speakers/set'; speakers: Ref[] }
   /** Appends an entry to a dictionary (`speakers` lives in the dialogue document). */
@@ -91,7 +93,15 @@ export type Action =
   | { type: 'batch'; actions: Action[] }
 
 /** Action types that leave the documents untouched, so they never push history. */
-const NON_MUTATING = new Set(['select', 'undo', 'redo', 'doc/load', 'doc/reset', 'doc/markSaved'])
+const NON_MUTATING = new Set([
+  'select',
+  'undo',
+  'redo',
+  'doc/load',
+  'doc/reset',
+  'doc/markSaved',
+  'validation/strict',
+])
 
 export function isMutating(action: Action): boolean {
   return !NON_MUTATING.has(action.type)

@@ -5,6 +5,10 @@
  * `validateDialogue`. Both are normalized into one list the panel can render
  * and click through, tagged with the document they came from. A validator that
  * throws is reported as a finding rather than taking the editor down.
+ *
+ * Strict mode is off by default. It turns on the advisory checks that only mean
+ * something once the whole pack is loaded, so a single file opened on its own is
+ * not buried under warnings about the parts that are missing.
  */
 import { type OqfDocument, validatePack } from '@oqf/core'
 import { type DialogueDocument, validateDialogue } from '@oqf/dialogue'
@@ -80,16 +84,48 @@ function crashed(source: EditorFinding['source'], error: unknown): EditorFinding
   }
 }
 
-export function computeFindings(quests: OqfDocument, dialogues: DialogueDocument): EditorFinding[] {
+export interface FindingOptions {
+  /** Run both validators in strict mode. Off by default. */
+  strict?: boolean
+}
+
+/**
+ * The codes only strict mode reports. `no-ending-reachable` is not one of them:
+ * strict promotes it from a warning to an error rather than adding it.
+ */
+export const STRICT_ONLY_CODES = [
+  'unknown-flag',
+  'unknown-ext-namespace',
+  'mixed-text-keys',
+  'unbound-conversation',
+] as const
+
+const STRICT_ONLY = new Set<string>(STRICT_ONLY_CODES)
+
+/** How many of these findings only strict mode would have reported. */
+export function countStrictOnly(findings: EditorFinding[]): number {
+  let count = 0
+  for (const finding of findings) {
+    if (STRICT_ONLY.has(finding.code)) count += 1
+  }
+  return count
+}
+
+export function computeFindings(
+  quests: OqfDocument,
+  dialogues: DialogueDocument,
+  options: FindingOptions = {},
+): EditorFinding[] {
+  const strict = options.strict === true
   const findings: EditorFinding[] = []
   try {
-    const result = validatePack([quests]) as unknown as { findings: RawFinding[] }
+    const result = validatePack([quests], { strict }) as unknown as { findings: RawFinding[] }
     for (const raw of result.findings) findings.push(normalize(raw, 'quests'))
   } catch (error) {
     findings.push(crashed('quests', error))
   }
   try {
-    const result = validateDialogue([dialogues], { quests: [quests] }) as unknown as {
+    const result = validateDialogue([dialogues], { quests: [quests], strict }) as unknown as {
       findings: RawFinding[]
     }
     for (const raw of result.findings) {
