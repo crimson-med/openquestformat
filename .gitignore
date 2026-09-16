@@ -10,3 +10,6 @@ coverage
 !.env.example
 .npmrc
 pnpm-publish-summary.json
+
+# Agent worktrees, never part of the repository.
+.claude/worktrees/

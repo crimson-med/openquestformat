@@ -65,10 +65,11 @@ pnpm add @oqf/dialogue    # conversations, Ink and Yarn Spinner interop
 pnpm add @oqf/i18n        # string extraction and injection
 ```
 
-The command line needs no install:
+The command line and the editor need no install:
 
 ```
 npx @oqf/cli validate quests/
+npx @oqf/editor
 ```
 
 Node 24 or newer, ESM only.
@@ -141,7 +142,7 @@ read and write them. Everything converts to or from the model in `@oqf/core`, ne
 | [`@oqf/i18n`](packages/i18n/README.md) | Pull inline strings into a translation table and push them back. JSON, CSV, PO and XLIFF. |
 | [`@oqf/cli`](packages/cli/README.md) | `oqf validate`, `convert`, `import`, `graph`, `schema`, `extract`, `inject`. |
 | [`@oqf/examples`](packages/examples/README.md) | The reference quest, the minimal quest, deliberately broken fixtures and nine single-pattern templates. |
-| [`@oqf/editor`](packages/editor/README.md) | The web editor. Part of this repository, not published to npm. |
+| [`@oqf/editor`](packages/editor/README.md) | The web editor. `npx @oqf/editor` runs it locally, and `QuestEditor` embeds it in a React app. |
 
 Package responsibilities are in [docs/09-packages.md](docs/09-packages.md). Phasing is in
 [docs/10-roadmap.md](docs/10-roadmap.md).
@@ -150,6 +151,13 @@ Package responsibilities are in [docs/09-packages.md](docs/09-packages.md). Phas
 
 An open source editor that authors OQF natively. The editor should be worth opening even if you
 never export OQF. That's the bar.
+
+```
+npx @oqf/editor          # run it, no install
+pnpm add @oqf/editor     # or embed QuestEditor in your own React app
+```
+
+From a checkout of this repository:
 
 ```
 pnpm install

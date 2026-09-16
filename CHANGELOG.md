@@ -4,8 +4,8 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Every package in the workspace shares one version number. `@oqf/editor` is part of the repository
-but is an application, not a library, and is not published to npm.
+Every package in the workspace shares one version number, the editor included: it publishes as
+both a command (`npx @oqf/editor`) and an embeddable React component.
 
 The file format carries its own major version, `OQF1`, which is independent of these package
 versions. Compact columns are append only, so a file written against `OQF1` keeps parsing.
@@ -78,12 +78,20 @@ First release. The format is frozen at `OQF1`, the packages are 0.x while the AP
   loop, recurring-step, parallel, failure, chain and engine-hooks, valid and warning free, with
   dialogue for every template that has a talk step.
 
-**The editor** (`@oqf/editor`, in this repository, not on npm)
+**`@oqf/editor`**
 
 - A web editor built on Vite and React with four views, Quests, Dialogue, Strings and Dictionaries,
   a step graph with per-edge field and state, an inspector with suggestions and live parse errors,
   validation on every change with one-click fixes, a playtest mode running `@oqf/runtime`, a
   conversation player, and import and export of single files or multi-file packs.
+- `npx @oqf/editor` serves the built editor and prints the URL, with `--port` (default 4600,
+  falling through to the next ten when busy), `--host` (default 127.0.0.1), `--open`, `--help` and
+  `--version`.
+- A library entry: `import { QuestEditor } from '@oqf/editor'` with `import '@oqf/editor/styles.css'`
+  mounts the editor inside another React app. `react` and `react-dom` are peer dependencies at
+  `>=18`, and every `@oqf/*` package is external, so the host keeps one React and one copy of the
+  model.
+- The static site builds under a relative base, so `dist/app` serves from any path.
 
 **The project**
 

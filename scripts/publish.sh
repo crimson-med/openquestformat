@@ -18,7 +18,7 @@ cd "$ROOT"
 # always resolve the one before it. pnpm sorts recursive commands topologically
 # on its own; this list is what the per package tarball check walks, and it
 # documents the order for a human reading the script.
-PACKAGES=(core dialogue runtime i18n examples cli)
+PACKAGES=(core dialogue runtime i18n examples cli editor)
 
 REGISTRY="//registry.npmjs.org/"
 NPMRC="$ROOT/.npmrc"
@@ -143,9 +143,9 @@ trap cleanup EXIT INT TERM
 )
 
 say "publish"
-# `-r` skips private packages, so @oqf/editor is never published. pnpm rewrites
-# every `workspace:*` range to the real version as it packs, and orders the
-# workspace topologically. `--no-git-checks` is safe here: the branch and clean
+# Every package here is public, the editor included. pnpm rewrites every
+# `workspace:*` range to the real version as it packs, and orders the workspace
+# topologically. `--no-git-checks` is safe here: the branch and clean
 # tree guards above already ran.
 pnpm -r publish --access public --no-git-checks
 
