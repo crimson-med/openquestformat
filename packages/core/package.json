@@ -1,8 +1,33 @@
 {
   "name": "@oqf/core",
   "version": "0.1.0",
-  "description": "Open Quest Format canonical model, compact and JSON parsers and serializers, condition language, validator.",
+  "description": "Open Quest Format canonical model, compact and JSON parsers and serializers, condition language, Markdown export, JSON Schema and validator.",
+  "keywords": [
+    "quest",
+    "game",
+    "narrative",
+    "interactive-fiction",
+    "gamedev",
+    "oqf",
+    "quest-system",
+    "parser",
+    "serializer",
+    "validator",
+    "json-schema"
+  ],
+  "homepage": "https://github.com/mburlet/openquestformat/tree/main/packages/core#readme",
+  "bugs": {
+    "url": "https://github.com/mburlet/openquestformat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mburlet/openquestformat.git",
+    "directory": "packages/core"
+  },
+  "license": "Apache-2.0",
+  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -11,11 +36,15 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
-  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
-  "license": "Apache-2.0",
-  "engines": { "node": ">=24" },
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",

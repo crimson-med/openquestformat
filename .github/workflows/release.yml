@@ -1,0 +1,59 @@
+name: Release
+
+# Runs on a pushed `v*` tag, or on demand from the Actions tab.
+# The only secret it needs is NPM_TOKEN: a fine grained npm automation token
+# with read and write access to the @oqf scope. Automation tokens skip the OTP
+# prompt, so nothing here waits for a one time password.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: verify and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        # Version comes from `packageManager` in the root package.json.
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm -r build
+
+      - name: Publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # The same auth trick as scripts/publish.sh: a repo local .npmrc, which
+        # pnpm reads, removed straight after. `pnpm -r publish` skips private
+        # packages, so @oqf/editor is never published, rewrites `workspace:*`
+        # to real versions, and orders the workspace topologically.
+        #
+        # NPM_CONFIG_PROVENANCE is deliberately left off. Provenance needs an
+        # `id-token: write` permission and a publisher npm trusts for this
+        # repo, and neither has been proven against this setup yet. Turn it on
+        # once a first publish has succeeded without it.
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "NPM_TOKEN secret is not set" >&2
+            exit 1
+          fi
+          trap 'rm -f .npmrc' EXIT
+          umask 077
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+          pnpm -r publish --access public --no-git-checks
