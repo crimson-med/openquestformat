@@ -184,7 +184,8 @@
           "start": true,
           "objective": {
             "kind": "talk",
-            "actor": "captain"
+            "actor": "captain",
+            "dialogue": "log_voyage"
           },
           "dialogue": {
             "provider": "oqf",
@@ -227,7 +228,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "captain"
+            "actor": "captain",
+            "dialogue": "log_signed"
           },
           "outcome": {
             "name": "signed",

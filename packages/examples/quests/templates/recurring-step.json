@@ -40,7 +40,8 @@
           "start": true,
           "objective": {
             "kind": "talk",
-            "actor": "harbormaster"
+            "actor": "harbormaster",
+            "dialogue": "bell_duty"
           },
           "dialogue": {
             "provider": "oqf",
@@ -98,7 +99,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "harbormaster"
+            "actor": "harbormaster",
+            "dialogue": "bell_retire"
           },
           "outcome": {
             "name": "retired",

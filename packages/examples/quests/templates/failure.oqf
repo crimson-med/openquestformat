@@ -6,10 +6,10 @@ Q	escort_merchant	1		0		Escort the Merchant	Walk Tobin to the night market and c
 R	escort_pay	currency	coins	40
 R	paid_rep	reputation	merchants	10	paid
 R	lost_rep	reputation	merchants	-10	merchant_lost
-S	meet_merchant	s			talk merchant				oqf:escort_offer	0	0	Meet Tobin at the town gate
+S	meet_merchant	s			talk merchant escort_offer				oqf:escort_offer	0	0	Meet Tobin at the town gate
 S	escort		step.meet_merchant	flag.escort_accepted	reach market	kill merchant		0		1	0	Escort Tobin to the night market	Stays available until the job is accepted. Fails if Tobin dies on the road.
 S	declined		step.meet_merchant and flag.escort_declined				!declined|Job refused			0	0	Turn the job down
 S	merchant_lost		step.escort == "failed"				!merchant_lost|Tobin fell on the road				0	Tobin is gone
-S	close_sale		step.escort		talk buyer	event world.nightfall			oqf:market_sale	1	1	Close the sale before nightfall
+S	close_sale		step.escort		talk buyer market_sale	event world.nightfall			oqf:market_sale	1	1	Close the sale before nightfall
 S	too_late		step.close_sale == "failed"				!too_late|The buyer left			1	1	The buyer has gone home
 S	paid		step.close_sale				paid|Sale closed			1	0	Collect your share

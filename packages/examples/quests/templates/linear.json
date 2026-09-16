@@ -46,7 +46,8 @@
           "start": true,
           "objective": {
             "kind": "talk",
-            "actor": "fisher"
+            "actor": "fisher",
+            "dialogue": "maren_intro"
           },
           "dialogue": {
             "provider": "oqf",
@@ -107,7 +108,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "fisher"
+            "actor": "fisher",
+            "dialogue": "maren_return"
           },
           "outcome": {
             "name": "returned",

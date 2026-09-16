@@ -54,7 +54,8 @@
           "start": true,
           "objective": {
             "kind": "talk",
-            "actor": "cook"
+            "actor": "cook",
+            "dialogue": "order_taken"
           },
           "rewards": [
             "bait"
@@ -98,7 +99,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "cook"
+            "actor": "cook",
+            "dialogue": "order_delivered"
           },
           "outcome": {
             "name": "delivered",
