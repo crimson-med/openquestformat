@@ -4,12 +4,17 @@
  * panes that replaces the inspector.
  */
 import type { ReactNode } from 'react'
-import { useEditorState } from '../store/context'
-import { countFindings } from '../store/findings'
+import { browserStore } from '../lib/direction'
+import { writeStrict } from '../lib/strict'
+import { useDispatch, useEditorState } from '../store/context'
+import { countFindings, countStrictOnly } from '../store/findings'
 import { FindingList } from './FindingList'
 import { SourcePanel } from './SourcePanel'
 
 export type DrawerTab = 'validation' | 'source'
+
+const STRICT_TITLE =
+  'Strict adds warnings that need the whole pack to be loaded: flags no reward sets, unknown extension namespaces, mixed keyed and literal text, unbound conversations.'
 
 export function Drawer({
   tab,
@@ -23,8 +28,15 @@ export function Drawer({
   onOpen: (open: boolean) => void
 }) {
   const state = useEditorState()
+  const dispatch = useDispatch()
   const counts = countFindings(state.findings)
   const total = counts.errors + counts.warnings
+  const strictOnly = state.strict ? countStrictOnly(state.findings) : 0
+
+  const setStrict = (strict: boolean) => {
+    dispatch({ type: 'validation/strict', strict })
+    writeStrict(browserStore(), strict)
+  }
 
   const tabButton = (value: DrawerTab, label: ReactNode) => (
     <button
@@ -65,6 +77,16 @@ export function Drawer({
           )}
           {tabButton('source', 'Source')}
         </nav>
+        {open && tab === 'validation' ? (
+          <label className="strict-toggle" title={STRICT_TITLE}>
+            <input
+              type="checkbox"
+              checked={state.strict}
+              onChange={(event) => setStrict(event.target.checked)}
+            />
+            Strict
+          </label>
+        ) : null}
         <button
           type="button"
           className="ghost"
@@ -76,7 +98,17 @@ export function Drawer({
       </header>
       {open ? (
         <div className="drawer-body">
-          {tab === 'validation' ? <FindingList findings={state.findings} /> : null}
+          {tab === 'validation' ? (
+            <>
+              {strictOnly > 0 ? (
+                <p className="strict-note" title={STRICT_TITLE}>
+                  {strictOnly} of {total} {strictOnly === 1 ? 'finding comes' : 'findings come'}{' '}
+                  from strict mode.
+                </p>
+              ) : null}
+              <FindingList findings={state.findings} />
+            </>
+          ) : null}
           {tab === 'source' ? <SourcePanel /> : null}
         </div>
       ) : null}

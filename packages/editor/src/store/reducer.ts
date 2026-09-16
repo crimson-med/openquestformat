@@ -558,10 +558,11 @@ function commit(state: EditorState, docs: Documents): EditorState {
   return {
     ...docs,
     dirty: true,
+    strict: state.strict,
     findings:
       docs.quests === state.quests && docs.dialogues === state.dialogues
         ? state.findings
-        : computeFindings(docs.quests, docs.dialogues),
+        : computeFindings(docs.quests, docs.dialogues, { strict: state.strict }),
     past: past.length > HISTORY_LIMIT ? past.slice(past.length - HISTORY_LIMIT) : past,
     future: [],
   }
@@ -571,20 +572,22 @@ export function createState(
   quests = emptyDocument(),
   dialogues = emptyDialogueDocument(),
   selection: Selection = NO_SELECTION,
+  strict = false,
 ): EditorState {
   return {
     quests,
     dialogues,
     selection,
     dirty: false,
-    findings: computeFindings(quests, dialogues),
+    strict,
+    findings: computeFindings(quests, dialogues, { strict }),
     past: [],
     future: [],
   }
 }
 
-export function initialState(): EditorState {
-  return createState()
+export function initialState(strict = false): EditorState {
+  return createState(undefined, undefined, undefined, strict)
 }
 
 export function reducer(state: EditorState, action: Action): EditorState {
@@ -592,9 +595,17 @@ export function reducer(state: EditorState, action: Action): EditorState {
     case 'select':
       return { ...state, selection: action.selection }
     case 'doc/reset':
-      return initialState()
+      return initialState(state.strict)
     case 'doc/markSaved':
       return { ...state, dirty: false }
+    case 'validation/strict': {
+      if (action.strict === state.strict) return state
+      return {
+        ...state,
+        strict: action.strict,
+        findings: computeFindings(state.quests, state.dialogues, { strict: action.strict }),
+      }
+    }
     case 'doc/load': {
       const quests = action.quests ?? state.quests
       const dialogues = action.dialogues ?? state.dialogues
@@ -603,7 +614,8 @@ export function reducer(state: EditorState, action: Action): EditorState {
         dialogues,
         selection: action.selection ?? NO_SELECTION,
         dirty: false,
-        findings: computeFindings(quests, dialogues),
+        strict: state.strict,
+        findings: computeFindings(quests, dialogues, { strict: state.strict }),
         past: [],
         future: [],
       }
@@ -619,7 +631,8 @@ export function reducer(state: EditorState, action: Action): EditorState {
       }
       return {
         ...previous,
-        findings: computeFindings(previous.quests, previous.dialogues),
+        strict: state.strict,
+        findings: computeFindings(previous.quests, previous.dialogues, { strict: state.strict }),
         past: state.past.slice(0, -1),
         future: [current, ...state.future].slice(0, HISTORY_LIMIT),
       }
@@ -635,7 +648,8 @@ export function reducer(state: EditorState, action: Action): EditorState {
       }
       return {
         ...next,
-        findings: computeFindings(next.quests, next.dialogues),
+        strict: state.strict,
+        findings: computeFindings(next.quests, next.dialogues, { strict: state.strict }),
         past: [...state.past, current].slice(-HISTORY_LIMIT),
         future: state.future.slice(1),
       }

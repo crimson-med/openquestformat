@@ -10,6 +10,7 @@ import type { DialogueDocument } from '@oqf/dialogue'
 import '@xyflow/react/dist/style.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { type KeyValueStore, loadState, saveState } from '../lib/persist'
+import { readStrict } from '../lib/strict'
 import { StoreProvider, useEditorState } from '../store/context'
 import { createState } from '../store/reducer'
 import type { EditorState, Selection } from '../store/types'
@@ -75,12 +76,14 @@ export function QuestEditor({
   )
 
   const initial = useMemo<EditorState>(() => {
-    if (given) return createState(initialQuests, initialDialogues)
+    // Strict is a viewer preference, remembered whether or not the documents are.
+    const strict = readStrict(storage ?? browserStorage())
+    if (given) return createState(initialQuests, initialDialogues, undefined, strict)
     const restored = store === undefined ? undefined : loadState(store)
-    if (restored === undefined) return createState()
-    return createState(restored.quests, restored.dialogues, restored.selection as Selection)
+    if (restored === undefined) return createState(undefined, undefined, undefined, strict)
+    return createState(restored.quests, restored.dialogues, restored.selection as Selection, strict)
     // The initial document is read once. Later changes flow through the reducer.
-  }, [given, initialQuests, initialDialogues, store])
+  }, [given, initialQuests, initialDialogues, store, storage])
 
   return (
     <StoreProvider initial={initial}>

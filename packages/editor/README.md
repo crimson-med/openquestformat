@@ -20,6 +20,13 @@ of the views, the graph legend and the shortcuts.
 
 ## What it does
 
+- **Toolbar.** The brand, the four view pills, Play, and the file actions (New,
+  Open, Export) with the More menu at the end. It holds together down to 720px
+  without wrapping or scrolling sideways: the header drops one group at a time
+  as the window narrows, least important first, and the More menu picks up the
+  same commands, so the view pills, Play, New, Open and Export stay on the bar
+  at every width. Unsaved work shows as a pill beside the brand, and as a dot on
+  the OQF mark once the bar is too narrow for the pill.
 - **Quest graph.** One node per step, edges from `stepGraph`, dagre auto layout
   top to bottom or left to right. The bar above each canvas holds Add, Auto
   layout, the direction toggle (remembered in local storage), the quest or
@@ -49,6 +56,14 @@ of the views, the graph legend and the shortcuts.
   Click a finding to select what it is about. Most findings carry one-click
   fixes (mark repeat, add an outcome, add a missing dictionary entry or reward,
   remove a dangling reference, bind a conversation), each a single undo step.
+  The Strict switch beside the tabs runs both validators in strict mode: it adds
+  the checks that only mean something once the whole pack is loaded (flags no
+  reward sets, unknown extension namespaces, mixed keyed and literal text,
+  unbound conversations) and turns an unreachable ending into an error. A line
+  above the list says how many of the findings came from strict, so the jump in
+  the count is never a mystery. The choice is remembered in local storage beside
+  the layout direction; it changes no document, so it neither dirties the pack
+  nor pushes an undo entry.
 - **Source.** The live compact text, and the JSON and markdown forms, read only.
 - **Play.** A mode, entered from the toolbar's Play button or cmd or ctrl P,
   that replaces the inspector while the graph stays live: the quest playtest

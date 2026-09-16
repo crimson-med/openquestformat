@@ -2,8 +2,8 @@
 export type { Action, DictionaryKind, FieldPatch } from './actions'
 export { isMutating } from './actions'
 export { StoreProvider, useDispatch, useEditorState } from './context'
-export type { EditorFinding } from './findings'
-export { computeFindings, countFindings } from './findings'
+export type { EditorFinding, FindingOptions } from './findings'
+export { STRICT_ONLY_CODES, computeFindings, countFindings, countStrictOnly } from './findings'
 export {
   createState,
   initialState,

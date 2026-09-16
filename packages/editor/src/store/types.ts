@@ -30,6 +30,11 @@ export interface EditorDocument {
 export interface EditorState extends EditorDocument {
   /** Recomputed from both documents on every change. */
   findings: EditorFinding[]
+  /**
+   * Run the validators in strict mode. A viewer preference, not a document
+   * value, so it sits outside `EditorDocument` and never enters the undo stack.
+   */
+  strict: boolean
   past: EditorDocument[]
   future: EditorDocument[]
 }
