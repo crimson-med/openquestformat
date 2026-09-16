@@ -8,6 +8,54 @@ and `@xyflow/react`, no other UI dependencies.
 ## Run it
 
 ```
+npx @oqf/editor
+```
+
+A local static server over the built editor, no install and no configuration.
+It prints the URL; everything runs in the browser, and the editor reads and
+writes files through the browser's file picker.
+
+| Flag | What it does |
+|------|--------------|
+| `--port <n>` | Port to listen on, default 4600. If it is busy the next ten ports are tried. |
+| `--host <h>` | Address to bind, default `127.0.0.1`. Pass `0.0.0.0` to reach it from another machine. |
+| `--open` | Open the URL in the default browser. |
+| `--help` | Print the usage text. |
+| `--version` | Print the package version. |
+
+`dist/app` in the package is that same build as plain files, so any static host
+serves it as it is. The site uses relative asset paths and works from any path
+under a domain.
+
+## Embed it
+
+```
+npm install @oqf/editor react react-dom
+```
+
+`react` and `react-dom` are peer dependencies (`>=18`); the host app provides
+them, and `@oqf/core`, `@oqf/dialogue`, `@oqf/i18n` and `@oqf/runtime` are
+external too, so the host and the editor share one copy of the model.
+
+```tsx
+import { QuestEditor } from '@oqf/editor'
+import '@oqf/editor/styles.css'
+
+export function Editor({ quests }: { quests: OqfDocument }) {
+  return <QuestEditor initialQuests={quests} onChange={(next) => save(next.quests)} />
+}
+```
+
+The stylesheet is a separate entry point, so importing it is the host's choice.
+Autosave is on unless documents are passed in: a host that owns the documents
+should own persistence too. The store is a plain reducer (`src/store`) with no
+React in it, so the actions, selectors and findings are usable on their own,
+and `mergePack` and `splitPack` are exported for hosts that keep a folder of
+files rather than one document.
+
+## Develop it
+
+```
 pnpm install
 pnpm editor          # from the repo root, or pnpm --filter @oqf/editor dev
 ```
@@ -17,6 +65,11 @@ template, open a file, or begin a blank quest. The "New" menu holds the same
 templates, the last of them the Harbormaster's Ledger fixture, quest and
 dialogue both. The `?` button (and Help under the More menu) opens a summary
 of the views, the graph legend and the shortcuts.
+
+`pnpm --filter @oqf/editor build` writes both builds: `dist/lib` for the
+library entry (Vite library mode, declarations from `tsconfig.lib.json`) and
+`dist/app` for the static site. The library build needs the sibling packages
+built first, which `pnpm -r build` does in order.
 
 ## What it does
 
@@ -115,15 +168,10 @@ dialogue for its talk steps (engine hooks has none), and is the same fixture
 the other packages test against, so a template never drifts from what the
 validator accepts.
 
-## Embedding
+## Props
 
-```tsx
-import { QuestEditor } from '@oqf/editor'
-
-<QuestEditor initialQuests={doc} initialDialogues={dialogue} onChange={save} />
-```
-
-The store is a plain reducer (`src/store`) with no React in it, so the actions,
-selectors and findings are usable on their own. `mergePack` and `splitPack`
-are exported too, for hosts that keep a folder of files rather than one
-document.
+`QuestEditor` takes `initialQuests`, `initialDialogues`, `onChange`, `persist`
+(autosave, defaulting to off once documents are passed in) and `storage` (where
+autosave writes, defaulting to `window.localStorage`). All of them are
+optional: mounted bare, the editor owns its own document and its own autosave,
+which is what the app entry point and `npx @oqf/editor` do.
