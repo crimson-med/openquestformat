@@ -100,5 +100,5 @@ First release. The format is frozen at `OQF1`, the packages are 0.x while the AP
 - A shipping game. Cozy Coast is the first target and the integration is not done, so "runs in a
   real game" is still unproven.
 
-[Unreleased]: https://github.com/mburlet/openquestformat/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/mburlet/openquestformat/releases/tag/v0.1.0
+[Unreleased]: https://github.com/crimson-med/openquestformat/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/crimson-med/openquestformat/releases/tag/v0.1.0

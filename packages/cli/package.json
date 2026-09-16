@@ -16,13 +16,13 @@
     "ink",
     "yarn-spinner"
   ],
-  "homepage": "https://github.com/mburlet/openquestformat/tree/main/packages/cli#readme",
+  "homepage": "https://github.com/crimson-med/openquestformat/tree/main/packages/cli#readme",
   "bugs": {
-    "url": "https://github.com/mburlet/openquestformat/issues"
+    "url": "https://github.com/crimson-med/openquestformat/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mburlet/openquestformat.git",
+    "url": "git+https://github.com/crimson-med/openquestformat.git",
     "directory": "packages/cli"
   },
   "license": "Apache-2.0",

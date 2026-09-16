@@ -6,13 +6,13 @@
   "type": "module",
   "license": "Apache-2.0",
   "author": "Mederic Burlet <mederic.burlet@gmail.com>",
-  "homepage": "https://github.com/mburlet/openquestformat#readme",
+  "homepage": "https://github.com/crimson-med/openquestformat#readme",
   "bugs": {
-    "url": "https://github.com/mburlet/openquestformat/issues"
+    "url": "https://github.com/crimson-med/openquestformat/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mburlet/openquestformat.git"
+    "url": "git+https://github.com/crimson-med/openquestformat.git"
   },
   "engines": {
     "node": ">=24"
