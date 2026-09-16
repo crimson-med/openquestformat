@@ -2,7 +2,32 @@
   "name": "@oqf/dialogue",
   "version": "0.1.0",
   "description": "Open Quest Format dialogue model, bridge interface, built-in provider, and Ink and Yarn Spinner export and import.",
+  "keywords": [
+    "quest",
+    "game",
+    "narrative",
+    "interactive-fiction",
+    "gamedev",
+    "oqf",
+    "dialogue",
+    "ink",
+    "yarn-spinner",
+    "branching-dialogue",
+    "conversation"
+  ],
+  "homepage": "https://github.com/mburlet/openquestformat/tree/main/packages/dialogue#readme",
+  "bugs": {
+    "url": "https://github.com/mburlet/openquestformat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mburlet/openquestformat.git",
+    "directory": "packages/dialogue"
+  },
+  "license": "Apache-2.0",
+  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -14,8 +39,6 @@
   "files": [
     "dist"
   ],
-  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
-  "license": "Apache-2.0",
   "engines": {
     "node": ">=24"
   },
@@ -30,11 +53,6 @@
   "dependencies": {
     "@oqf/core": "workspace:*"
   },
-  "devDependencies": {
-    "inkjs": "^2.4.0",
-    "tsup": "^8.3.5",
-    "typescript": "^5.7.3"
-  },
   "peerDependencies": {
     "inkjs": "^2.4.0"
   },
@@ -42,5 +60,10 @@
     "inkjs": {
       "optional": true
     }
+  },
+  "devDependencies": {
+    "inkjs": "^2.4.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
   }
 }

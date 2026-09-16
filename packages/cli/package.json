@@ -1,7 +1,32 @@
 {
   "name": "@oqf/cli",
   "version": "0.1.0",
-  "description": "Open Quest Format command line: validate, convert, graph.",
+  "description": "The oqf command line for Open Quest Format: validate, convert, import, graph, schema, extract and inject.",
+  "keywords": [
+    "quest",
+    "game",
+    "narrative",
+    "interactive-fiction",
+    "gamedev",
+    "oqf",
+    "cli",
+    "command-line",
+    "validator",
+    "converter",
+    "ink",
+    "yarn-spinner"
+  ],
+  "homepage": "https://github.com/mburlet/openquestformat/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/mburlet/openquestformat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mburlet/openquestformat.git",
+    "directory": "packages/cli"
+  },
+  "license": "Apache-2.0",
+  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,11 +36,12 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "oqf": "./dist/index.js"
+  },
   "files": [
     "dist"
   ],
-  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
-  "license": "Apache-2.0",
   "engines": {
     "node": ">=24"
   },
@@ -37,8 +63,5 @@
     "typescript": "^5.7.3",
     "@types/node": "^22.10.5",
     "tsx": "^4.19.2"
-  },
-  "bin": {
-    "oqf": "./dist/index.js"
   }
 }

@@ -1,8 +1,19 @@
 {
   "name": "openquestformat",
   "version": "0.1.0",
+  "description": "Open Quest Format: an open, engine neutral standard for quests. Spec, canonical model, parsers, validator, runtime, CLI and editor.",
   "private": true,
   "type": "module",
+  "license": "Apache-2.0",
+  "author": "Mederic Burlet <mederic.burlet@gmail.com>",
+  "homepage": "https://github.com/mburlet/openquestformat#readme",
+  "bugs": {
+    "url": "https://github.com/mburlet/openquestformat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mburlet/openquestformat.git"
+  },
   "engines": {
     "node": ">=24"
   },
@@ -17,7 +28,10 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "cli": "tsx packages/cli/src/index.ts",
-    "editor": "pnpm --filter @oqf/editor dev"
+    "editor": "pnpm --filter @oqf/editor dev",
+    "release": "bash scripts/publish.sh",
+    "release:dry": "bash scripts/publish.sh --dry-run",
+    "version:set": "pnpm -r exec npm version --no-git-tag-version --allow-same-version"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

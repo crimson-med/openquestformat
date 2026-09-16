@@ -1,0 +1,104 @@
+# Changelog
+
+All notable changes to this project are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+Every package in the workspace shares one version number. `@oqf/editor` is part of the repository
+but is an application, not a library, and is not published to npm.
+
+The file format carries its own major version, `OQF1`, which is independent of these package
+versions. Compact columns are append only, so a file written against `OQF1` keeps parsing.
+
+## [Unreleased]
+
+## [0.1.0] - 2026-09-16
+
+First release. The format is frozen at `OQF1`, the packages are 0.x while the API settles.
+
+### Added
+
+**`@oqf/core`**
+
+- The canonical quest model: quests, steps, the `unlock`, `activate`, `complete` and `fail`
+  transitions, objectives, rewards, outcomes, dictionaries of actors, locations, items and tags, and
+  `x-<namespace>.<key>` extension keys that are preserved and never read.
+- The condition language: a non-Turing-complete infix authoring form over a fixed operator
+  whitelist, stored as a JSON Logic subset, with a parser, a canonical printer and an evaluator that
+  takes a resolver for the `flag`, `count`, `step`, `outcome`, `quest` and `var` namespaces.
+- The compact `.oqf` format, line oriented and interned, with the column order frozen in
+  `docs/12-compact-spec.md`, and the JSON format, both parsing to the identical model and both
+  reproducing their input byte for byte after normalization.
+- Markdown export, read only.
+- A JSON Schema (draft 2020-12) for the JSON form, exported as a value and as text.
+- The validator: structural and reference checks, the step graph, cycle detection and reachability,
+  with findings carrying a level, a code and a path, over one document or a pack of several.
+
+**`@oqf/dialogue`**
+
+- The dialogue model: conversations, nodes, choices, flag sets, emitted events and lore nodes, with
+  the `.oqd` compact and JSON forms frozen in `docs/13-dialogue-spec.md` and their own JSON Schema.
+- The bridge interface any dialogue system implements, and `OqfDialogueProvider`, a built-in
+  provider that runs the model and drives quest steps through the event channel.
+- Ink and Yarn Spinner export, and import back from both. Constructs the model cannot hold are
+  reported per line rather than silently dropped.
+- A dialogue validator that shares the core finding type, including the lore node check and the
+  binding checks against the quests that name a conversation.
+
+**`@oqf/runtime`**
+
+- An engine-agnostic quest state machine: world events in, quest state and events out. Runs in
+  browsers and in Node, and depends only on `@oqf/core`.
+- Offer, accept, per step progress, rewards, multiple outcomes including failures, repeat quests and
+  repeat steps, parallel active steps, and `custom` objectives the engine reports itself.
+- Versioned state documents that save, load and reconcile against the quests the game shipped.
+- An event map so an engine keeps its own event vocabulary.
+
+**`@oqf/i18n`**
+
+- Extraction of inline strings into a table and injection back into the document, for quests and
+  dialogue, with keys derived from structure so they are stable across runs.
+- Table adapters as symmetric pairs: JSON, CSV, PO and XLIFF 1.2.
+- A resolver for reading a localized document at runtime, with a fallback locale.
+
+**`@oqf/cli`**
+
+- `oqf validate`, `convert`, `import`, `graph`, `schema`, `extract` and `inject`, over single files
+  or a directory read as one pack.
+- Conversion between `.oqf`, JSON, Markdown, `.oqd`, Ink and Yarn Spinner, and import from Ink and
+  Yarn Spinner.
+- Mermaid flowchart output for a quest's step graph.
+
+**`@oqf/examples`**
+
+- The Harbormaster's Ledger reference quest in every form: `.oqf`, JSON, `.oqd` and dialogue JSON.
+- `minimal.oqf` and its JSON, the smallest valid document.
+- `broken/`, one deliberate defect per file, each naming the finding it expects.
+- `templates/`, nine small quests that each isolate one pattern: linear, branching, repeatable,
+  loop, recurring-step, parallel, failure, chain and engine-hooks, valid and warning free, with
+  dialogue for every template that has a talk step.
+
+**The editor** (`@oqf/editor`, in this repository, not on npm)
+
+- A web editor built on Vite and React with four views, Quests, Dialogue, Strings and Dictionaries,
+  a step graph with per-edge field and state, an inspector with suggestions and live parse errors,
+  validation on every change with one-click fixes, a playtest mode running `@oqf/runtime`, a
+  conversation player, and import and export of single files or multi-file packs.
+
+**The project**
+
+- The planning and specification documents in `docs/`, including the frozen compact and dialogue
+  specs, the condition grammar, the event vocabulary, the state document and the validation rules.
+- Apache 2.0 license.
+
+### Not in this release
+
+- Engine exporters. Godot, Unity and Unreal are v1.5.
+- An MCP server and a Claude Code plugin.
+- Timers, factions, radiant quests and tabletop export, all planned for v2 and designed so v1 files
+  stay valid when they land.
+- A shipping game. Cozy Coast is the first target and the integration is not done, so "runs in a
+  real game" is still unproven.
+
+[Unreleased]: https://github.com/mburlet/openquestformat/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/mburlet/openquestformat/releases/tag/v0.1.0
