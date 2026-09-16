@@ -45,7 +45,8 @@
           "start": true,
           "objective": {
             "kind": "talk",
-            "actor": "angler"
+            "actor": "angler",
+            "dialogue": "eel_tale"
           },
           "dialogue": {
             "provider": "oqf",
@@ -126,7 +127,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "angler"
+            "actor": "angler",
+            "dialogue": "eel_landed"
           },
           "outcome": {
             "name": "landed",

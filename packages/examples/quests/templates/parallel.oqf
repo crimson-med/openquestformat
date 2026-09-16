@@ -8,10 +8,10 @@ R	halfway_xp	xp	xp	10
 R	bunting_coins	currency	coins	5
 R	pie_coins	currency	coins	30
 R	festival_rep	reputation	town	15	opened
-S	meet_organizer	s			talk organizer				oqf:festival_plan	0	0	Ask Pim what the festival needs
+S	meet_organizer	s			talk organizer festival_plan				oqf:festival_plan	0	0	Ask Pim what the festival needs
 S	gather_lanterns		step.meet_organizer		collect lantern 4					0		Gather four paper lanterns
 S	lanterns_halfway	o	count.gather_lanterns >= 2					0				Halfway through the lanterns	Unlocks from another step's counter, before that step is done.
 S	hang_bunting		step.meet_organizer		interact bunting_post			1		0		Hang the bunting
-S	hire_band		step.meet_organizer		talk bandleader				oqf:band_hire	0	1	Hire Suli's band
+S	hire_band		step.meet_organizer		talk bandleader band_hire				oqf:band_hire	0	1	Hire Suli's band
 S	bake_pies	o	step.meet_organizer		collect pie 6			2		0		Bake six fish pies (bonus)
-S	open_festival		step.gather_lanterns and step.hang_bunting and step.hire_band		talk organizer		opened|The festival opens		oqf:festival_open	0	0	Tell Pim the square is ready
+S	open_festival		step.gather_lanterns and step.hang_bunting and step.hire_band		talk organizer festival_open		opened|The festival opens		oqf:festival_open	0	0	Tell Pim the square is ready

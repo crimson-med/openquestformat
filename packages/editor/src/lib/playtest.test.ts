@@ -284,8 +284,8 @@ describe('suggestEvents', () => {
       ['Collect all 3 fish.common', { item: 'fish.common', amount: 3 }],
     ])
     expect(suggestion(list, 'take_order')[0]).toMatchObject({
-      label: 'Talk to cook',
-      payload: { actor: 'cook' },
+      label: 'End order_taken',
+      payload: { actor: 'cook', node: 'order_taken' },
     })
   })
 
@@ -351,9 +351,9 @@ describe('PlaytestSession on the repeatable template', () => {
   it('retakes the quest after an outcome and counts the passes', () => {
     const session = new PlaytestSession(repeatable, 'daily_catch')
     session.start()
-    session.emit('dialogue.ended', { actor: 'cook' })
+    session.emit('dialogue.ended', { actor: 'cook', node: 'order_taken' })
     session.emit('item.collected', { item: 'fish.common', amount: 3 })
-    session.emit('dialogue.ended', { actor: 'cook' })
+    session.emit('dialogue.ended', { actor: 'cook', node: 'order_delivered' })
 
     let snapshot = session.snapshot()
     expect(snapshot.outcome).toBeNull()
@@ -375,10 +375,10 @@ describe('PlaytestSession on the repeatable template', () => {
     expect(session.snapshot().status).toBe('offered')
     session.accept()
     expect(session.snapshot().status).toBe('open')
-    session.emit('dialogue.ended', { actor: 'cook' })
+    session.emit('dialogue.ended', { actor: 'cook', node: 'order_taken' })
     session.emit('item.collected', { item: 'fish.common', amount: 1 })
     session.emit('item.collected', { item: 'fish.common', amount: 2 })
-    session.emit('dialogue.ended', { actor: 'cook' })
+    session.emit('dialogue.ended', { actor: 'cook', node: 'order_delivered' })
 
     snapshot = session.snapshot()
     expect(snapshot.passes).toBe(2)
@@ -415,7 +415,7 @@ describe('PlaytestSession.removeFlag', () => {
   it('drops the flag from the snapshot and the runtime reads it as false', () => {
     const session = new PlaytestSession(failure, 'escort_merchant')
     session.start()
-    session.emit('dialogue.ended', { actor: 'merchant' })
+    session.emit('dialogue.ended', { actor: 'merchant', node: 'escort_offer' })
     expect(states(session).escort).toBe('available')
     session.setFlag('escort_accepted')
     expect(states(session).escort).toBe('active')
@@ -505,9 +505,9 @@ describe('lastOutcome', () => {
     const session = new PlaytestSession(repeatable, 'daily_catch')
     session.start()
     expect(lastOutcome(session.transcript, 'daily_catch')).toBeUndefined()
-    session.emit('dialogue.ended', { actor: 'cook' })
+    session.emit('dialogue.ended', { actor: 'cook', node: 'order_taken' })
     session.emit('item.collected', { item: 'fish.common', amount: 3 })
-    session.emit('dialogue.ended', { actor: 'cook' })
+    session.emit('dialogue.ended', { actor: 'cook', node: 'order_delivered' })
     expect(lastOutcome(session.transcript, 'daily_catch')).toEqual({
       name: 'delivered',
       failed: false,
@@ -592,7 +592,7 @@ describe('nextEvents', () => {
     const escort = failure.quests[0]
     const session = new PlaytestSession(failure, 'escort_merchant')
     session.start()
-    session.emit('dialogue.ended', { actor: 'merchant' })
+    session.emit('dialogue.ended', { actor: 'merchant', node: 'escort_offer' })
     const split = nextEvents(escort, session.snapshot(), suggestEvents(escort))
     expect(split.now.map((group) => [group.step, group.state, group.waiting])).toEqual([
       ['escort', 'available', true],

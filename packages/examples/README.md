@@ -13,8 +13,9 @@ normalization. Nothing here is generated, so edits are deliberate and reviewable
 `quests/templates/` holds small quests that each isolate one pattern the model supports, valid and
 warning free, in `.oqf` and `.json` pairs. Every template with a `talk` step also ships its
 conversations as an `.oqd` and `.dialogue.json` pair, one conversation per talk step, bound from the
-step's `dialogue` cell; `engine-hooks` is the only template without dialogue. The editor offers them
-under "New from template".
+step's `dialogue` cell; `engine-hooks` is the only template without dialogue. Every `talk` objective
+names the conversation its step is bound to, so replaying an earlier conversation cannot complete a
+later step. The editor offers them under "New from template".
 
 | Template | Pattern | Dialogue |
 |----------|---------|----------|

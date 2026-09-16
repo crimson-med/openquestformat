@@ -7,6 +7,6 @@ Q	daily_catch	1	r	0	flag.notice_board_open	The Daily Catch	The tavern needs fres
 R	bait	item	bait.worm	2
 R	daily_coins	currency	coins	20	delivered
 R	daily_rep	reputation	tavern	1	delivered
-S	take_order	s			talk cook			0	oqf:order_taken	0	0	Take today's order from the cook
+S	take_order	s			talk cook order_taken			0	oqf:order_taken	0	0	Take today's order from the cook
 S	catch_fish		step.take_order		collect fish.common 3							Catch three harbor sardines
-S	deliver		step.catch_fish		talk cook		delivered|Order delivered		oqf:order_delivered	0	0	Deliver the sardines to the galley
+S	deliver		step.catch_fish		talk cook order_delivered		delivered|Order delivered		oqf:order_delivered	0	0	Deliver the sardines to the galley

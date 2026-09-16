@@ -44,7 +44,8 @@
           "start": true,
           "objective": {
             "kind": "talk",
-            "actor": "merchant"
+            "actor": "merchant",
+            "dialogue": "escort_offer"
           },
           "dialogue": {
             "provider": "oqf",
@@ -157,7 +158,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "buyer"
+            "actor": "buyer",
+            "dialogue": "market_sale"
           },
           "failObjective": {
             "kind": "event",

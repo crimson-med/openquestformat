@@ -13,6 +13,6 @@ S	sail_out	s			reach open_sea					1	1	Sail out to the open sea
 S	sail_home		step.sail_out		reach harbor		returned|Home safe			2	1	Sail back to the harbor
 Q	captains_log	1		0	quest.first_voyage == "closed"	Chain 3: The Captain's Log	Unlocked once First Voyage is closed. One step reads a step of another quest.
 R	log_bonus	xp	xp	5
-S	write_log	s			talk captain				oqf:log_voyage	2	1	Tell Rosa about the voyage
+S	write_log	s			talk captain log_voyage				oqf:log_voyage	2	1	Tell Rosa about the voyage
 S	note_open_sea	o	step.first_voyage#sail_out					0			1	Note the open sea in the log
-S	sign_log		step.write_log		talk captain		signed|Log signed		oqf:log_signed	2	1	Sign the captain's log
+S	sign_log		step.write_log		talk captain log_signed		signed|Log signed		oqf:log_signed	2	1	Sign the captain's log

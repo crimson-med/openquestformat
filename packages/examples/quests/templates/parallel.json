@@ -49,7 +49,8 @@
           "start": true,
           "objective": {
             "kind": "talk",
-            "actor": "organizer"
+            "actor": "organizer",
+            "dialogue": "festival_plan"
           },
           "dialogue": {
             "provider": "oqf",
@@ -128,7 +129,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "bandleader"
+            "actor": "bandleader",
+            "dialogue": "band_hire"
           },
           "dialogue": {
             "provider": "oqf",
@@ -194,7 +196,8 @@
           },
           "objective": {
             "kind": "talk",
-            "actor": "organizer"
+            "actor": "organizer",
+            "dialogue": "festival_open"
           },
           "outcome": {
             "name": "opened",
