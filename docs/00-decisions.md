@@ -106,6 +106,12 @@ The editor writes what only it needs into extension keys under `x-editor`, which
 
 Reason: the store stays one document with one dictionary set, which is what every selector, validator pass and cross-reference already expects, and the editor needs no format change or side file to remember layout or provenance. D12 guarantees other tools carry the keys through untouched.
 
+## D23. A failed step never reaches its own outcome
+
+Only completing an ending step reaches its outcome. A step that fails through `fail` or `failObjective` transitions to `failed` and stops there, whatever the outcome's `failed` flag says. The quest stays open and the remaining steps carry on. An outcome marked `failed` is still reached by completing its step, which is how `caught` closes the reference quest on `confiscated`.
+
+Reason: a fail rule on an ending is how an author rules that branch out, not how the quest ends. "Sell the contents" with a fail objective for the player refusing means the sale did not happen, so closing the quest on the `sold` outcome is exactly wrong. A failed ending is a route that closed, and the player still has the other routes. Endings and fail rules stay independent: one field says where a route leads, the other says when the route is off the table.
+
 ## Open items
 
 - **One objective per step.** The reference quest wants `trade` to require both "collect five koi" and "talk to the otter". v0.1 holds one objective per step; the talk half rides on the dialogue binding and a flag. A list of objectives is a candidate for v0.2 once the runtime has shipped in Cozy Coast and the need is confirmed.
