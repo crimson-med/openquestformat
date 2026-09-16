@@ -18,9 +18,16 @@ import type { QuestState } from './state.js'
 
 const LEDGER = REFERENCE_QUEST
 
+const FATE = 'ledger_fate'
+
 /** `quest.harbormasters_ledger.step.<id>.<state>`, spelled out for readable expectations. */
 function ev(stepId: string, state: string): string {
   return `quest.${LEDGER}.step.${stepId}.${state}`
+}
+
+/** The same spelled out for the two-ending quest in `ruledOutDocument`. */
+function fateEv(stepId: string, state: string): string {
+  return `quest.${FATE}.step.${stepId}.${state}`
 }
 
 interface Options {
@@ -70,6 +77,47 @@ function twinDocument(): OqfDocument {
   return inline([
     only('first', { id: 'errand', start: true, objective: parseObjective('event tick 5') }),
     only('second', { id: 'errand', start: true, complete: parseCondition('count.errand >= 2') }),
+  ])
+}
+
+/**
+ * Two endings, both reachable at once. `sell` carries a fail rule the author
+ * uses to rule that route out, so failing it must not close the quest on the
+ * `sold` outcome. `keep` is the route left standing.
+ */
+function ruledOutDocument(): OqfDocument {
+  return inline([
+    {
+      id: FATE,
+      version: 1,
+      title: 'What to do with the ledger',
+      tags: [],
+      steps: [
+        {
+          id: 'sell',
+          title: 'Sell the contents',
+          start: true,
+          objective: parseObjective('event ledger.sold'),
+          failObjective: parseObjective('event ledger.refused'),
+          outcome: { name: 'sold' },
+          rewards: ['sale_coins'],
+          actors: [],
+        },
+        {
+          id: 'keep',
+          title: 'Keep the ledger',
+          start: true,
+          objective: parseObjective('event ledger.kept'),
+          outcome: { name: 'kept' },
+          rewards: [],
+          actors: [],
+        },
+      ],
+      rewards: [
+        { id: 'sale_coins', kind: 'currency', ref: 'coins', amount: 100 },
+        { id: 'sold_rep', kind: 'reputation', ref: 'harbor', amount: -10, outcome: 'sold' },
+      ],
+    },
   ])
 }
 
@@ -334,6 +382,60 @@ describe('the steal route', () => {
     h.runtime.emit('object.interacted', { object: 'ledger_chest' })
     expect(h.names()).toEqual([])
     expect(h.runtime.getState(LEDGER).steps.steal.state).toBe('failed')
+  })
+})
+
+describe('a failed ending', () => {
+  it('marks only that step failed and leaves the quest open', () => {
+    const h = harness({ documents: [ruledOutDocument()] })
+    h.runtime.accept(FATE)
+    h.reset()
+
+    h.runtime.emit('ledger.refused')
+    expect(h.names()).toEqual([fateEv('sell', 'failed')])
+    expect(h.payloads(`quest.${FATE}.outcome`)).toEqual([])
+    expect(h.payloads('reward.granted')).toEqual([])
+
+    const state = h.runtime.getState(FATE)
+    expect(state.status).toBe('open')
+    expect(state.outcome).toBeNull()
+    expect(state.steps.sell).toMatchObject({ state: 'failed', failCount: 1 })
+    expect(state.steps.keep.state).toBe('active')
+    expect(state.rewards).toEqual([])
+    expect(h.runtime.resolve(`outcome.${FATE}.sold`)).toBe(false)
+  })
+
+  it('leaves the other ending reachable afterwards', () => {
+    const h = harness({ documents: [ruledOutDocument()] })
+    h.runtime.accept(FATE)
+    h.runtime.emit('ledger.refused')
+    h.reset()
+
+    h.runtime.emit('ledger.kept')
+    expect(h.payloads(`quest.${FATE}.outcome`)).toEqual([{ name: 'kept', failed: false }])
+
+    const state = h.runtime.getState(FATE)
+    expect(state.status).toBe('closed')
+    expect(state.outcome).toBe('kept')
+    expect(state.steps.sell.state).toBe('failed')
+    expect(state.steps.keep.state).toBe('done')
+    expect(state.rewards).toEqual([])
+  })
+
+  it('still reaches the outcome when the ending is completed instead', () => {
+    const h = harness({ documents: [ruledOutDocument()] })
+    h.runtime.accept(FATE)
+    h.reset()
+
+    h.runtime.emit('ledger.sold')
+    expect(h.payloads(`quest.${FATE}.outcome`)).toEqual([{ name: 'sold', failed: false }])
+
+    const state = h.runtime.getState(FATE)
+    expect(state.status).toBe('closed')
+    expect(state.outcome).toBe('sold')
+    expect(state.steps.sell.state).toBe('done')
+    expect(state.steps.keep.state).toBe('skipped')
+    expect(state.rewards).toEqual(['sale_coins', 'sold_rep'])
   })
 })
 

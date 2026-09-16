@@ -499,7 +499,14 @@ export class QuestRuntime {
     return true
   }
 
-  /** `fail` is checked before `complete`. The objective and the condition combine by `and`. */
+  /**
+   * `fail` is checked before `complete`. The objective and the condition combine
+   * by `and`. A step that fails this way only turns `failed`: it never reaches
+   * its outcome, whatever the outcome's `failed` flag says. An ending carrying a
+   * fail rule is how an author rules that route out, so the quest stays open and
+   * the remaining steps carry on. Only completing an ending closes a quest, see
+   * D23 in docs/00-decisions.md.
+   */
   private failed(quest: Quest, state: QuestState, step: Step): boolean {
     if (step.failObjective === undefined && step.fail === undefined) return false
     const runtime = state.steps[step.id]
@@ -511,7 +518,6 @@ export class QuestRuntime {
     }
     if (step.fail !== undefined && !this.test(step.fail, quest.id)) return false
     this.transition(quest, state, step, 'failed')
-    if (step.outcome !== undefined) this.reachOutcome(quest, state, step, step.outcome)
     return true
   }
 
@@ -524,7 +530,11 @@ export class QuestRuntime {
     return true
   }
 
-  /** A step met its completion. Ending steps run the outcome sequence afterwards. */
+  /**
+   * A step met its completion. Ending steps run the outcome sequence afterwards.
+   * This is the only path to an outcome: reaching one always means a step was
+   * completed, never that a step failed through `fail` or `failObjective`.
+   */
   private finish(quest: Quest, state: QuestState, step: Step): void {
     const failedEnding = step.outcome?.failed === true
     this.transition(quest, state, step, failedEnding ? 'failed' : 'done')

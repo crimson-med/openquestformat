@@ -54,7 +54,7 @@ locked -> available -> active -> done
 - `available`: unlocked, waiting for `activate` (or immediately `active` if none).
 - `active`: objective is live, counters run.
 - `done`: complete condition met, rewards granted.
-- `failed`: fail condition met.
+- `failed`: fail condition met. A failed step never reaches an outcome, even when it is an ending.
 - `skipped`: the runtime marks a step skipped when an ending is reached and the step is not `done` or `failed`, so the route the player did not take is crossed out. Never set by a condition.
 
 Several steps may be `active` at once.
@@ -100,6 +100,8 @@ Present on ending steps.
 | `name` | string | Unique among the quest's outcomes. |
 | `failed` | boolean | The outcome is a failure. Default false. |
 | `title` | text | Player-facing, optional. |
+
+A step reaches its outcome by completing. A step that fails through `fail` or `failObjective` only marks that step `failed`, whatever the outcome's `failed` flag says: the quest stays open and every other step carries on. An ending with a fail rule is how an author rules that route out, not how a quest ends. See [D23](00-decisions.md).
 
 Reaching an outcome:
 
