@@ -14,7 +14,6 @@ import {
 } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Direction } from '../lib/direction'
-import { bowOf } from '../lib/floating'
 import { conversationPositions, dialogueEdges } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForNode, worstLevel } from '../store/selectors'
@@ -76,20 +75,19 @@ export function DialogueGraph({
     setNodes(build())
   }, [build])
 
-  const edges = useMemo<Edge[]>(() => {
-    const found = dialogueEdges(conversation)
-    const bows = bowOf(found)
-    return found.map((edge, index) => ({
-      id: `${edge.from}->${edge.to}-${index}`,
-      type: 'floating',
-      source: edge.from,
-      target: edge.to,
-      label: edge.label,
-      className: edge.kind,
-      markerEnd: ARROW,
-      data: { bow: bows[index] },
-    }))
-  }, [conversation])
+  const edges = useMemo<Edge[]>(
+    () =>
+      dialogueEdges(conversation).map((edge, index) => ({
+        id: `${edge.from}->${edge.to}-${index}`,
+        type: 'floating',
+        source: edge.from,
+        target: edge.to,
+        label: edge.label,
+        className: edge.kind,
+        markerEnd: ARROW,
+      })),
+    [conversation],
+  )
 
   const onNodesChange = useCallback((changes: NodeChange<DialogueFlowNode>[]) => {
     setNodes((current) => applyNodeChanges(changes, current))

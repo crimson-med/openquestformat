@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   type Box,
-  bowOf,
+  EDGE_GAP,
   centerOf,
   edgeAnchors,
   offsetAlongSide,
+  routeEdges,
   selfLoopPath,
   sideFacing,
   sidePoint,
@@ -90,37 +91,64 @@ describe('selfLoopPath', () => {
   })
 })
 
-describe('bowOf', () => {
-  it('leaves a lone edge on the straight line', () => {
-    expect(bowOf([{ from: 'a', to: 'b' }])).toEqual([0])
+describe('routeEdges', () => {
+  const boxes = {
+    offer: { x: 0, y: 0, width: 200, height: 160 },
+    a: { x: 500, y: -200, width: 200, height: 100 },
+    b: { x: 500, y: 0, width: 200, height: 100 },
+    c: { x: 500, y: 200, width: 200, height: 100 },
+  }
+
+  it('fans the edges that leave one side apart', () => {
+    const routes = routeEdges(boxes, [
+      { id: '1', from: 'offer', to: 'a' },
+      { id: '2', from: 'offer', to: 'b' },
+      { id: '3', from: 'offer', to: 'c' },
+    ])
+    const ys = ['1', '2', '3'].map((id) => routes[id].source.y)
+    expect(new Set(ys).size).toBe(3)
+    // Ordered by where the far end sits, and evenly spaced.
+    expect(ys[0]).toBeLessThan(ys[1])
+    expect(ys[1]).toBeLessThan(ys[2])
+    expect(ys[1] - ys[0]).toBeCloseTo(ys[2] - ys[1])
   })
 
-  it('opens a reply and its line into a pair', () => {
-    const bows = bowOf([
-      { from: 'offer', to: 'curiosity' },
-      { from: 'curiosity', to: 'offer' },
+  it('separates a line from its reply', () => {
+    const routes = routeEdges(boxes, [
+      { id: 'there', from: 'offer', to: 'b' },
+      { id: 'back', from: 'b', to: 'offer' },
     ])
-    expect(bows[0]).not.toBe(0)
-    expect(bows[1]).not.toBe(0)
-    // Same sign, because the second edge runs the other way: the pair opens.
-    expect(Math.sign(bows[0])).toBe(Math.sign(bows[1]))
+    expect(routes.there.source.y).not.toBe(routes.back.target.y)
+    expect(Math.abs(routes.there.source.y - routes.back.target.y)).toBe(EDGE_GAP)
   })
 
-  it('spreads three edges between the same pair evenly', () => {
-    const bows = bowOf([
-      { from: 'a', to: 'b' },
-      { from: 'a', to: 'b' },
-      { from: 'a', to: 'b' },
-    ])
-    expect(bows).toEqual([-1, 0, 1])
+  it('leaves a lone edge on the middle of the side', () => {
+    const routes = routeEdges(boxes, [{ id: 'only', from: 'offer', to: 'b' }])
+    expect(routes.only.source).toEqual({ x: 200, y: 80 })
   })
 
-  it('keeps unrelated edges at zero', () => {
-    const bows = bowOf([
-      { from: 'a', to: 'b' },
-      { from: 'b', to: 'a' },
-      { from: 'c', to: 'd' },
+  it('tightens the gap rather than overflowing a short side', () => {
+    const narrow = { ...boxes, offer: { x: 0, y: 0, width: 200, height: 40 } }
+    const routes = routeEdges(narrow, [
+      { id: '1', from: 'offer', to: 'a' },
+      { id: '2', from: 'offer', to: 'b' },
+      { id: '3', from: 'offer', to: 'c' },
     ])
-    expect(bows[2]).toBe(0)
+    const ys = ['1', '2', '3'].map((id) => routes[id].source.y)
+    for (const y of ys) {
+      expect(y).toBeGreaterThanOrEqual(0)
+      expect(y).toBeLessThanOrEqual(40)
+    }
+  })
+
+  it('skips a self loop and an edge whose node is missing', () => {
+    const routes = routeEdges(boxes, [
+      { id: 'loop', from: 'offer', to: 'offer' },
+      { id: 'gone', from: 'offer', to: 'nowhere' },
+      { id: 'real', from: 'offer', to: 'b' },
+    ])
+    expect(routes.loop).toBeUndefined()
+    expect(routes.gone).toBeUndefined()
+    expect(routes.real).toBeDefined()
   })
 })

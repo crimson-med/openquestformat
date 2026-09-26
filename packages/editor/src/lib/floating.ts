@@ -110,29 +110,76 @@ export function selfLoopPath(box: Box, radius = 34): string {
   return `M ${start.x},${start.y} C ${c1.x},${c1.y} ${c2.x},${c2.y} ${end.x},${end.y}`
 }
 
+/** An edge, reduced to what routing needs. */
+export interface EdgeEnds {
+  id: string
+  from: string
+  to: string
+}
+
+/** Gap between two edges that meet the same side of the same card. */
+export const EDGE_GAP = 22
+
 /**
- * How far each edge should be pulled off the straight line between its two
- * nodes, so that edges sharing a pair of nodes stay apart. The pair is read
- * without direction, so a line and its reply count as one group and bow the
- * same amount in opposite directions. A lone edge gets zero and stays put.
+ * Where every edge should meet every card.
+ *
+ * Anchoring each edge on its own puts all of a card's edges on one point, so a
+ * hub with three choices and a line back sprouts four lines from the same
+ * pixel. This walks the whole set instead: it picks a side per end, then fans
+ * the edges that share a side out along it, ordered by where their other end
+ * sits so the lines do not cross. Self loops are left out, they have their own
+ * path.
  */
-export function bowOf(edges: ReadonlyArray<{ from: string; to: string }>): number[] {
-  const groups = new Map<string, number[]>()
-  edges.forEach((edge, index) => {
-    const key = [edge.from, edge.to].sort().join('\u0000')
-    const group = groups.get(key) ?? []
-    group.push(index)
-    groups.set(key, group)
-  })
-  const bows = new Array<number>(edges.length).fill(0)
-  for (const group of groups.values()) {
-    if (group.length < 2) continue
-    const middle = (group.length - 1) / 2
-    group.forEach((index, position) => {
-      // Reversed edges bow the same way, so the pair opens instead of crossing.
-      const direction = edges[index].from < edges[index].to ? 1 : -1
-      bows[index] = (position - middle) * direction
+export function routeEdges(
+  boxes: Readonly<Record<string, Box>>,
+  edges: readonly EdgeEnds[],
+): Record<string, Anchors> {
+  const routes: Record<string, Anchors> = {}
+  /** Every end that lands on one side of one card, so they can be fanned out. */
+  const lanes = new Map<string, { id: string; end: 'source' | 'target'; along: number }[]>()
+
+  for (const edge of edges) {
+    const source = boxes[edge.from]
+    const target = boxes[edge.to]
+    if (source === undefined || target === undefined || edge.from === edge.to) continue
+    const anchors = edgeAnchors(source, target)
+    routes[edge.id] = anchors
+    const put = (node: string, side: Side, end: 'source' | 'target', other: Box) => {
+      const key = `${node}\u0000${side}`
+      const lane = lanes.get(key) ?? []
+      const center = centerOf(other)
+      lane.push({
+        id: edge.id,
+        end,
+        along: side === 'left' || side === 'right' ? center.y : center.x,
+      })
+      lanes.set(key, lane)
+    }
+    put(edge.from, anchors.sourceSide, 'source', target)
+    put(edge.to, anchors.targetSide, 'target', source)
+  }
+
+  for (const [key, lane] of lanes) {
+    if (lane.length < 2) continue
+    const [node, side] = key.split('\u0000') as [string, Side]
+    const box = boxes[node]
+    if (box === undefined) continue
+    // Order by where the far end sits, so neighbouring lines stay parallel.
+    lane.sort((a, b) => a.along - b.along)
+    const span = side === 'left' || side === 'right' ? box.height : box.width
+    const gap = Math.min(EDGE_GAP, (span * 0.8) / (lane.length - 1))
+    const middle = (lane.length - 1) / 2
+    lane.forEach((entry, index) => {
+      const anchors = routes[entry.id]
+      if (anchors === undefined) return
+      const shift = (index - middle) * gap
+      if (entry.end === 'source') {
+        anchors.source = offsetAlongSide(anchors.source, anchors.sourceSide, shift)
+      } else {
+        anchors.target = offsetAlongSide(anchors.target, anchors.targetSide, shift)
+      }
     })
   }
-  return bows
+
+  return routes
 }
