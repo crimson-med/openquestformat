@@ -1,0 +1,48 @@
+/*
+ * The dialogue canvas. Edges anchor to the side of the card that faces the
+ * other one (see lib/floating.ts), so a line back to an earlier node is a short
+ * hop rather than a loop around the card.
+ */
+
+/* Anchors are geometric here, so the handle dots would only be noise. */
+.dialogue-node .react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.edge-markers {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.edge-markers marker path {
+  fill: var(--role-optional);
+}
+
+/* The choice text, sat on the line it belongs to. */
+.edge-chip {
+  position: absolute;
+  max-width: 190px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.react-flow__edge.choice .edge-chip {
+  color: var(--text);
+}
+
+.react-flow__edge.selected .edge-chip,
+.react-flow__edge:hover .edge-chip {
+  border-color: var(--accent);
+  color: var(--accent);
+}

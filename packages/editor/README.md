@@ -142,7 +142,11 @@ built first, which `pnpm -r build` does in order.
   Typing an unknown actor, item or location in a completion field offers to
   create it, and the pickers in the inspector link here with Manage.
 - **Dialogue.** A second graph, edges labelled with choice text, with the same
-  layout controls as the quest graph.
+  layout controls as the quest graph. Edges anchor to the side of each card
+  that faces the other one and carry an arrowhead, so a lore branch that
+  returns to its hub reads as a short hop back rather than a loop around the
+  card, and a line and its reply sit side by side instead of on top of each
+  other.
 - **Files.** Open one file or several at once; `.oqf`, `.oqd` and either JSON
   form, the kind read from the magic line, not the extension. A pack of files
   is merged into one document, and each quest and conversation remembers its

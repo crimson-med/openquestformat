@@ -14,13 +14,23 @@ import {
 } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Direction } from '../lib/direction'
+import { bowOf } from '../lib/floating'
 import { conversationPositions, dialogueEdges } from '../lib/layout'
 import { useDispatch, useEditorState } from '../store/context'
 import { findingsForNode, worstLevel } from '../store/selectors'
 import { type DialogueFlowNode, DialogueNodeCard } from './DialogueNodeCard'
+import { FloatingEdge } from './FloatingEdge'
 import { useStringResolver } from './StringsContext'
+import '../styles/dialogue.css'
 
 const NODE_TYPES = { dialogue: DialogueNodeCard }
+const EDGE_TYPES = { floating: FloatingEdge }
+
+/**
+ * The arrowhead every dialogue edge ends with, colored from the stylesheet.
+ * React Flow wraps this in `url(#...)` itself, so it is the bare marker id.
+ */
+const ARROW = 'oqf-dialogue-arrow'
 
 /** The add, layout and direction controls live in the canvas header above, not here. */
 export function DialogueGraph({
@@ -66,17 +76,20 @@ export function DialogueGraph({
     setNodes(build())
   }, [build])
 
-  const edges = useMemo<Edge[]>(
-    () =>
-      dialogueEdges(conversation).map((edge, index) => ({
-        id: `${edge.from}->${edge.to}-${index}`,
-        source: edge.from,
-        target: edge.to,
-        label: edge.label,
-        className: edge.kind,
-      })),
-    [conversation],
-  )
+  const edges = useMemo<Edge[]>(() => {
+    const found = dialogueEdges(conversation)
+    const bows = bowOf(found)
+    return found.map((edge, index) => ({
+      id: `${edge.from}->${edge.to}-${index}`,
+      type: 'floating',
+      source: edge.from,
+      target: edge.to,
+      label: edge.label,
+      className: edge.kind,
+      markerEnd: ARROW,
+      data: { bow: bows[index] },
+    }))
+  }, [conversation])
 
   const onNodesChange = useCallback((changes: NodeChange<DialogueFlowNode>[]) => {
     setNodes((current) => applyNodeChanges(changes, current))
@@ -87,6 +100,7 @@ export function DialogueGraph({
       nodes={nodes}
       edges={edges}
       nodeTypes={NODE_TYPES}
+      edgeTypes={EDGE_TYPES}
       onNodesChange={onNodesChange}
       onNodeDragStop={(_, node) =>
         dispatch({
@@ -115,6 +129,23 @@ export function DialogueGraph({
       proOptions={{ hideAttribution: true }}
       minZoom={0.2}
     >
+      {/* One arrowhead for every edge, so its color follows the stylesheet. */}
+      <svg className="edge-markers" aria-hidden="true">
+        <title>Edge markers</title>
+        <defs>
+          <marker
+            id="oqf-dialogue-arrow"
+            viewBox="0 0 10 10"
+            refX="8"
+            refY="5"
+            markerWidth="5"
+            markerHeight="5"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 1 L 9 5 L 0 9 z" />
+          </marker>
+        </defs>
+      </svg>
       <Background gap={24} size={1} />
       <Controls showInteractive={false} />
       <MiniMap pannable zoomable />
