@@ -38,6 +38,17 @@ export const VALIDATION_CODES = [
   'reward-id-reused',
   'mixed-text-keys',
   'lore-node-effect',
+  'cooldown-without-repeat',
+  'duration-invalid',
+  'outcome-reserved',
+  'duplicate-param-name',
+  'unknown-param-ref',
+  'param-type-mismatch',
+  'unused-param',
+  'streak-without-calendar-cooldown',
+  'time-not-number',
+  'unknown-time-variable',
+  'deadline-after-expire',
 ] as const
 
 export type ValidationCode = (typeof VALIDATION_CODES)[number]

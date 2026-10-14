@@ -1,0 +1,4 @@
+# Expected error: time.* compared with a non number. The unlock reads time.hour == "night", but every time variable is a number.
+OQF1
+Q	time_not_number	1				Time Not Number
+S	only_step	s	time.hour == "night"				finished					Finish the only step at night

@@ -4,7 +4,7 @@
  * transitions. Meant for design review and for pasting into a doc.
  */
 import { conditionVariables, formatCompletion, formatCondition } from '../condition/index.js'
-import type { Condition, Objective, OqfDocument, Quest, Reward, Step } from '../model.js'
+import type { Condition, Objective, OqfDocument, Parameter, Quest, Reward, Step } from '../model.js'
 
 const STEP_PREFIX = 'step.'
 const HEADERS = ['ID', 'Title', 'Unlock', 'Complete', 'Fail', 'Outcome', 'Rewards']
@@ -37,7 +37,7 @@ function outcomeCell(step: Step): string {
   return step.outcome.failed === true ? `!${step.outcome.name}` : step.outcome.name
 }
 
-function stepRow(step: Step): string {
+function stepRow(step: Step, withDeadline: boolean): string {
   return row([
     code(step.id),
     step.title,
@@ -46,7 +46,22 @@ function stepRow(step: Step): string {
     completion(step.failObjective, step.fail),
     outcomeCell(step),
     step.rewards.map(code).join(', '),
+    ...(withDeadline ? [step.deadline ?? ''] : []),
   ])
+}
+
+/** The timing line under the summary, only for a quest that has one. */
+function recurrence(quest: Quest): string | undefined {
+  const parts: string[] = []
+  if (quest.cooldown !== undefined) parts.push(`cooldown ${code(quest.cooldown)}`)
+  if (quest.expire !== undefined) parts.push(`expires after ${code(quest.expire)}`)
+  if (parts.length === 0) return undefined
+  return `${quest.repeat === true ? 'Repeatable' : 'One time'}, ${parts.join(', ')}.`
+}
+
+function parameterLine(parameter: Parameter): string {
+  const constraint = parameter.constraint === undefined ? '' : ` (${code(parameter.constraint)})`
+  return `- ${code(`$${parameter.name}`)} ${parameter.type}${constraint}`
 }
 
 function rewardLine(reward: Reward): string {
@@ -106,11 +121,21 @@ function questSection(quest: Quest): string {
   const lines: string[] = [`# ${quest.title} ${code(quest.id)}`]
 
   if (quest.summary !== undefined) lines.push('', quest.summary)
+  const timing = recurrence(quest)
+  if (timing !== undefined) lines.push('', timing)
 
+  if (quest.params !== undefined && quest.params.length > 0) {
+    lines.push('', '## Parameters', '')
+    for (const parameter of quest.params) lines.push(parameterLine(parameter))
+  }
+
+  // The deadline column only appears when a step has one, so an untimed quest reads as before.
+  const withDeadline = quest.steps.some((step) => step.deadline !== undefined)
+  const headers = withDeadline ? [...HEADERS, 'Deadline'] : HEADERS
   lines.push('', '## Steps', '')
-  lines.push(row(HEADERS))
-  lines.push(`| ${HEADERS.map(() => '---').join(' | ')} |`)
-  for (const step of quest.steps) lines.push(stepRow(step))
+  lines.push(row(headers))
+  lines.push(`| ${headers.map(() => '---').join(' | ')} |`)
+  for (const step of quest.steps) lines.push(stepRow(step, withDeadline))
 
   const grouped = rewardsByOutcome(quest)
   if (grouped.size > 0) {

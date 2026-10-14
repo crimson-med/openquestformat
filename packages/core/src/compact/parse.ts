@@ -7,6 +7,7 @@
  * CompactFormatError carrying the 1-based line it was raised on.
  */
 import { ConditionSyntaxError, parseCompletion, parseCondition } from '../condition/index.js'
+import { normalizeDuration } from '../duration/index.js'
 import {
   type Condition,
   type DialogueBinding,
@@ -15,6 +16,9 @@ import {
   type Objective,
   type OqfDocument,
   type Outcome,
+  PARAMETER_TYPES,
+  type Parameter,
+  type ParameterType,
   type Payload,
   type Quest,
   REWARD_KINDS,
@@ -29,10 +33,15 @@ import {
 /** Where the extra cells of a newer writer are parked so they round trip. */
 export const EXTRA_EXT_KEY = 'x-oqf.extra'
 
-/** Field counts per record, not counting the leading type cell. */
-const QUEST_FIELDS = 7
+/**
+ * Field counts per record, not counting the leading type cell. v0.1 froze the
+ * first 7 quest and 13 step columns; v0.2 appended `cooldown` and `expire` to
+ * `Q`, `deadline` to `S`, and added the `P` record.
+ */
+const QUEST_FIELDS = 9
+const PARAM_FIELDS = 3
 const REWARD_FIELDS = 6
-const STEP_FIELDS = 13
+const STEP_FIELDS = 14
 
 const NAMESPACE = /^[a-z0-9-]+$/
 const EXT_NAME = /^[A-Za-z0-9_.-]+$/
@@ -241,6 +250,11 @@ function attachExtra(target: { ext?: Ext }, cells: string[], fields: number): vo
   addExt(target, EXTRA_EXT_KEY, cells.slice(fields + 1).join('\t'))
 }
 
+/** A non-empty duration cell, in its canonical spelling when it is valid. */
+function durationCell(text: string): string | undefined {
+  return text === '' ? undefined : normalizeDuration(text)
+}
+
 /** Parse compact text into the canonical model. Throws CompactFormatError. */
 export function parseCompact(text: string): OqfDocument {
   const document = emptyDocument()
@@ -248,6 +262,8 @@ export function parseCompact(text: string): OqfDocument {
   const dictionaries = new Set<string>()
   let magic = false
   let quest: Quest | undefined
+  /** Set once the current quest has an `R` or `S` line, after which `P` is too late. */
+  let questBody = false
   let extTarget: { ext?: Ext } | undefined
 
   for (let position = 0; position < lines.length; position += 1) {
@@ -291,6 +307,8 @@ export function parseCompact(text: string): OqfDocument {
       )
       const unlock = cell(5)
       const summary = cell(7)
+      const cooldown = durationCell(cell(8))
+      const expire = durationCell(cell(9))
       const parsed: Quest = {
         id,
         version: integerCell(version, line, 'a quest version'),
@@ -299,12 +317,37 @@ export function parseCompact(text: string): OqfDocument {
         tags,
         ...(flags.has('r') ? { repeat: true } : {}),
         ...(unlock === '' ? {} : { unlock: conditionCell(unlock, line) }),
+        ...(cooldown === undefined ? {} : { cooldown }),
+        ...(expire === undefined ? {} : { expire }),
         steps: [],
         rewards: [],
       }
       attachExtra(parsed, cells, QUEST_FIELDS)
       document.quests.push(parsed)
       quest = parsed
+      questBody = false
+      extTarget = parsed
+      continue
+    }
+
+    if (type === 'P') {
+      if (quest === undefined) fail('parameter line before any quest', line)
+      if (questBody) fail('parameter line after a reward or step line', line)
+      const name = cell(1)
+      if (name === '') fail('missing parameter name', line)
+      const kind = cell(2)
+      if (kind === '') fail('missing parameter type', line)
+      if (!(PARAMETER_TYPES as readonly string[]).includes(kind)) {
+        fail(`unknown parameter type "${kind}"`, line)
+      }
+      const constraint = cell(3)
+      const parsed: Parameter = {
+        name,
+        type: kind as ParameterType,
+        ...(constraint === '' ? {} : { constraint }),
+      }
+      attachExtra(parsed, cells, PARAM_FIELDS)
+      quest.params = [...(quest.params ?? []), parsed]
       extTarget = parsed
       continue
     }
@@ -333,6 +376,7 @@ export function parseCompact(text: string): OqfDocument {
       }
       attachExtra(parsed, cells, REWARD_FIELDS)
       quest.rewards.push(parsed)
+      questBody = true
       extTarget = parsed
       continue
     }
@@ -353,6 +397,7 @@ export function parseCompact(text: string): OqfDocument {
       const dialogue = cell(9)
       const location = cell(10)
       const journal = cell(13)
+      const deadline = durationCell(cell(14))
       const completion = complete === '' ? {} : completionCell(complete, line)
       const failed = failure === '' ? {} : completionCell(failure, line)
       const rewards = indexList(cell(8), line, owner.rewards.length, 'a step reward').map(
@@ -375,6 +420,7 @@ export function parseCompact(text: string): OqfDocument {
         ...(completion.condition === undefined ? {} : { complete: completion.condition }),
         ...(failed.objective === undefined ? {} : { failObjective: failed.objective }),
         ...(failed.condition === undefined ? {} : { fail: failed.condition }),
+        ...(deadline === undefined ? {} : { deadline }),
         ...(flags.has('o') ? { optional: true } : {}),
         ...(flags.has('r') ? { repeat: true } : {}),
         ...(outcome === '' ? {} : { outcome: parseOutcome(outcome) }),
@@ -397,6 +443,7 @@ export function parseCompact(text: string): OqfDocument {
       }
       attachExtra(parsed, cells, STEP_FIELDS)
       owner.steps.push(parsed)
+      questBody = true
       extTarget = parsed
       continue
     }

@@ -65,8 +65,15 @@ export function fullDocument(): OqfDocument {
               ],
             },
             { '>=': [{ var: 'count.catch_rare' }, 5] },
+            { '>=': [{ var: 'param.n' }, 1] },
           ],
         },
+        cooldown: 'day',
+        expire: 'P1DT12H',
+        params: [
+          { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+          { name: 'n', type: 'number', constraint: '1..40', ext: { 'x-editor.note': 'rolled' } },
+        ],
         steps: [
           {
             id: 'talk_ines',
@@ -96,8 +103,9 @@ export function fullDocument(): OqfDocument {
             id: 'trade',
             title: 'Trade five silver koi for the ledger',
             unlock: { '==': [{ var: 'step.find_otter' }, 'done'] },
-            objective: { kind: 'collect', item: 'fish.rare', count: 5 },
+            objective: { kind: 'collect', item: '$fish', count: '$n' },
             complete: { var: 'flag.otter_agreed' },
+            deadline: 'PT2H',
             repeat: true,
             rewards: ['fish_xp'],
             actors: ['otter'],

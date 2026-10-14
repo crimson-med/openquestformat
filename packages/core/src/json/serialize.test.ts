@@ -72,6 +72,9 @@ describe('toJsonValue', () => {
       'tags',
       'repeat',
       'unlock',
+      'cooldown',
+      'expire',
+      'params',
       'steps',
       'rewards',
       'ext',
@@ -97,6 +100,7 @@ describe('toJsonValue', () => {
       'unlock',
       'objective',
       'complete',
+      'deadline',
       'repeat',
       'rewards',
       'actors',
@@ -209,7 +213,7 @@ describe('toJsonValue', () => {
     const written = firstQuest(doc).unlock as { and: unknown[] }
     written.and.pop()
     const original = doc.quests[0].unlock as { and: unknown[] }
-    expect(original.and).toHaveLength(3)
+    expect(original.and).toHaveLength(4)
   })
 
   it('copies payloads and extension bags', () => {
@@ -241,5 +245,55 @@ describe('toJson', () => {
   it('is stable across a parse and write cycle', () => {
     const once = toJson(fullDocument())
     expect(toJson(fromJsonValue(JSON.parse(once)))).toBe(once)
+  })
+})
+
+describe('recurrence fields', () => {
+  it('writes cooldown, expire and params after unlock, deadline after fail', () => {
+    const doc = withQuest({
+      repeat: true,
+      unlock: { var: 'flag.intro' },
+      cooldown: 'day',
+      expire: 'P1D',
+      params: [{ name: 'n', type: 'number', constraint: '1..40', ext: { 'x-editor.note': 'p' } }],
+    })
+    Object.assign(doc.quests[0].steps[0], {
+      fail: { var: 'flag.late' },
+      deadline: 'PT2H',
+      objective: { kind: 'collect', item: '$fish', count: '$n' },
+    })
+    const quest = firstQuest(doc)
+    expect(Object.keys(quest)).toEqual([
+      'id',
+      'version',
+      'title',
+      'repeat',
+      'unlock',
+      'cooldown',
+      'expire',
+      'params',
+      'steps',
+    ])
+    expect(quest.params).toEqual([
+      { name: 'n', type: 'number', constraint: '1..40', ext: { 'x-editor.note': 'p' } },
+    ])
+    const step = stepNamed(doc, 'wake_up')
+    expect(Object.keys(step)).toEqual(['id', 'title', 'objective', 'fail', 'deadline'])
+    expect(step.objective).toEqual({ kind: 'collect', item: '$fish', count: '$n' })
+  })
+
+  it('leaves an empty params list out', () => {
+    expect(firstQuest(withQuest({ params: [] }))).not.toHaveProperty('params')
+  })
+
+  it('round trips through the parser', () => {
+    const doc = withQuest({
+      repeat: true,
+      cooldown: 'week',
+      expire: 'P3D',
+      params: [{ name: 'fish', type: 'item' }],
+    })
+    Object.assign(doc.quests[0].steps[0], { deadline: 'PT30M' })
+    expect(fromJsonValue(toJsonValue(doc))).toEqual(doc)
   })
 })

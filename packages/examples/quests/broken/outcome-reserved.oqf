@@ -1,0 +1,4 @@
+# Expected error: an author outcome named "expired". That name is reserved for the built-in failed outcome a quest with expire reaches when its time runs out.
+OQF1
+Q	outcome_reserved	1				Outcome Reserved
+S	only_step	s					!expired					Run out the clock

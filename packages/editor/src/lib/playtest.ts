@@ -344,7 +344,8 @@ function suggestFor(quest: Quest, step: Step, fail: boolean): EventSuggestion[] 
         },
       ]
     case 'collect': {
-      const count = objective.count ?? 1
+      // A `$name` count is bound per instance; until it is, suggest the smallest run.
+      const count = typeof objective.count === 'number' ? objective.count : 1
       const one: EventSuggestion = {
         ...base,
         label: `Collect 1 ${objective.item}`,
@@ -510,7 +511,7 @@ export function objectiveCount(step: Step | undefined): number | undefined {
   const objective = step?.objective
   if (objective === undefined) return undefined
   if (objective.kind === 'kill' || objective.kind === 'collect' || objective.kind === 'event') {
-    return objective.count
+    return typeof objective.count === 'number' ? objective.count : undefined
   }
   return undefined
 }

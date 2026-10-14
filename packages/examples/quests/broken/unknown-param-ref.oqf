@@ -1,0 +1,5 @@
+# Expected error: $name not declared by a P line. The complete cell reads "collect $fish $n" but the quest declares only "fish".
+OQF1
+Q	unknown_param_ref	1				Unknown Param Ref
+P	fish	item
+S	only_step	s			collect $fish $n		finished					Catch today's fish

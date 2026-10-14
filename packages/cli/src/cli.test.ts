@@ -249,18 +249,28 @@ const BROKEN_FIXTURES: Array<{ file: string; expected: string; actual?: string }
   // The comment describes a malformed condition, which the compact parser
   // rejects before the validator ever sees the document.
   { file: 'bad-condition-syntax.oqf', expected: 'condition-invalid', actual: 'parse-error' },
+  { file: 'cooldown-without-repeat.oqf', expected: 'cooldown-without-repeat' },
   { file: 'cycle-without-repeat.oqf', expected: 'cycle-without-repeat' },
+  { file: 'deadline-after-expire.oqf', expected: 'deadline-after-expire' },
   { file: 'dictionary-index-out-of-range.oqf', expected: 'parse-error' },
+  { file: 'duplicate-param-name.oqf', expected: 'duplicate-param-name' },
   { file: 'duplicate-step-id.oqf', expected: 'duplicate-step-id' },
+  { file: 'duration-invalid.oqf', expected: 'duration-invalid' },
   // The comment describes a non-namespaced extension key, which the compact
   // parser rejects before the validator's ext-key-invalid check can run.
   { file: 'ext-without-namespace.oqf', expected: 'ext-key-invalid', actual: 'parse-error' },
+  { file: 'outcome-reserved.oqf', expected: 'outcome-reserved' },
   { file: 'outcome-with-dependents.oqf', expected: 'outcome-with-dependents' },
+  { file: 'param-type-mismatch.oqf', expected: 'param-type-mismatch' },
+  { file: 'streak-without-calendar-cooldown.oqf', expected: 'streak-without-calendar-cooldown' },
+  { file: 'time-not-number.oqf', expected: 'time-not-number' },
   { file: 'unknown-objective-kind.oqf', expected: 'parse-error' },
+  { file: 'unknown-param-ref.oqf', expected: 'unknown-param-ref' },
   // The comment describes an unknown reward reference. In the compact form a
   // reward reference is an index, so an out of range one is a parse error.
   { file: 'unknown-reward-ref.oqf', expected: 'unknown-reward-ref', actual: 'parse-error' },
   { file: 'unreachable-step.oqf', expected: 'unreachable-step' },
+  { file: 'unused-param.oqf', expected: 'unused-param' },
   { file: 'wrong-magic.oqf', expected: 'parse-error' },
 ]
 

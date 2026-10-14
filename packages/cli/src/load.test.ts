@@ -61,7 +61,7 @@ describe('expandPaths', () => {
 
   it('expands a directory to its quest files, sorted, without recursing', () => {
     const files = expandPaths([`${QUESTS}broken`], io)
-    expect(files).toHaveLength(10)
+    expect(files).toHaveLength(20)
     expect(files.every((file) => file.endsWith('.oqf'))).toBe(true)
     expect([...files].sort()).toEqual(files)
     expect(files[0].endsWith('bad-condition-syntax.oqf')).toBe(true)

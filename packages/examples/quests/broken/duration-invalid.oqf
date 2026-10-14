@@ -1,0 +1,4 @@
+# Expected error: unparseable duration. The expire cell reads "tomorrow", which is neither an ISO 8601 span of weeks, days, hours, minutes and seconds nor one of day, week and month.
+OQF1
+Q	duration_invalid	1	r			Duration Invalid			tomorrow
+S	only_step	s					finished					Finish the only step

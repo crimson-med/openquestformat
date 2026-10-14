@@ -255,9 +255,9 @@ describe('toCompact extensions', () => {
       ]),
     )
     expect(records(text)).toEqual([
-      'Q\tq\t1\t\t\t\tQuest\t\tone\ttwo',
+      'Q\tq\t1\t\t\t\tQuest\t\t\t\tone\ttwo',
       'X\tns\tk\tv',
-      'S\ts1\t\t\t\t\t\t\t\t\t\t\tStep\t\tlate',
+      'S\ts1\t\t\t\t\t\t\t\t\t\t\tStep\t\t\tlate',
     ])
   })
 
@@ -339,5 +339,58 @@ describe('toCompact round trips its own output', () => {
     const text = toCompact(source)
     expect(parseCompact(text)).toEqual(source)
     expect(toCompact(parseCompact(text))).toBe(text)
+  })
+})
+
+describe('toCompact recurrence (v0.2 columns)', () => {
+  it('writes cooldown, expire, P lines and deadline in place', () => {
+    const text = toCompact(
+      document([
+        quest({
+          repeat: true,
+          cooldown: 'day',
+          expire: 'P1D',
+          params: [
+            { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+            { name: 'n', type: 'number', ext: { 'x-editor.note': 'picked' } },
+          ],
+          rewards: [{ id: 'coins', kind: 'currency', ref: 'coins', amount: 30, outcome: 'done' }],
+          steps: [
+            step({
+              id: 'catch',
+              start: true,
+              objective: { kind: 'collect', item: '$fish', count: '$n' },
+              deadline: 'PT2H',
+            }),
+          ],
+        }),
+      ]),
+    )
+    expect(records(text)).toEqual([
+      'Q\tq\t1\tr\t\t\tQuest\t\tday\tP1D',
+      'P\tfish\titem\tfish.catchable',
+      'P\tn\tnumber',
+      'X\teditor\tnote\tpicked',
+      'R\tcoins\tcurrency\tcoins\t30\tdone',
+      'S\tcatch\ts\t\t\tcollect $fish $n\t\t\t\t\t\t\tStep\t\tPT2H',
+    ])
+  })
+
+  it('round trips the daily request from docs/14-recurrence.md byte for byte', () => {
+    const text = [
+      'OQF1',
+      'A\tgus|Gus Barnacle',
+      'T\tfish.catchable',
+      'Q\tgus_daily\t1\tr\t\toutcome.gus_intro.done\t@quest.gus_daily.title\t@quest.gus_daily.desc\tday\tP1D',
+      'P\tfish\titem\tfish.catchable',
+      'P\tn\tnumber\t1..40',
+      'R\tcoins\tcurrency\tcoins\t30\tdone',
+      'S\tcatch\ts\t\t\tcollect $fish $n\t\t\t\t\t\t\t@quest.gus_daily.catch',
+      'S\tturn_in\t\tstep.catch\t\ttalk gus gus_turn_in\t\tdone\t\t\t\t0\t@quest.gus_daily.title',
+      '',
+    ].join('\n')
+    const model = parseCompact(text)
+    expect(model.quests[0].params).toHaveLength(2)
+    expect(toCompact(model)).toBe(text)
   })
 })

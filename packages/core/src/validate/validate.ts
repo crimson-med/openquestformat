@@ -10,16 +10,23 @@
  * Dialogue is not part of v0.1, so the lore node checks are not implemented.
  */
 import { checkCondition, conditionVariables } from '../condition/index.js'
+import { isCalendarDuration, parseDuration } from '../duration/index.js'
 import {
   type Condition,
+  EXPIRED_OUTCOME,
   type Ext,
+  type Objective,
   type OqfDocument,
+  type Parameter,
   type Quest,
   type Ref,
   type Reward,
   type Step,
+  TIME_VARIABLES,
   type Text,
   VARIABLE_NAMESPACES,
+  isParamRef,
+  paramRefName,
 } from '../model.js'
 import {
   findCycles,
@@ -48,6 +55,10 @@ interface QuestEntry {
   stepPaths: Map<string, string>
   outcomes: Set<string>
   rewards: Map<string, Reward>
+  /** First parameter per name. Duplicates are reported and then ignored for lookups. */
+  params: Map<string, Parameter>
+  /** Parameter names referenced anywhere in the quest, filled while checking. */
+  usedParams: Set<string>
 }
 
 interface Context {
@@ -118,6 +129,11 @@ function buildContext(docs: OqfDocument[], options: ValidateOptions): Context {
         stepPaths: new Map(),
         outcomes: new Set(),
         rewards: new Map(),
+        params: new Map(),
+        usedParams: new Set(),
+      }
+      for (const parameter of quest.params ?? []) {
+        if (!entry.params.has(parameter.name)) entry.params.set(parameter.name, parameter)
       }
       quest.steps.forEach((step, stepIndex) => {
         if (!entry.steps.has(step.id)) entry.steps.set(step.id, step)
@@ -401,6 +417,77 @@ function checkVariable(context: Context, entry: QuestEntry, variable: string, wh
     return
   }
   if (namespace === 'var') return
+  if (namespace === 'param') {
+    entry.usedParams.add(rest)
+    if (entry.params.has(rest)) return
+    report(
+      context,
+      'error',
+      'unknown-param-ref',
+      `$${rest} is not a parameter of this quest`,
+      where,
+    )
+    return
+  }
+  if (namespace === 'time') {
+    if ((TIME_VARIABLES as readonly string[]).includes(rest)) return
+    report(
+      context,
+      'error',
+      'unknown-time-variable',
+      `variable ${quote(variable)} is not one of ${list(TIME_VARIABLES.map((name) => `time.${name}`))}`,
+      where,
+    )
+    return
+  }
+  if (namespace === 'runs') {
+    const [questId, ...outcomeParts] = rest.split('.')
+    const target = context.quests.get(questId)
+    if (target === undefined) {
+      report(
+        context,
+        'error',
+        'unknown-quest-ref',
+        `quest ${quote(questId)} is not in this pack`,
+        where,
+      )
+      return
+    }
+    if (outcomeParts.length === 0) return
+    const name = outcomeParts.join('.')
+    if (name === EXPIRED_OUTCOME || target.outcomes.has(name)) return
+    report(
+      context,
+      'error',
+      'unknown-outcome-ref',
+      `quest ${quote(questId)} has no outcome named ${quote(name)}`,
+      where,
+    )
+    return
+  }
+  if (namespace === 'streak') {
+    const target = context.quests.get(rest)
+    if (target === undefined) {
+      report(
+        context,
+        'error',
+        'unknown-quest-ref',
+        `quest ${quote(rest)} is not in this pack`,
+        where,
+      )
+      return
+    }
+    const cooldown = target.quest.cooldown
+    if (cooldown !== undefined && isCalendarDuration(cooldown)) return
+    report(
+      context,
+      'error',
+      'streak-without-calendar-cooldown',
+      `${quote(variable)} needs quest ${quote(rest)} to have a calendar cooldown (day, week or month)`,
+      where,
+    )
+    return
+  }
   if (namespace === 'flag') {
     if (!context.strict || context.flagRewards.has(rest)) return
     report(
@@ -496,6 +583,66 @@ function checkVariable(context: Context, entry: QuestEntry, variable: string, wh
   )
 }
 
+const COMPARISONS = ['==', '!=', '<', '<=', '>', '>=', 'in']
+
+/** A `var` read, as the path it names, or undefined for any other node. */
+function variableOf(node: unknown): string | undefined {
+  if (node === null || typeof node !== 'object' || Array.isArray(node)) return undefined
+  const path = (node as { var?: unknown }).var
+  return typeof path === 'string' ? path : undefined
+}
+
+/** True when the node is a number, or a variable the runtime types as a number. */
+function isNumeric(node: unknown, entry: QuestEntry): boolean {
+  if (typeof node === 'number') return true
+  const path = variableOf(node)
+  if (path === undefined) return false
+  const namespace = pathNamespace(path)
+  if (namespace === 'count' || namespace === 'time' || namespace === 'runs') return true
+  if (namespace === 'streak') return true
+  if (namespace === 'param') return entry.params.get(pathRest(path))?.type === 'number'
+  return false
+}
+
+/**
+ * `time.*` is a number, so comparing it with anything else, or using it bare in
+ * boolean position (which the parser sugars to `== true`), can never be meant.
+ */
+function checkTimeComparisons(
+  context: Context,
+  entry: QuestEntry,
+  node: unknown,
+  where: Where,
+): void {
+  if (node === null || typeof node !== 'object' || Array.isArray(node)) return
+  const [operator, args] = Object.entries(node)[0] ?? []
+  if (operator === undefined) return
+  if (operator === 'var') return
+  const parts = Array.isArray(args) ? args : [args]
+  if (COMPARISONS.includes(operator) && parts.length === 2) {
+    const [left, right] = parts
+    const leftTime =
+      variableOf(left) !== undefined && pathNamespace(variableOf(left) ?? '') === 'time'
+    const rightTime =
+      variableOf(right) !== undefined && pathNamespace(variableOf(right) ?? '') === 'time'
+    const other = leftTime ? right : left
+    const ok =
+      operator === 'in'
+        ? Array.isArray(other) && other.every((item) => typeof item === 'number')
+        : isNumeric(other, entry)
+    if ((leftTime || rightTime) && !ok) {
+      report(
+        context,
+        'error',
+        'time-not-number',
+        `${quote(variableOf(leftTime ? left : right) ?? '')} is a number and cannot be compared with ${JSON.stringify(other)}`,
+        where,
+      )
+    }
+  }
+  for (const part of parts) checkTimeComparisons(context, entry, part, where)
+}
+
 function checkConditionField(
   context: Context,
   entry: QuestEntry,
@@ -506,6 +653,7 @@ function checkConditionField(
     if (error.message.includes(NAMESPACE_ERROR)) continue
     report(context, 'error', 'condition-invalid', error.message, where)
   }
+  checkTimeComparisons(context, entry, condition, where)
   if (condition === true || condition === false) {
     report(
       context,
@@ -625,12 +773,210 @@ function checkGraph(context: Context, entry: QuestEntry): void {
   )
 }
 
+function article(word: string): string {
+  return /^[aeiou]/.test(word) ? 'an' : 'a'
+}
+
+/** The parameter type each objective slot accepts, by the field holding the reference. */
+const SLOT_TYPES: Record<string, string[]> = {
+  actor: ['actor'],
+  item: ['item'],
+  location: ['location'],
+  object: ['item', 'actor', 'location', 'string'],
+  dialogue: ['string'],
+  event: ['string'],
+  count: ['number'],
+}
+
+function checkParamSlot(
+  context: Context,
+  entry: QuestEntry,
+  slot: string,
+  value: unknown,
+  where: Where,
+): void {
+  if (!isParamRef(value)) return
+  const name = paramRefName(value)
+  entry.usedParams.add(name)
+  const parameter = entry.params.get(name)
+  if (parameter === undefined) {
+    report(
+      context,
+      'error',
+      'unknown-param-ref',
+      `${value} is not a parameter of this quest`,
+      where,
+    )
+    return
+  }
+  const accepted = SLOT_TYPES[slot] ?? []
+  if (accepted.includes(parameter.type)) return
+  report(
+    context,
+    'error',
+    'param-type-mismatch',
+    `${value} is ${article(parameter.type)} ${parameter.type} parameter and cannot stand for ${article(slot)} ${slot}`,
+    where,
+  )
+}
+
+function checkObjectiveParams(
+  context: Context,
+  entry: QuestEntry,
+  objective: Objective,
+  where: Where,
+): void {
+  const at = (slot: string): Where => ({ ...where, path: `${where.path}.${slot}` })
+  switch (objective.kind) {
+    case 'kill':
+      checkParamSlot(context, entry, 'actor', objective.actor, at('actor'))
+      checkParamSlot(context, entry, 'count', objective.count, at('count'))
+      return
+    case 'collect':
+      checkParamSlot(context, entry, 'item', objective.item, at('item'))
+      checkParamSlot(context, entry, 'count', objective.count, at('count'))
+      return
+    case 'reach':
+      checkParamSlot(context, entry, 'location', objective.location, at('location'))
+      return
+    case 'talk':
+      checkParamSlot(context, entry, 'actor', objective.actor, at('actor'))
+      checkParamSlot(context, entry, 'dialogue', objective.dialogue, at('dialogue'))
+      return
+    case 'interact':
+      checkParamSlot(context, entry, 'object', objective.object, at('object'))
+      return
+    case 'event':
+      checkParamSlot(context, entry, 'event', objective.event, at('event'))
+      checkParamSlot(context, entry, 'count', objective.count, at('count'))
+      return
+    default:
+      return
+  }
+}
+
+const PLACEHOLDER = /\{([A-Za-z_][A-Za-z0-9_]*)\}/g
+
+/** Parameter names a text mentions as `{name}` placeholders. */
+function placeholders(text: Text): string[] {
+  return [...text.matchAll(PLACEHOLDER)].map((match) => match[1])
+}
+
+function checkDuration(
+  context: Context,
+  value: string | undefined,
+  what: string,
+  where: Where,
+): void {
+  if (value === undefined || parseDuration(value) !== undefined) return
+  report(
+    context,
+    'error',
+    'duration-invalid',
+    `${what} ${quote(value)} is not an ISO 8601 duration of weeks, days, hours, minutes and seconds, nor day, week or month`,
+    where,
+  )
+}
+
+function checkRecurrence(context: Context, entry: QuestEntry): void {
+  const quest = entry.quest.id
+  const { cooldown, expire } = entry.quest
+  checkDuration(context, cooldown, 'cooldown', { quest, path: `${entry.path}.cooldown` })
+  checkDuration(context, expire, 'expire', { quest, path: `${entry.path}.expire` })
+  if (cooldown !== undefined && entry.quest.repeat !== true) {
+    report(
+      context,
+      'error',
+      'cooldown-without-repeat',
+      `quest ${quote(quest)} has a cooldown but is not marked repeat`,
+      { quest, path: `${entry.path}.cooldown` },
+    )
+  }
+
+  const names = new Set<string>()
+  ;(entry.quest.params ?? []).forEach((parameter, index) => {
+    const path = `${entry.path}.params[${index}]`
+    checkExt(context, parameter.ext, { quest, path: `${path}.ext` })
+    if (names.has(parameter.name)) {
+      report(
+        context,
+        'error',
+        'duplicate-param-name',
+        `parameter ${quote(parameter.name)} is declared twice`,
+        { quest, path },
+      )
+    }
+    names.add(parameter.name)
+  })
+
+  for (const name of placeholders(entry.quest.title)) entry.usedParams.add(name)
+  for (const name of placeholders(entry.quest.summary ?? '')) entry.usedParams.add(name)
+
+  const expireSpan = expire === undefined ? undefined : parseDuration(expire)
+  entry.quest.steps.forEach((step, index) => {
+    const path = `${entry.path}.steps[${index}]`
+    const where = { quest, step: step.id, path }
+    if (step.outcome?.name === EXPIRED_OUTCOME) {
+      report(
+        context,
+        'error',
+        'outcome-reserved',
+        `outcome ${quote(EXPIRED_OUTCOME)} is reserved for the built-in outcome a quest reaches when it expires`,
+        { ...where, path: `${path}.outcome` },
+      )
+    }
+    checkDuration(context, step.deadline, 'deadline', { ...where, path: `${path}.deadline` })
+    const deadlineSpan = step.deadline === undefined ? undefined : parseDuration(step.deadline)
+    if (
+      expireSpan?.kind === 'fixed' &&
+      deadlineSpan?.kind === 'fixed' &&
+      deadlineSpan.ms > expireSpan.ms
+    ) {
+      report(
+        context,
+        'warning',
+        'deadline-after-expire',
+        `deadline ${quote(step.deadline ?? '')} on step ${quote(step.id)} is longer than the quest's expire ${quote(expire ?? '')}, so the step can never run out first`,
+        { ...where, path: `${path}.deadline` },
+      )
+    }
+    if (step.objective !== undefined) {
+      checkObjectiveParams(context, entry, step.objective, { ...where, path: `${path}.objective` })
+    }
+    if (step.failObjective !== undefined) {
+      checkObjectiveParams(context, entry, step.failObjective, {
+        ...where,
+        path: `${path}.failObjective`,
+      })
+    }
+    for (const text of [step.title, step.journal ?? '', step.outcome?.title ?? '']) {
+      for (const name of placeholders(text)) entry.usedParams.add(name)
+    }
+  })
+}
+
+/** Runs after the conditions have been checked, so every `$name` read has been seen. */
+function checkUnusedParams(context: Context, entry: QuestEntry): void {
+  ;(entry.quest.params ?? []).forEach((parameter, index) => {
+    if (entry.usedParams.has(parameter.name)) return
+    report(
+      context,
+      'warning',
+      'unused-param',
+      `parameter ${quote(parameter.name)} is declared and never used`,
+      { quest: entry.quest.id, path: `${entry.path}.params[${index}]` },
+    )
+  })
+}
+
 function checkQuest(context: Context, entry: QuestEntry): void {
   checkExt(context, entry.quest.ext, { quest: entry.quest.id, path: `${entry.path}.ext` })
   checkDuplicates(context, entry)
   checkDictionaryRefs(context, entry)
   checkRewards(context, entry)
+  checkRecurrence(context, entry)
   checkConditions(context, entry)
+  checkUnusedParams(context, entry)
   checkGraph(context, entry)
 }
 

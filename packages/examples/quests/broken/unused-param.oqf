@@ -1,0 +1,6 @@
+# Expected warning, not an error: parameter declared and never used. The P line declares "n" but no objective, condition or text placeholder reads it. The file is valid OQF.
+OQF1
+Q	unused_param	1				Unused Param
+P	fish	item
+P	n	number
+S	only_step	s			collect $fish 3		finished					Catch three of the day's fish

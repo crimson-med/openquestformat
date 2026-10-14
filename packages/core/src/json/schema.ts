@@ -5,13 +5,28 @@
  * generated from or validated by a schema library. The shapes must be kept in
  * step with model.ts by hand; the enums are imported so they cannot drift.
  */
-import { OQF_MAJOR, REWARD_KINDS } from '../model.js'
+import {
+  DURATION_KEYWORDS,
+  EXPIRED_OUTCOME,
+  OQF_MAJOR,
+  PARAMETER_TYPES,
+  REWARD_KINDS,
+} from '../model.js'
 
 /** Loose type for the schema tree. Keeps callers from depending on its literal shape. */
 export type JsonSchemaObject = Record<string, unknown>
 
 /** Extension keys are `x-<namespace>.<key>`. */
 export const EXT_KEY_PATTERN_SOURCE = '^x-[a-z0-9-]+\\.[A-Za-z0-9_.-]+$'
+
+/** A `$name` parameter reference. */
+export const PARAM_REF_PATTERN_SOURCE = '^\\$[A-Za-z_][A-Za-z0-9_]*$'
+
+/**
+ * A calendar keyword or an ISO 8601 span of weeks, days, hours, minutes and
+ * seconds. The pattern cannot rule out a zero span; the validator does.
+ */
+export const DURATION_PATTERN_SOURCE = `^(?:${DURATION_KEYWORDS.join('|')}|P(?:\\d+W)?(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+S)?)?)$`
 
 export const OQF_JSON_SCHEMA: JsonSchemaObject = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -56,6 +71,37 @@ export const OQF_JSON_SCHEMA: JsonSchemaObject = {
       description: 'A flat map of scalars.',
       type: 'object',
       additionalProperties: { $ref: '#/$defs/Scalar' },
+    },
+
+    Duration: {
+      description:
+        'An ISO 8601 span restricted to weeks, days, hours, minutes and seconds, or one of the calendar keywords day, week and month.',
+      type: 'string',
+      pattern: DURATION_PATTERN_SOURCE,
+    },
+
+    ParamRef: {
+      description: 'A reference to a quest parameter, written $name.',
+      type: 'string',
+      pattern: PARAM_REF_PATTERN_SOURCE,
+    },
+
+    Count: {
+      description: 'An objective count: a positive integer or a $name parameter reference.',
+      anyOf: [{ type: 'integer', minimum: 1 }, { $ref: '#/$defs/ParamRef' }],
+    },
+
+    Parameter: {
+      description: 'A value the engine binds when an instance of the quest is offered.',
+      type: 'object',
+      required: ['name', 'type'],
+      additionalProperties: false,
+      properties: {
+        name: { type: 'string' },
+        type: { enum: [...PARAMETER_TYPES] },
+        constraint: { type: 'string' },
+        ext: { $ref: '#/$defs/Ext' },
+      },
     },
 
     Ref: {
@@ -164,7 +210,7 @@ export const OQF_JSON_SCHEMA: JsonSchemaObject = {
           properties: {
             kind: { const: 'kill' },
             actor: { type: 'string' },
-            count: { type: 'integer', minimum: 1 },
+            count: { $ref: '#/$defs/Count' },
           },
         },
         {
@@ -174,7 +220,7 @@ export const OQF_JSON_SCHEMA: JsonSchemaObject = {
           properties: {
             kind: { const: 'collect' },
             item: { type: 'string' },
-            count: { type: 'integer', minimum: 1 },
+            count: { $ref: '#/$defs/Count' },
           },
         },
         {
@@ -212,7 +258,7 @@ export const OQF_JSON_SCHEMA: JsonSchemaObject = {
           properties: {
             kind: { const: 'event' },
             event: { type: 'string' },
-            count: { type: 'integer', minimum: 1 },
+            count: { $ref: '#/$defs/Count' },
           },
         },
         {
@@ -246,12 +292,12 @@ export const OQF_JSON_SCHEMA: JsonSchemaObject = {
     },
 
     Outcome: {
-      description: 'Present on ending steps only.',
+      description: `Present on ending steps only. The name ${EXPIRED_OUTCOME} is reserved for the built-in outcome a quest with expire reaches.`,
       type: 'object',
       required: ['name'],
       additionalProperties: false,
       properties: {
-        name: { type: 'string' },
+        name: { type: 'string', not: { const: EXPIRED_OUTCOME } },
         failed: { type: 'boolean' },
         title: { $ref: '#/$defs/Text' },
       },
@@ -283,6 +329,7 @@ export const OQF_JSON_SCHEMA: JsonSchemaObject = {
         complete: { $ref: '#/$defs/Condition' },
         failObjective: { $ref: '#/$defs/Objective' },
         fail: { $ref: '#/$defs/Condition' },
+        deadline: { $ref: '#/$defs/Duration' },
         optional: { type: 'boolean' },
         repeat: { type: 'boolean' },
         outcome: { $ref: '#/$defs/Outcome' },
@@ -306,6 +353,9 @@ export const OQF_JSON_SCHEMA: JsonSchemaObject = {
         tags: { type: 'array', items: { type: 'string' } },
         repeat: { type: 'boolean' },
         unlock: { $ref: '#/$defs/Condition' },
+        cooldown: { $ref: '#/$defs/Duration' },
+        expire: { $ref: '#/$defs/Duration' },
+        params: { type: 'array', items: { $ref: '#/$defs/Parameter' } },
         steps: { type: 'array', items: { $ref: '#/$defs/Step' } },
         rewards: { type: 'array', items: { $ref: '#/$defs/Reward' } },
         ext: { $ref: '#/$defs/Ext' },

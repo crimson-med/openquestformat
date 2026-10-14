@@ -1,0 +1,4 @@
+# Expected error: cooldown without repeat. The quest carries a cooldown in Q column 8 but its flags cell has no "r", so there is never a second instance for the cooldown to gate.
+OQF1
+Q	cooldown_without_repeat	1				Cooldown Without Repeat		day
+S	only_step	s					finished					Finish the only step

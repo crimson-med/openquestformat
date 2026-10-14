@@ -11,7 +11,13 @@
  * basis and reads back as `flag.x == true`.
  */
 import type { Condition, Objective } from '../model.js'
-import { variableNamespace } from './paths.js'
+import { paramRefOf, variableNamespace } from './paths.js'
+
+/** A variable path as the authoring string spells it: `param.n` is written `$n`. */
+function pathText(path: unknown): string {
+  const text = String(path)
+  return paramRefOf(text) ?? text
+}
 
 /** Binding power, loosest first. A child below the required level gets parentheses. */
 const LEVEL_OR = 1
@@ -70,9 +76,9 @@ function wrap(text: string, level: number, required: number): string {
 function formatBoolean(node: unknown, required: number): string {
   const current = entry(node)
   if (current === undefined) return formatLiteral(node)
-  if (current.operator === 'var') return String(current.args)
+  if (current.operator === 'var') return pathText(current.args)
   const sugared = sugaredPath(current)
-  if (sugared !== undefined) return sugared
+  if (sugared !== undefined) return pathText(sugared)
   if (current.operator === 'and') {
     const parts = operands(current.args).map((part) => formatBoolean(part, LEVEL_NOT))
     return wrap(parts.join(' and '), LEVEL_AND, required)
@@ -97,7 +103,7 @@ function formatBoolean(node: unknown, required: number): string {
 function formatOperand(node: unknown): string {
   const current = entry(node)
   if (current === undefined) return formatLiteral(node)
-  if (current.operator === 'var') return String(current.args)
+  if (current.operator === 'var') return pathText(current.args)
   return `(${formatBoolean(node, LEVEL_OR)})`
 }
 

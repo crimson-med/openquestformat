@@ -256,8 +256,9 @@ describe('parseCompact extensions', () => {
   })
 
   it('preserves extra cells beyond the frozen order', () => {
+    // The quest order ends at expire (column 9), the step order at deadline (column 14).
     const document = parseCompact(
-      doc(`${quest()}\tone\ttwo`, `${reward()}\tthree`, `${step()}\tfour\t\tfive`),
+      doc(`${quest()}\t\t\tone\ttwo`, `${reward()}\tthree`, `${step()}\t\tfour\t\tfive`),
     )
     expect(document.quests[0].ext).toEqual({ 'x-oqf.extra': 'one\ttwo' })
     expect(document.quests[0].rewards[0].ext).toEqual({ 'x-oqf.extra': 'three' })
@@ -419,5 +420,74 @@ describe('parseCompact errors', () => {
     expect(raised(doc(quest(), reward({ [R.ref]: '' }))).message).toMatch(/missing reward ref/)
     expect(raised(doc(quest(), step({ [S.id]: '' }))).message).toMatch(/missing step id/)
     expect(raised(doc(quest(), step({ [S.title]: '' }))).message).toMatch(/missing step title/)
+  })
+})
+
+describe('parseCompact recurrence (v0.2 columns)', () => {
+  const daily = (extra: string[] = []): string =>
+    doc(
+      'T\tfish.catchable',
+      `${quest({ [Q.flags]: 'r', [Q.unlock]: 'flag.intro' })}\tday\tP1D`,
+      'P\tfish\titem\tfish.catchable',
+      'P\tn\tnumber\t1..40',
+      ...extra,
+      'R\tcoins\tcurrency\tcoins\t30\tdone',
+      `${step({ [S.id]: 'catch', [S.flags]: 's', [S.complete]: 'collect $fish $n' })}\tPT2H`,
+    )
+
+  it('reads cooldown and expire from quest columns 8 and 9', () => {
+    const quest = parseCompact(daily()).quests[0]
+    expect(quest.cooldown).toBe('day')
+    expect(quest.expire).toBe('P1D')
+  })
+
+  it('reads P lines into the quest parameters, before the rewards', () => {
+    const quest = parseCompact(daily()).quests[0]
+    expect(quest.params).toEqual([
+      { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+      { name: 'n', type: 'number', constraint: '1..40' },
+    ])
+    expect(quest.rewards).toHaveLength(1)
+  })
+
+  it('reads a step deadline from column 14 and $name slots in the objective', () => {
+    const step = parseCompact(daily()).quests[0].steps[0]
+    expect(step.deadline).toBe('PT2H')
+    expect(step.objective).toEqual({ kind: 'collect', item: '$fish', count: '$n' })
+  })
+
+  it('leaves the fields out when the cells are empty', () => {
+    const document = parseCompact(doc(quest(), step()))
+    expect(document.quests[0]).not.toHaveProperty('cooldown')
+    expect(document.quests[0]).not.toHaveProperty('expire')
+    expect(document.quests[0]).not.toHaveProperty('params')
+    expect(document.quests[0].steps[0]).not.toHaveProperty('deadline')
+  })
+
+  it('normalizes a valid duration and keeps an invalid one for the validator', () => {
+    const document = parseCompact(doc(`${quest()}\t\tP1DT0H`, `${step()}\ttomorrow`))
+    expect(document.quests[0].expire).toBe('P1D')
+    expect(document.quests[0].steps[0].deadline).toBe('tomorrow')
+  })
+
+  it('attaches X lines to the preceding P line', () => {
+    const document = parseCompact(daily(['X\teditor\tnote\tpicked daily']))
+    expect(document.quests[0].params?.[1].ext).toEqual({ 'x-editor.note': 'picked daily' })
+  })
+
+  it('rejects a P line before any quest, after a reward, or after a step', () => {
+    expect(raised(doc('P\tn\tnumber')).message).toMatch(/parameter line before any quest/)
+    expect(raised(doc(quest(), reward(), 'P\tn\tnumber')).message).toMatch(
+      /parameter line after a reward or step line on line 4/,
+    )
+    expect(raised(doc(quest(), step(), 'P\tn\tnumber')).message).toMatch(
+      /parameter line after a reward or step line/,
+    )
+  })
+
+  it('rejects a P line with a missing name or type, or an unknown type', () => {
+    expect(raised(doc(quest(), 'P\t\tnumber')).message).toMatch(/missing parameter name/)
+    expect(raised(doc(quest(), 'P\tn')).message).toMatch(/missing parameter type/)
+    expect(raised(doc(quest(), 'P\tn\tcolour')).message).toMatch(/unknown parameter type "colour"/)
   })
 })

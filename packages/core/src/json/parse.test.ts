@@ -412,3 +412,66 @@ describe('error paths', () => {
     )
   })
 })
+
+describe('recurrence fields', () => {
+  it('reads cooldown, expire, params and deadline', () => {
+    const value = withQuest({
+      repeat: true,
+      cooldown: 'day',
+      expire: 'P1DT0H',
+      params: [
+        { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+        { name: 'n', type: 'number', ext: { 'x-editor.note': 'picked' } },
+      ],
+      steps: [
+        {
+          id: 's',
+          title: 'S',
+          deadline: 'PT2H',
+          objective: { kind: 'collect', item: '$fish', count: '$n' },
+        },
+      ],
+    })
+    const quest = fromJsonValue(value).quests[0]
+    expect(quest.cooldown).toBe('day')
+    expect(quest.expire).toBe('P1D')
+    expect(quest.params).toEqual([
+      { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+      { name: 'n', type: 'number', ext: { 'x-editor.note': 'picked' } },
+    ])
+    expect(quest.steps[0].deadline).toBe('PT2H')
+    expect(quest.steps[0].objective).toEqual({ kind: 'collect', item: '$fish', count: '$n' })
+  })
+
+  it('leaves an empty params list out of the model', () => {
+    expect(fromJsonValue(withQuest({ params: [] })).quests[0]).not.toHaveProperty('params')
+  })
+
+  it('keeps an invalid duration for the validator', () => {
+    expect(fromJsonValue(withQuest({ expire: 'tomorrow' })).quests[0].expire).toBe('tomorrow')
+  })
+
+  it('rejects an empty or non string duration', () => {
+    failsAt(withQuest({ cooldown: '' }), 'quests[0].cooldown')
+    failsAt(withQuest({ expire: 3 }), 'quests[0].expire')
+    failsAt(withStep({ deadline: true }), 'quests[0].steps[0].deadline')
+  })
+
+  it('rejects a bad parameter', () => {
+    failsAt(withQuest({ params: [{ type: 'item' }] }), 'quests[0].params[0].name')
+    failsAt(withQuest({ params: [{ name: 'n', type: 'colour' }] }), 'quests[0].params[0].type')
+    failsAt(
+      withQuest({ params: [{ name: 'n', type: 'number', min: 1 }] }),
+      'quests[0].params[0].min',
+    )
+    failsAt(withQuest({ params: 'n' }), 'quests[0].params')
+  })
+
+  it('rejects a count that is neither a number nor a $name', () => {
+    const error = failsAt(
+      withStep({ objective: { kind: 'collect', item: 'fish', count: 'five' } }),
+      'quests[0].steps[0].objective.count',
+    )
+    expect(error.message).toMatch(/number or a \$name parameter reference/)
+  })
+})

@@ -4,6 +4,7 @@
  * Validation is done by hand, with no schema library, so every failure can
  * carry the exact path of the offending value.
  */
+import { normalizeDuration } from '../duration/index.js'
 import {
   CONDITION_OPERATORS,
   type Condition,
@@ -16,6 +17,9 @@ import {
   type Objective,
   type OqfDocument,
   type Outcome,
+  PARAMETER_TYPES,
+  type ParamRef,
+  type Parameter,
   type Payload,
   type Quest,
   REWARD_KINDS,
@@ -23,6 +27,7 @@ import {
   type Reward,
   type Scalar,
   type Step,
+  isParamRef,
 } from '../model.js'
 
 /** Extension keys are `x-<namespace>.<key>`. */
@@ -161,6 +166,37 @@ function optionalCondition(
 ): Condition | undefined {
   const value = record[name]
   return value === undefined ? undefined : readCondition(value, key(path, name))
+}
+
+/** A duration string, stored in its canonical spelling when it is valid. */
+function optionalDuration(
+  record: Record<string, unknown>,
+  name: string,
+  path: string,
+): string | undefined {
+  const value = record[name]
+  if (value === undefined) return undefined
+  const text = readString(value, key(path, name))
+  if (text === '') fail('expected a duration, got an empty string', key(path, name))
+  return normalizeDuration(text)
+}
+
+/** An objective count: a number, or a `$name` parameter reference. */
+function optionalCount(
+  record: Record<string, unknown>,
+  name: string,
+  path: string,
+): number | ParamRef | undefined {
+  const value = record[name]
+  if (value === undefined) return undefined
+  if (isParamRef(value)) return value
+  if (typeof value === 'string') {
+    fail(
+      `expected a number or a $name parameter reference, got ${JSON.stringify(value)}`,
+      key(path, name),
+    )
+  }
+  return readNumber(value, key(path, name))
 }
 
 function checkKeys(
@@ -308,14 +344,14 @@ function readObjective(value: unknown, path: string): Objective {
       return prune({
         kind,
         actor: requiredString(record, 'actor', path),
-        count: optionalNumber(record, 'count', path),
+        count: optionalCount(record, 'count', path),
       })
     case 'collect':
       checkKeys(record, ['kind', 'item', 'count'], path)
       return prune({
         kind,
         item: requiredString(record, 'item', path),
-        count: optionalNumber(record, 'count', path),
+        count: optionalCount(record, 'count', path),
       })
     case 'reach':
       checkKeys(record, ['kind', 'location'], path)
@@ -335,7 +371,7 @@ function readObjective(value: unknown, path: string): Objective {
       return prune({
         kind,
         event: requiredString(record, 'event', path),
-        count: optionalNumber(record, 'count', path),
+        count: optionalCount(record, 'count', path),
       })
     default:
       checkKeys(record, ['kind', 'custom', 'args'], path)
@@ -373,6 +409,30 @@ function readReward(value: unknown, path: string): Reward {
   })
 }
 
+function readParameter(value: unknown, path: string): Parameter {
+  const record = readRecord(value, path, 'a parameter')
+  checkKeys(record, ['name', 'type', 'constraint', 'ext'], path)
+  const type = required(record, 'type', path)
+  if (typeof type !== 'string' || !PARAMETER_TYPES.includes(type as Parameter['type'])) {
+    fail(`unknown parameter type ${JSON.stringify(type)}`, key(path, 'type'))
+  }
+  return prune({
+    name: requiredString(record, 'name', path),
+    type: type as Parameter['type'],
+    constraint: optionalString(record, 'constraint', path),
+    ext: optionalExt(record, path),
+  })
+}
+
+/** The parameter list, left out of the model when it is absent or empty. */
+function optionalParameters(value: unknown, path: string): Parameter[] | undefined {
+  if (value === undefined) return undefined
+  const list = readArray(value, path, 'the parameters of a quest').map((item, position) =>
+    readParameter(item, at(path, position)),
+  )
+  return list.length === 0 ? undefined : list
+}
+
 function readOutcome(value: unknown, path: string): Outcome {
   const record = readRecord(value, path, 'an outcome')
   checkKeys(record, ['name', 'failed', 'title'], path)
@@ -403,6 +463,7 @@ const STEP_KEYS = [
   'complete',
   'failObjective',
   'fail',
+  'deadline',
   'optional',
   'repeat',
   'outcome',
@@ -437,6 +498,7 @@ function readStep(value: unknown, path: string): Step {
         ? undefined
         : readObjective(failObjective, key(path, 'failObjective')),
     fail: optionalCondition(record, 'fail', path),
+    deadline: optionalDuration(record, 'deadline', path),
     optional: optionalBoolean(record, 'optional', path),
     repeat: optionalBoolean(record, 'repeat', path),
     outcome: outcome === undefined ? undefined : readOutcome(outcome, key(path, 'outcome')),
@@ -456,6 +518,9 @@ const QUEST_KEYS = [
   'tags',
   'repeat',
   'unlock',
+  'cooldown',
+  'expire',
+  'params',
   'steps',
   'rewards',
   'ext',
@@ -476,6 +541,9 @@ function readQuest(value: unknown, path: string): Quest {
     tags: readIdList(record.tags, key(path, 'tags'), 'the tags of a quest'),
     repeat: optionalBoolean(record, 'repeat', path),
     unlock: optionalCondition(record, 'unlock', path),
+    cooldown: optionalDuration(record, 'cooldown', path),
+    expire: optionalDuration(record, 'expire', path),
+    params: optionalParameters(record.params, key(path, 'params')),
     steps: readArray(required(record, 'steps', path), stepsPath, 'the steps of a quest').map(
       (item, position) => readStep(item, at(stepsPath, position)),
     ),

@@ -1,0 +1,6 @@
+# Expected error: duplicate parameter name. Two P lines both declare "fish".
+OQF1
+Q	duplicate_param_name	1				Duplicate Param Name
+P	fish	item
+P	fish	item
+S	only_step	s			collect $fish 3		finished					Catch three of the day's fish

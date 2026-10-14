@@ -13,6 +13,7 @@ import {
   type Objective,
   type OqfDocument,
   type Outcome,
+  type Parameter,
   type Payload,
   type Quest,
   type Ref,
@@ -104,6 +105,15 @@ function writeObjective(objective: Objective): JsonRecord {
   }
 }
 
+function writeParameter(parameter: Parameter): JsonRecord {
+  return prune({
+    name: parameter.name,
+    type: parameter.type,
+    constraint: parameter.constraint,
+    ext: copyExt(parameter.ext),
+  })
+}
+
 function writeOutcome(outcome: Outcome): JsonRecord {
   return prune({ name: outcome.name, failed: flag(outcome.failed), title: outcome.title })
 }
@@ -137,6 +147,7 @@ function writeStep(step: Step): JsonRecord {
     failObjective:
       step.failObjective === undefined ? undefined : writeObjective(step.failObjective),
     fail: writeCondition(step.fail),
+    deadline: step.deadline,
     optional: flag(step.optional),
     repeat: flag(step.repeat),
     outcome: step.outcome === undefined ? undefined : writeOutcome(step.outcome),
@@ -157,6 +168,12 @@ function writeQuest(quest: Quest): JsonRecord {
     tags: list(quest.tags),
     repeat: flag(quest.repeat),
     unlock: writeCondition(quest.unlock),
+    cooldown: quest.cooldown,
+    expire: quest.expire,
+    params:
+      quest.params !== undefined && quest.params.length > 0
+        ? quest.params.map(writeParameter)
+        : undefined,
     steps: quest.steps.map(writeStep),
     rewards: quest.rewards.length > 0 ? quest.rewards.map(writeReward) : undefined,
     ext: copyExt(quest.ext),

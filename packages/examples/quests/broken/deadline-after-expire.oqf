@@ -1,0 +1,4 @@
+# Expected warning, not an error: a step deadline longer than the quest's expire. The quest expires after P1D but the step's deadline (S column 14) is P2D, so the step can never run out before the quest does. The file is valid OQF.
+OQF1
+Q	deadline_after_expire	1				Deadline After Expire			P1D
+S	only_step	s					finished					Finish the only step		P2D

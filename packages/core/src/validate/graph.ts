@@ -16,7 +16,14 @@
  * the safe side: it never claims a step is unreachable unless it proved it.
  */
 import { conditionVariables, evaluateCondition } from '../condition/index.js'
-import { type Condition, type Quest, STEP_STATES, type Scalar, type Step } from '../model.js'
+import {
+  type Condition,
+  OPAQUE_NAMESPACES,
+  type Quest,
+  STEP_STATES,
+  type Scalar,
+  type Step,
+} from '../model.js'
 
 /** The step fields that hold a condition, in evaluation order. */
 export const STEP_CONDITION_FIELDS = ['unlock', 'activate', 'complete', 'fail'] as const
@@ -72,12 +79,17 @@ export function isStartStep(step: Step): boolean {
   return step.start === true || step.unlock === undefined
 }
 
-/** True when reaching or completing this step depends on a game-provided variable. */
+/** True when the namespace's values are unknown to the validator: `var` and the play-time ones. */
+export function isOpaqueNamespace(namespace: string): boolean {
+  return (OPAQUE_NAMESPACES as readonly string[]).includes(namespace)
+}
+
+/** True when reaching or completing this step depends on a variable the validator cannot value. */
 export function readsGameVariables(step: Step): boolean {
   for (const { field, condition } of stepConditions(step)) {
     if (!PROGRESS_FIELDS.includes(field)) continue
     for (const path of conditionVariables(condition)) {
-      if (pathNamespace(path) === 'var') return true
+      if (isOpaqueNamespace(pathNamespace(path))) return true
     }
   }
   return false
@@ -239,7 +251,7 @@ function domainFor(path: string, context: SearchContext, literals: Scalar[]): un
   }
   if (namespace === 'flag' || namespace === 'outcome') return [true, false]
   if (namespace === 'quest') return [...QUEST_STATES]
-  if (namespace === 'var' && context.ignoreVars === true) return [null]
+  if (isOpaqueNamespace(namespace) && context.ignoreVars === true) return [null]
   return wildProbes(literals)
 }
 

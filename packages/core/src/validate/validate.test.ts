@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Condition, OqfDocument } from '../model.js'
+import type { Condition, OqfDocument, Quest, Step } from '../model.js'
 import { cleanDocument, doc, done, inState, quest, referenceDocument, step } from './fixtures.js'
 import type { ValidationResult } from './types.js'
 import { validateDocument, validatePack } from './validate.js'
@@ -658,5 +658,284 @@ describe('the reference quest', () => {
 
   it('does not report ending-needs-var because trade is a var free route', () => {
     expect(codes(validateDocument(referenceDocument()))).not.toContain('ending-needs-var')
+  })
+})
+
+describe('recurrence', () => {
+  /** A repeatable quest with the given patch, one start step and one ending. */
+  function timed(patch: Partial<Quest>, steps?: Step[]): OqfDocument {
+    return doc([
+      quest(
+        'q',
+        steps ?? [
+          step('begin', { start: true }),
+          step('finish', { unlock: done('begin'), outcome: { name: 'done' } }),
+        ],
+        { repeat: true, ...patch },
+      ),
+    ])
+  }
+
+  it('accepts a daily quest with parameters used everywhere', () => {
+    const result = validateDocument(
+      timed(
+        {
+          cooldown: 'day',
+          expire: 'P1D',
+          unlock: { '>=': [{ var: 'streak.q' }, 0] },
+          params: [
+            { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+            { name: 'n', type: 'number', constraint: '1..40' },
+            { name: 'where', type: 'location' },
+            { name: 'giver', type: 'actor' },
+            { name: 'note', type: 'string' },
+          ],
+          title: 'Catch {n} {fish} for {giver}',
+        },
+        [
+          step('begin', {
+            start: true,
+            objective: { kind: 'collect', item: '$fish', count: '$n' },
+            deadline: 'PT2H',
+          }),
+          step('go', { unlock: done('begin'), objective: { kind: 'reach', location: '$where' } }),
+          step('finish', {
+            unlock: done('go'),
+            objective: { kind: 'talk', actor: '$giver', dialogue: '$note' },
+            outcome: { name: 'done' },
+          }),
+        ],
+      ),
+    )
+    expect(result.findings).toEqual([])
+  })
+
+  it('reports a cooldown on a quest that is not repeatable', () => {
+    const result = validateDocument(timed({ repeat: undefined, cooldown: 'day' }))
+    const finding = only(result, 'cooldown-without-repeat')[0]
+    expect(finding.level).toBe('error')
+    expect(finding.path).toBe('quests[0].cooldown')
+  })
+
+  it('reports an unparseable duration in every slot', () => {
+    const result = validateDocument(
+      timed({ cooldown: 'tomorrow', expire: 'P1M' }, [
+        step('begin', { start: true, deadline: 'PT', outcome: { name: 'done' } }),
+      ]),
+    )
+    expect(only(result, 'duration-invalid').map((finding) => finding.path)).toEqual([
+      'quests[0].cooldown',
+      'quests[0].expire',
+      'quests[0].steps[0].deadline',
+    ])
+  })
+
+  it('reports an author outcome named expired', () => {
+    const result = validateDocument(
+      timed({}, [step('begin', { start: true, outcome: { name: 'expired', failed: true } })]),
+    )
+    expect(only(result, 'outcome-reserved')).toHaveLength(1)
+    expect(result.ok).toBe(false)
+  })
+
+  it('reports a duplicate parameter name once', () => {
+    const result = validateDocument(
+      timed(
+        {
+          params: [
+            { name: 'n', type: 'number' },
+            { name: 'n', type: 'string' },
+          ],
+        },
+        [
+          step('begin', {
+            start: true,
+            objective: { kind: 'event', event: 'x', count: '$n' },
+            outcome: { name: 'done' },
+          }),
+        ],
+      ),
+    )
+    expect(only(result, 'duplicate-param-name')).toHaveLength(1)
+    expect(only(result, 'duplicate-param-name')[0].path).toBe('quests[0].params[1]')
+    expect(codes(result)).not.toContain('unknown-param-ref')
+  })
+
+  it('reports a $name no parameter declares, in objectives and in conditions', () => {
+    const result = validateDocument(
+      timed({ params: [{ name: 'fish', type: 'item' }] }, [
+        step('begin', {
+          start: true,
+          objective: { kind: 'collect', item: '$fish', count: '$n' },
+          unlock: { '>': [{ var: 'param.m' }, 1] },
+          outcome: { name: 'done' },
+        }),
+      ]),
+    )
+    const findings = only(result, 'unknown-param-ref')
+    expect(findings.map((finding) => finding.path)).toEqual([
+      'quests[0].steps[0].objective.count',
+      'quests[0].steps[0].unlock',
+    ])
+    expect(findings[0].message).toBe('$n is not a parameter of this quest')
+  })
+
+  it('reports a parameter whose type does not fit its slot', () => {
+    const result = validateDocument(
+      timed(
+        {
+          params: [
+            { name: 'fish', type: 'item' },
+            { name: 'n', type: 'number' },
+          ],
+        },
+        [
+          step('begin', {
+            start: true,
+            objective: { kind: 'collect', item: '$n', count: '$fish' },
+            outcome: { name: 'done' },
+          }),
+        ],
+      ),
+    )
+    const findings = only(result, 'param-type-mismatch')
+    expect(findings.map((finding) => finding.path)).toEqual([
+      'quests[0].steps[0].objective.item',
+      'quests[0].steps[0].objective.count',
+    ])
+    expect(findings[0].message).toBe('$n is a number parameter and cannot stand for an item')
+    expect(findings[1].message).toBe('$fish is an item parameter and cannot stand for a count')
+  })
+
+  it('warns about a parameter nothing reads, and counts text placeholders as reads', () => {
+    const unused = validateDocument(
+      timed({
+        params: [
+          { name: 'n', type: 'number' },
+          { name: 'fish', type: 'item' },
+        ],
+      }),
+    )
+    expect(only(unused, 'unused-param').map((finding) => finding.path)).toEqual([
+      'quests[0].params[0]',
+      'quests[0].params[1]',
+    ])
+    expect(unused.ok).toBe(true)
+    const titled = validateDocument(
+      timed(
+        {
+          params: [
+            { name: 'n', type: 'number' },
+            { name: 'fish', type: 'item' },
+          ],
+          summary: 'Catch {n}',
+        },
+        [step('begin', { start: true, title: 'Find {fish}', outcome: { name: 'done' } })],
+      ),
+    )
+    expect(codes(titled)).not.toContain('unused-param')
+  })
+
+  it('reports streak on a quest without a calendar cooldown', () => {
+    const fixed = validateDocument(
+      timed({ cooldown: 'PT20H', unlock: { '>=': [{ var: 'streak.q' }, 3] } }),
+    )
+    expect(only(fixed, 'streak-without-calendar-cooldown')).toHaveLength(1)
+    const none = validateDocument(timed({ unlock: { '>=': [{ var: 'streak.q' }, 3] } }))
+    expect(only(none, 'streak-without-calendar-cooldown')).toHaveLength(1)
+    const calendar = validateDocument(
+      timed({ cooldown: 'week', unlock: { '>=': [{ var: 'streak.q' }, 3] } }),
+    )
+    expect(codes(calendar)).toEqual([])
+  })
+
+  it('resolves runs and streak against the pack', () => {
+    const result = validateDocument(
+      timed({
+        cooldown: 'day',
+        unlock: {
+          and: [
+            { '>': [{ var: 'runs.q' }, 0] },
+            { '>': [{ var: 'runs.q.done' }, 0] },
+            { '>': [{ var: 'runs.q.expired' }, 0] },
+            { '>': [{ var: 'runs.q.nope' }, 0] },
+            { '>': [{ var: 'runs.ghost' }, 0] },
+            { '>': [{ var: 'streak.ghost' }, 0] },
+          ],
+        },
+      }),
+    )
+    expect(only(result, 'unknown-outcome-ref')).toHaveLength(1)
+    expect(only(result, 'unknown-quest-ref')).toHaveLength(2)
+  })
+
+  it('reports time compared with a non number, or used bare', () => {
+    const result = validateDocument(
+      timed({
+        unlock: {
+          and: [
+            { '==': [{ var: 'time.hour' }, 'night'] },
+            { '==': [{ var: 'time.day' }, true] },
+            { '<': [{ var: 'time.minute' }, { var: 'flag.x' }] },
+            { in: [{ var: 'time.weekday' }, [0, 'sat']] },
+            { '>=': [{ var: 'time.hour' }, 20] },
+            { '<': [{ var: 'time.now' }, { var: 'count.begin' }] },
+            { in: [{ var: 'time.weekday' }, [5, 6]] },
+            { '>': [{ var: 'time.week' }, { var: 'param.n' }] },
+          ],
+        },
+        params: [{ name: 'n', type: 'number' }],
+      }),
+    )
+    expect(only(result, 'time-not-number')).toHaveLength(4)
+    expect(only(result, 'time-not-number')[0].message).toMatch(
+      /"time.hour" is a number and cannot be compared with "night"/,
+    )
+  })
+
+  it('reports a time variable that does not exist', () => {
+    const result = validateDocument(timed({ unlock: { '>': [{ var: 'time.second' }, 0] } }))
+    expect(only(result, 'unknown-time-variable')).toHaveLength(1)
+  })
+
+  it('warns when a fixed deadline outlasts a fixed expire, and stays quiet otherwise', () => {
+    const longer = validateDocument(
+      timed({ expire: 'P1D' }, [
+        step('begin', { start: true, deadline: 'P2D', outcome: { name: 'done' } }),
+      ]),
+    )
+    expect(only(longer, 'deadline-after-expire')).toHaveLength(1)
+    expect(longer.ok).toBe(true)
+    const shorter = validateDocument(
+      timed({ expire: 'P1D' }, [
+        step('begin', { start: true, deadline: 'PT2H', outcome: { name: 'done' } }),
+      ]),
+    )
+    expect(codes(shorter)).toEqual([])
+    const calendar = validateDocument(
+      timed({ expire: 'day' }, [
+        step('begin', { start: true, deadline: 'P2D', outcome: { name: 'done' } }),
+      ]),
+    )
+    expect(codes(calendar)).toEqual([])
+  })
+
+  it('treats the play-time namespaces as opaque for reachability', () => {
+    const result = validateDocument(
+      doc([
+        quest(
+          'q',
+          [
+            step('begin', { start: true, rewards: ['tip'] }),
+            step('finish', {
+              unlock: { '>=': [{ var: 'time.hour' }, 20] },
+              outcome: { name: 'done' },
+            }),
+          ],
+          { rewards: [{ id: 'tip', kind: 'xp', ref: 'xp' }] },
+        ),
+      ]),
+    )
+    expect(codes(result)).toEqual(['ending-needs-var'])
   })
 })

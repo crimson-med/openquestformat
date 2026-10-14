@@ -2,7 +2,7 @@
  * Writes the canonical model back out as compact lines.
  *
  * The normalization rules in docs/12-compact-spec.md are what make the round
- * trip byte stable: dictionaries in first-use order, rewards before steps,
+ * trip byte stable: dictionaries in first-use order, parameters, then rewards, then steps,
  * conditions in their one canonical spelling, no trailing empty cells and `X`
  * lines sorted by namespace then key.
  */
@@ -12,6 +12,7 @@ import {
   OQF_MAGIC,
   type OqfDocument,
   type Outcome,
+  type Parameter,
   type Payload,
   type Quest,
   type Ref,
@@ -167,7 +168,13 @@ function questCells(quest: Quest, tags: Interned): string[] {
     quest.unlock === undefined ? '' : formatCondition(quest.unlock),
     quest.title,
     quest.summary ?? '',
+    quest.cooldown ?? '',
+    quest.expire ?? '',
   ]
+}
+
+function paramCells(parameter: Parameter): string[] {
+  return [parameter.name, parameter.type, parameter.constraint ?? '']
 }
 
 function rewardCells(reward: Reward): string[] {
@@ -212,6 +219,7 @@ function stepCells(
     step.actors.map((id) => String(indexOf(actors, id, 'a step actor'))).join(','),
     step.title,
     step.journal ?? '',
+    step.deadline ?? '',
   ]
 }
 
@@ -241,6 +249,11 @@ export function toCompact(document: OqfDocument): string {
   for (const quest of document.quests) {
     lines.push(record('Q', [...questCells(quest, tags), ...extraCells(quest.ext)]))
     lines.push(...extLines(quest.ext))
+
+    for (const parameter of quest.params ?? []) {
+      lines.push(record('P', [...paramCells(parameter), ...extraCells(parameter.ext)]))
+      lines.push(...extLines(parameter.ext))
+    }
 
     const rewards = new Map<string, number>()
     for (const [position, reward] of quest.rewards.entries()) {

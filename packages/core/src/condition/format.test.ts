@@ -221,3 +221,31 @@ describe('formatCompletion', () => {
     expect(parseCompletion(formatCompletion(parts))).toEqual(parts)
   })
 })
+
+describe('parameter references', () => {
+  it('prints param.<name> as $name', () => {
+    expect(formatCondition({ '>=': [{ var: 'count.catch' }, { var: 'param.n' }] })).toBe(
+      'count.catch >= $n',
+    )
+    expect(formatCondition({ '==': [{ var: 'param.ready' }, true] })).toBe('$ready')
+    expect(formatCondition({ var: 'param.ready' })).toBe('$ready')
+  })
+
+  it('prints a templated objective', () => {
+    expect(formatObjective({ kind: 'collect', item: '$fish', count: '$n' })).toBe(
+      'collect $fish $n',
+    )
+    expect(
+      formatCompletion({
+        objective: { kind: 'kill', actor: '$prey', count: 2 },
+        condition: { '>': [{ var: 'param.n' }, 1] },
+      }),
+    ).toBe('kill $prey 2 and $n > 1')
+  })
+
+  it('round trips through the parser', () => {
+    for (const text of ['count.catch >= $n', '$ready', 'collect $fish $n and $n > 1']) {
+      expect(formatCompletion(parseCompletion(text))).toBe(text)
+    }
+  })
+})

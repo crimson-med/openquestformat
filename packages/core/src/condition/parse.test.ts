@@ -235,7 +235,7 @@ describe('parseCondition, errors', () => {
   })
 
   it('reports unexpected characters', () => {
-    expectSyntaxError(() => parseCondition('count.x == $5'), /unexpected character "\$"/, 11)
+    expectSyntaxError(() => parseCondition('count.x == %5'), /unexpected character "%"/, 11)
     expectSyntaxError(() => parseCondition('flag.a = 1'), /unexpected character "="/, 7)
     expectSyntaxError(() => parseCondition('flag.a ! 1'), /unexpected character "!"/, 7)
   })
@@ -408,5 +408,52 @@ describe('parseCompletion', () => {
       /unexpected "flag.y"/,
       31,
     )
+  })
+})
+
+describe('parameter references', () => {
+  it('parses $name as the param namespace', () => {
+    expect(parseCondition('count.catch >= $n')).toEqual({
+      '>=': [{ var: 'count.catch' }, { var: 'param.n' }],
+    })
+  })
+
+  it('sugars a bare $name in boolean position like any other path', () => {
+    expect(parseCondition('$ready')).toEqual({ '==': [{ var: 'param.ready' }, true] })
+  })
+
+  it('accepts a $name in a list comparison', () => {
+    expect(parseCondition('$fish in ["fish.rare", "fish.koi"]')).toEqual({
+      in: [{ var: 'param.fish' }, ['fish.rare', 'fish.koi']],
+    })
+  })
+
+  it('rejects a malformed parameter reference', () => {
+    expect(() => parseCondition('$ == 1')).toThrow(/invalid parameter reference "\$"/)
+    expect(() => parseCondition('$1n == 1')).toThrow(/invalid parameter reference/)
+    expect(() => parseCondition('$a.b == 1')).toThrow(/invalid parameter reference/)
+  })
+
+  it('parses $name in every objective slot', () => {
+    expect(parseObjective('collect $fish $n')).toEqual({
+      kind: 'collect',
+      item: '$fish',
+      count: '$n',
+    })
+    expect(parseObjective('kill $prey 3')).toEqual({ kind: 'kill', actor: '$prey', count: 3 })
+    expect(parseObjective('reach $where')).toEqual({ kind: 'reach', location: '$where' })
+    expect(parseObjective('talk $giver')).toEqual({ kind: 'talk', actor: '$giver' })
+    expect(parseObjective('event $signal $n')).toEqual({
+      kind: 'event',
+      event: '$signal',
+      count: '$n',
+    })
+  })
+
+  it('parses a templated objective with a condition', () => {
+    expect(parseCompletion('collect $fish $n and $n > 1')).toEqual({
+      objective: { kind: 'collect', item: '$fish', count: '$n' },
+      condition: { '>': [{ var: 'param.n' }, 1] },
+    })
   })
 })

@@ -1,0 +1,6 @@
+# Expected error: parameter type mismatch. "n" is declared as a number but stands in the item slot of "collect $n 3", and "fish" is an item standing in the count slot.
+OQF1
+Q	param_type_mismatch	1				Param Type Mismatch
+P	fish	item
+P	n	number
+S	only_step	s			collect $n $fish		finished					Catch the wrong way round

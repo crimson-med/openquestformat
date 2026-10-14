@@ -211,6 +211,54 @@ describe('toMarkdown', () => {
     expect(text.endsWith('```\n')).toBe(true)
   })
 
+  it('writes recurrence, parameters and a deadline column when a quest has them', () => {
+    const doc = document()
+    Object.assign(doc.quests[0], {
+      repeat: true,
+      cooldown: 'day',
+      expire: 'P1D',
+      params: [
+        { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+        { name: 'n', type: 'number' },
+      ],
+    })
+    doc.quests[0].steps[1].deadline = 'PT2H'
+    const text = toMarkdown(doc)
+    const head = text.slice(0, text.indexOf('| `a` |'))
+    expect(head).toBe(
+      [
+        '# The Ledger `ledger`',
+        '',
+        'Find the ledger, then decide what it is worth.',
+        '',
+        'Repeatable, cooldown `day`, expires after `P1D`.',
+        '',
+        '## Parameters',
+        '',
+        '- `$fish` item (`fish.catchable`)',
+        '- `$n` number',
+        '',
+        '## Steps',
+        '',
+        '| ID | Title | Unlock | Complete | Fail | Outcome | Rewards | Deadline |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- |',
+        '',
+      ].join('\n'),
+    )
+    expect(text).toContain(
+      '| objective:collect | objective:event and flag.caught \\| flag.fled |  |  | PT2H |',
+    )
+    expect(text).toContain('| `a` | Start here |  | flag.ready |  |  | `coins` |  |')
+  })
+
+  it('writes the timing line for a one time quest that expires', () => {
+    const doc = document()
+    doc.quests[1].expire = 'PT12H'
+    expect(toMarkdown(doc)).toContain(
+      '# Aftermath `ledger2`\n\nOne time, expires after `PT12H`.\n\n## Steps',
+    )
+  })
+
   it('writes nothing for a document with no quests', () => {
     expect(
       toMarkdown({ dictionaries: { actors: [], locations: [], items: [], tags: [] }, quests: [] }),

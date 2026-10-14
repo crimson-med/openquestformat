@@ -1,0 +1,4 @@
+# Expected error: streak on a quest without a calendar cooldown. The unlock reads streak.streak_without_calendar_cooldown, but the quest's cooldown is the fixed span PT20H, so there are no calendar periods to count.
+OQF1
+Q	streak_without_calendar_cooldown	1	r		streak.streak_without_calendar_cooldown >= 3	Streak Without Calendar Cooldown		PT20H
+S	only_step	s					finished					Finish the only step

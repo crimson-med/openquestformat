@@ -66,7 +66,8 @@ export interface QuestRuntimeOptions {
 
 function objectiveThreshold(objective: Objective): number {
   if (objective.kind === 'kill' || objective.kind === 'collect' || objective.kind === 'event') {
-    return objective.count ?? 1
+    // A `$name` count is bound per instance; substitution lands with the recurrence runtime.
+    return typeof objective.count === 'number' ? objective.count : 1
   }
   return 1
 }

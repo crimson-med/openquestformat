@@ -5,9 +5,22 @@
  * parser over a small hand written lexer, with no dependencies. Every error is
  * a ConditionSyntaxError carrying the character offset it was raised at.
  */
-import { type Condition, OBJECTIVE_KINDS, type Objective, type Scalar } from '../model.js'
+import {
+  type Condition,
+  OBJECTIVE_KINDS,
+  type Objective,
+  type ParamRef,
+  type Scalar,
+} from '../model.js'
 import { ConditionSyntaxError } from './errors.js'
-import { PATH_PATTERN, REF_PATTERN, isVariableNamespace, variableNamespace } from './paths.js'
+import {
+  PARAM_PATTERN,
+  PATH_PATTERN,
+  REF_PATTERN,
+  isVariableNamespace,
+  paramPath,
+  variableNamespace,
+} from './paths.js'
 
 type TokenType = 'word' | 'number' | 'string' | 'op' | 'punct' | 'end'
 
@@ -21,7 +34,8 @@ interface Token {
 }
 
 const SPACE = /\s/
-const WORD_START = /[A-Za-z_]/
+/** A dollar starts a parameter reference, which lexes as a word and checks as one below. */
+const WORD_START = /[A-Za-z_$]/
 /** Colons are lexed into words so that a path containing one reports a clear error. */
 const WORD_CHAR = /[A-Za-z0-9_#.:-]/
 const DIGIT = /[0-9]/
@@ -105,7 +119,8 @@ function tokenize(source: string, from: number): Token[] {
       continue
     }
     if (WORD_START.test(ch)) {
-      let j = i
+      // The dollar itself is not a word character, so step over it before scanning on.
+      let j = ch === '$' ? i + 1 : i
       while (j < source.length && WORD_CHAR.test(source[j])) j += 1
       tokens.push({ type: 'word', text: source.slice(start, j), start })
       i = j
@@ -243,6 +258,15 @@ class Parser {
       if (RESERVED.includes(lowered)) {
         throw new ConditionSyntaxError(`unexpected keyword ${describe(token)}`, token.start)
       }
+      if (token.text.startsWith('$')) {
+        if (!PARAM_PATTERN.test(token.text)) {
+          throw new ConditionSyntaxError(
+            `invalid parameter reference ${describe(token)}`,
+            token.start,
+          )
+        }
+        return { var: paramPath(token.text) }
+      }
       if (!PATH_PATTERN.test(token.text)) {
         throw new ConditionSyntaxError(`invalid variable path ${describe(token)}`, token.start)
       }
@@ -316,18 +340,28 @@ function requireChunk(source: string, from: number, what: string): Chunk {
   return chunk
 }
 
+/** A reference slot takes an id or a `$name` parameter reference. */
+function isRefOrParam(text: string): boolean {
+  return REF_PATTERN.test(text) || PARAM_PATTERN.test(text)
+}
+
 function requireRef(source: string, from: number, what: string): Chunk {
   const chunk = requireChunk(source, from, what)
-  if (!REF_PATTERN.test(chunk.text)) {
+  if (!isRefOrParam(chunk.text)) {
     throw new ConditionSyntaxError(`invalid ${what} ${JSON.stringify(chunk.text)}`, chunk.start)
   }
   return chunk
 }
 
-/** Reads a trailing count when the next word is an integer, and leaves it alone otherwise. */
-function optionalCount(source: string, from: number): { count?: number; end: number } {
+/**
+ * Reads a trailing count when the next word is an integer or a `$name` parameter
+ * reference, and leaves it alone otherwise.
+ */
+function optionalCount(source: string, from: number): { count?: number | ParamRef; end: number } {
   const chunk = nextChunk(source, from)
-  if (chunk === undefined || !INTEGER.test(chunk.text)) return { end: from }
+  if (chunk === undefined) return { end: from }
+  if (PARAM_PATTERN.test(chunk.text)) return { count: chunk.text as ParamRef, end: chunk.end }
+  if (!INTEGER.test(chunk.text)) return { end: from }
   const count = Number(chunk.text)
   if (count < 1) {
     throw new ConditionSyntaxError('count must be a positive integer', chunk.start)
@@ -364,7 +398,7 @@ function parseObjectiveAt(source: string, from: number): { objective: Objective;
     if (
       dialogue === undefined ||
       dialogue.text.toLowerCase() === 'and' ||
-      !REF_PATTERN.test(dialogue.text)
+      !isRefOrParam(dialogue.text)
     ) {
       return { objective: { kind: 'talk', actor: actor.text }, end: actor.end }
     }
