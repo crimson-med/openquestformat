@@ -28,8 +28,13 @@ const POSITIONS: Record<Side, Position> = {
   left: Position.Left,
 }
 
-/** Every measured node box, keyed by id. Unmeasured nodes are left out. */
-function readBoxes(state: ReactFlowState): Record<string, Box> {
+/**
+ * Every measured node box, keyed by id, as a string. React Flow compares
+ * selector results by value, so a string keeps the subscription quiet until
+ * something actually moved, where returning the boxes themselves would rerender
+ * every edge on every store tick. Unmeasured nodes are left out.
+ */
+function boxSignature(state: ReactFlowState): string {
   const boxes: Record<string, Box> = {}
   for (const [id, node] of state.nodeLookup) {
     const { width, height } = node.measured
@@ -37,50 +42,30 @@ function readBoxes(state: ReactFlowState): Record<string, Box> {
     const { x, y } = node.internals.positionAbsolute
     boxes[id] = { x, y, width, height }
   }
-  return boxes
+  return JSON.stringify(boxes)
 }
 
-/**
- * A string that changes whenever a box moves or resizes. React Flow compares
- * selector results by value, so a string keeps the subscription quiet until
- * something actually moved, where returning the boxes themselves would rerender
- * every edge on every store tick.
- */
-function boxSignature(state: ReactFlowState): string {
-  let signature = ''
-  for (const [id, node] of state.nodeLookup) {
-    const { x, y } = node.internals.positionAbsolute
-    signature += `${id}:${x},${y},${node.measured.width},${node.measured.height};`
-  }
-  return signature
-}
-
+/** Every edge's id and ends, as a string, for the same reason. */
 function edgeEnds(state: ReactFlowState): string {
-  return state.edges.map((edge) => `${edge.id}>${edge.source}>${edge.target}`).join('|')
+  const list: EdgeEnds[] = state.edges.map((edge) => ({
+    id: edge.id,
+    from: edge.source,
+    to: edge.target,
+  }))
+  return JSON.stringify(list)
 }
 
 export function FloatingEdge({ id, source, target, label, markerEnd, style }: EdgeProps) {
   const signature = useStore(boxSignature)
   const ends = useStore(edgeEnds)
-  const store = useStore((state) => state)
   const sourceNode = useInternalNode(source)
 
-  const routes = useMemo(
-    () => {
-      const list: EdgeEnds[] = store.edges.map((edge) => ({
-        id: edge.id,
-        from: edge.source,
-        to: edge.target,
-      }))
-      return routeEdges(readBoxes(store), list)
-    },
-    // The signatures say when the geometry actually changed.
-    // biome-ignore lint/correctness/useExhaustiveDependencies: store is read through the signatures
-    [signature, ends],
-  )
+  // The signatures carry the geometry, so they are the whole dependency list.
+  const boxes = useMemo(() => JSON.parse(signature) as Record<string, Box>, [signature])
+  const routes = useMemo(() => routeEdges(boxes, JSON.parse(ends) as EdgeEnds[]), [boxes, ends])
 
   if (source === target) {
-    const box = sourceNode === undefined ? undefined : readBoxes(store)[source]
+    const box = sourceNode === undefined ? undefined : boxes[source]
     if (box === undefined) return null
     return <BaseEdge id={id} path={selfLoopPath(box)} markerEnd={markerEnd} style={style} />
   }
