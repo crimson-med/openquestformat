@@ -203,8 +203,7 @@ a day after it was started.
 
 ## Resolved questions
 
-Each was open in the proposal; the numbered docs follow the recommendation, listed under "Open
-items" in [00-decisions.md](00-decisions.md) until confirmed.
+Each was open in the proposal. The first is folded into D25, the other two are D30.
 
 - **Merge `cooldown` and `expire` into one `cycle`?** No. They measure from different anchors (the
   last outcome and the instance start), so one field would need a flag and a third encoding, and a

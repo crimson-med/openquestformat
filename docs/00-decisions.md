@@ -191,7 +191,20 @@ Reason: templated quests are unreadable without it, and the smallest thing that 
 name to value. Plural rules differ per language and per localization library, so OQF does not pick
 one.
 
+## D30. `streak` is a core variable, broken by a missed period or an `expired` outcome
+
+`streak.<questId>` is resolved by the runtime from the quest record, not derived by each game.
+It counts consecutive calendar periods (the quest's `day`, `week` or `month` cooldown) that ended
+in an outcome. A period with no outcome, or whose only outcome is `expired`, breaks it. Any
+author-declared outcome, failed or not, keeps it alive.
+
+Reason: the record already holds the data, but turning it into a number means applying
+`dayStartsAt`, `weekStart` and the zone, which the runtime owns; deriving it per engine would copy
+that logic, and authors could not write `streak.gus_daily >= 7` in an `unlock` without engine code.
+On what breaks it: a streak rewards showing up. An author's `failed` outcome is a verdict on the
+route the player took, not on attendance, while `expired` and silence both mean the player did not
+turn up.
+
 ## Open items
 
 - **One objective per step.** The reference quest wants `trade` to require both "collect five koi" and "talk to the otter". v0.1 holds one objective per step; the talk half rides on the dialogue binding and a flag. A list of objectives is a candidate for v0.2 once the runtime has shipped in Cozy Coast and the need is confirmed.
-- **Recurrence, pending confirmation.** The numbered docs already follow these three recommendations from [14-recurrence.md](14-recurrence.md): keep `cooldown` and `expire` as two fields rather than one `cycle` (folded into D25); keep `streak.<questId>` as a core variable, because deriving it in every engine would reimplement the calendar rules the runtime already owns; a streak is broken by a calendar period with no outcome or whose only outcome is `expired`, while any author-declared outcome, failed or not, keeps it alive, since the player showed up.

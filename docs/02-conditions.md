@@ -42,7 +42,7 @@ Variables are dotted paths. The first segment is the namespace.
 | `time.minute` | number | 0 to 59. |
 | `runs.<questId>` | number | Outcomes reached across every instance of that quest, `expired` included. |
 | `runs.<questId>.<name>` | number | The same, for one outcome. |
-| `streak.<questId>` | number | Consecutive calendar periods ending in an outcome. Only valid on a quest with a calendar `cooldown` (`day`, `week`, `month`). |
+| `streak.<questId>` | number | Consecutive calendar periods ending in an outcome, per [D30](00-decisions.md). Only valid on a quest with a calendar `cooldown` (`day`, `week`, `month`). |
 
 Everything except `var.*` is owned by the runtime and resolvable without the engine. That is what makes the validator useful: it can reason about every namespace except `var`, and it treats `var` as unknown.
 
