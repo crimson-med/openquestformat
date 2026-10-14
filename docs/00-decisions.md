@@ -131,9 +131,10 @@ A `repeat` quest may carry a `cooldown`: an ISO 8601 duration measured from the 
 only when `unlock` holds and the cooldown has passed. `cooldown` without `repeat` is a validation
 error.
 
-Clock-jump guard: a `lastOutcomeAt` in the future is read as now, and one more than a whole
-cooldown in the future counts as passed. A clock moved backwards therefore never locks a player
-out for longer than one cooldown, and a clock that is wildly off does not cost even that.
+Clock-jump guard: a `lastOutcomeAt` more than a whole cooldown in the future counts as passed,
+and one less far ahead is moved back to now on the quest record. A clock moved backwards therefore
+never locks a player out for longer than one cooldown from the moment the jump is seen, and a
+clock that is wildly off does not cost even that.
 
 `cooldown` and `expire` (D26) stay two fields rather than one `cycle`: they measure from different
 anchors (the last outcome and the instance start), and a daily quest that must be gone at the day

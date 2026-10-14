@@ -21,14 +21,25 @@ export {
   stepEvent,
   toEvent,
 } from './events.js'
-export type { QuestRuntimeOptions } from './runtime.js'
+export type { CalendarOptions, WallClock } from './calendar.js'
+export { Calendar } from './calendar.js'
+export type { BindHook, QuestRuntimeOptions, TextArguments } from './runtime.js'
 export { MAX_PASSES, QuestRuntime } from './runtime.js'
-export type { LogEntry, QuestState, QuestStatus, StepRuntime } from './state.js'
+export type {
+  LogEntry,
+  ParamValue,
+  QuestRecord,
+  QuestState,
+  QuestStatus,
+  StepRuntime,
+} from './state.js'
 export {
   ORPHANED_KEY,
   QUEST_STATUSES,
   STATE_VERSION,
+  cloneQuestRecord,
   cloneQuestState,
+  newQuestRecord,
   newQuestState,
   newStepRuntime,
 } from './state.js'

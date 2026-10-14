@@ -45,8 +45,8 @@ describe('newQuestState', () => {
 })
 
 describe('state constants', () => {
-  it('pins the schema version at 1', () => {
-    expect(STATE_VERSION).toBe(1)
+  it('pins the schema version at 2', () => {
+    expect(STATE_VERSION).toBe(2)
   })
 
   it('lists the four quest statuses from docs/05-state.md', () => {

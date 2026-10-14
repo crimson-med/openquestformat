@@ -811,8 +811,9 @@ describe('the transition log', () => {
     takeQuest(h)
     h.runtime.emit('dialogue.ended', { actor: 'harbormaster', node: 'ines_intro' })
     const log = h.runtime.getState(LEDGER).log
+    // The clock is read once per input: offer, accept, then the dialogue event.
     expect(log.slice(0, 3)).toEqual([
-      { step: 'talk_ines', from: 'locked', to: 'available', at: 0 },
+      { step: 'talk_ines', from: 'locked', to: 'available', at: 1 },
       { step: 'talk_ines', from: 'available', to: 'active', at: 1 },
       { step: 'talk_ines', from: 'active', to: 'done', at: 2 },
     ])
@@ -828,8 +829,11 @@ describe('the transition log', () => {
     runtime.accept('custom_quest')
     expect(runtime.getState('custom_quest').log).toEqual([
       { step: 'ritual', from: 'locked', to: 'available', at: 100 },
-      { step: 'ritual', from: 'available', to: 'active', at: 200 },
+      { step: 'ritual', from: 'available', to: 'active', at: 100 },
     ])
+    expect(runtime.getState('custom_quest').startedAt).toBe(100)
+    runtime.emit('nothing')
+    expect(stamps).toEqual([300])
   })
 })
 

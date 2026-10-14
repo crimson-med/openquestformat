@@ -40,9 +40,10 @@ the cooldown has passed since the last outcome.
 | `week` | from the next calendar week boundary |
 | `month` | from the next calendar month boundary |
 
-Clock-jump guard (normative): a `lastOutcomeAt` in the future is read as now, and one more than a
-whole cooldown in the future counts as passed. A clock moved backwards never locks a player out for
-longer than one cooldown, and a clock that is wildly off does not cost even that.
+Clock-jump guard (normative): a `lastOutcomeAt` more than a whole cooldown in the future counts
+as passed, and one less far ahead is moved back to now on the quest record. A clock moved backwards
+never locks a player out for longer than one cooldown from the moment the jump is seen, and a clock
+that is wildly off does not cost even that.
 
 `cooldown` without `repeat` is a validation error.
 

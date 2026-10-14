@@ -31,7 +31,7 @@ One document per quest instance. A `repeat` quest that is retaken gets a fresh d
 
 ## Clock
 
-`enteredAt`, `startedAt`, `outcomeAt`, `lastOutcomeAt` and `log.at` hold the runtime clock's value. The default clock is a counter, which is enough for ordering. When any loaded quest uses `cooldown`, `expire` or `deadline`, the clock must return milliseconds since the epoch, so these fields survive a reload and compare across sessions; the runtime refuses to load such a quest on the default clock.
+`enteredAt`, `startedAt`, `outcomeAt`, `lastOutcomeAt` and `log.at` hold the runtime clock's value. The runtime reads the clock once per input (an event, an offer, an accept, a tick, a load), so everything one input does carries the same instant. The default clock is a counter, which is enough for ordering. When any loaded quest uses `cooldown`, `expire`, `deadline` or `time.*`, the clock must return milliseconds since the epoch, so these fields survive a reload and compare across sessions; the runtime refuses to construct with such a quest on the default clock.
 
 ## Quest record
 
