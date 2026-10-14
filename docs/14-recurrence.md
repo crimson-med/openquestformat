@@ -197,7 +197,7 @@ a day after it was started.
 ## Out of scope
 
 - NPC schedules and "once per visit": whether a giver is present belongs to the game. Use `unlock`
-  with a `var.*` the engine resolves (`var.giver_present.milo`).
+  with a `var.*` the engine resolves (`var.giver_present.rimu`).
 - How parameter values are chosen: that is the bind hook, so the engine's.
 - Catching up time while the game is closed: the runtime evaluates against the clock it is given,
   when asked.
