@@ -12,6 +12,17 @@ versions. Compact columns are append only, so a file written against `OQF1` keep
 
 ## [Unreleased]
 
+### Added
+
+**The project**
+
+- The v0.2 recurrence spec: `cooldown` and `expire` on quests, `deadline` on steps, templated
+  quests with parameters bound by the engine, text arguments, a calendar-aware clock, the quest
+  record, and the `param`, `time`, `runs` and `streak` condition namespaces. Proposed in
+  `docs/14-recurrence.md`, decided as D24 to D29 and folded into the model, condition, state,
+  i18n, validation and compact format docs. Every v0.1 file stays valid; compact columns are
+  appended only. Implementation across the packages follows.
+
 ## [0.1.0] - 2026-09-16
 
 First release. The format is frozen at `OQF1`, the packages are 0.x while the API settles.

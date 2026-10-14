@@ -76,6 +76,9 @@ Cozy Coast is Phaser 4 on Electron in TypeScript. `@oqf/runtime` is the day-one 
 
 Planned for, listed as non-goals for v1, designed so v1 files stay valid when they land.
 
+Superseded for timers and radiant quests by D25 to D28, which bring them forward to v0.2.
+Factions and tabletop stay v2.
+
 ## D16. Own evaluator, JSON Logic compatible tree, no dependency
 
 The condition tree is JSON Logic shaped so other languages can use their existing JSON Logic library. The TypeScript runtime does not depend on `json-logic-js`: the whitelist is eleven operators and a strict evaluator is under a hundred lines. This keeps `@oqf/core` dependency-free and gives strict equality semantics instead of JSON Logic's loose `==`.
@@ -112,6 +115,83 @@ Only completing an ending step reaches its outcome. A step that fails through `f
 
 Reason: a fail rule on an ending is how an author rules that branch out, not how the quest ends. "Sell the contents" with a fail objective for the player refusing means the sale did not happen, so closing the quest on the `sold` outcome is exactly wrong. A failed ending is a route that closed, and the player still has the other routes. Endings and fail rules stay independent: one field says where a route leads, the other says when the route is off the table.
 
+## D24. A retaken quest is a new instance, never reopened for the player
+
+After an outcome, a `repeat` quest's instance is closed and kept in history, and a fresh instance
+starts `unseen`. It is offered again when its `unlock` holds and its cooldown (D25) has passed, or
+when the game calls `offer`. The runtime never moves it to `open` on the player's behalf.
+
+Reason: this is what the v0.1 runtime already does. Pinning it stops engines that re-implement OQF
+from auto-reopening, which would hide every quest a giver offers after a repeatable one.
+
+## D25. `cooldown` on Quest
+
+A `repeat` quest may carry a `cooldown`: an ISO 8601 duration measured from the last outcome, or
+`day`, `week` or `month`, which wait for the next calendar boundary. A new instance is offerable
+only when `unlock` holds and the cooldown has passed. `cooldown` without `repeat` is a validation
+error.
+
+Clock-jump guard: a `lastOutcomeAt` in the future is read as now, and one more than a whole
+cooldown in the future counts as passed. A clock moved backwards therefore never locks a player
+out for longer than one cooldown, and a clock that is wildly off does not cost even that.
+
+`cooldown` and `expire` (D26) stay two fields rather than one `cycle`: they measure from different
+anchors (the last outcome and the instance start), and a daily quest that must be gone at the day
+boundary already reads `day` in both cells.
+
+Reason: "once a day" is the most common recurring quest and v0.1 could not say it. Calendar
+keywords exist because `PT24H` from the last outcome drifts later every day, which is not what a
+daily means.
+
+## D26. `expire` on Quest
+
+Same encoding as `cooldown`, measured from the instance's `startedAt`. When it passes, an open
+instance reaches the built-in failed outcome `expired`: every other step is skipped, the flag
+`outcome.<questId>.expired` is set, `quest.<questId>.outcome` fires with `failed: true`, and for a
+`repeat` quest the cooldown starts as after any outcome. `expired` is reserved: an author cannot
+declare an outcome with that name.
+
+Reason: an outcome is already how a quest closes, so expiry needs no new state, event or flag
+shape. Reserving the name keeps `outcome.<questId>.expired` meaningful in every quest.
+
+## D27. `deadline` on Step
+
+Same encoding as `cooldown`, measured from the step's `enteredAt`. When it passes while the step is
+`active` or `available`, the step takes its `fail` transition and D23 applies: the step is
+`failed`, the quest stays open. A step with a deadline and no `fail` rule still fails on the
+deadline. `enteredAt` is set on every transition, so a step with an `activate` condition gets the
+full deadline from the moment it activates.
+
+Reason: a timed objective is a step that fails when time runs out, which the fail transition
+already models. Keeping it on the step rather than the quest lets one timed leg sit inside an
+untimed quest.
+
+## D28. Templated quests (parameters)
+
+A quest may declare parameters: a name, a type (`item`, `actor`, `location`, `number`, `string`)
+and an optional constraint (a tag id for reference types, `min..max` for numbers). `$name` may
+stand wherever an id or a number may appear in an objective, and as a value in a condition, where
+it is sugar for the runtime-owned variable `param.<name>`. The engine binds values through a `bind`
+hook when an instance is offered; the instance document stores them so a reload restores the same
+quest. A missing or out-of-constraint value means the instance is not offered, never a crash, and a
+quest with parameters and no bind hook is never offered.
+
+Reason: a daily "catch n of this fish" is one quest with two parameters, not a quest per fish.
+Binding at offer time keeps the choice (random, weighted, by season) in the game, and storing the
+values on the instance keeps the promise that state is a document. Encoding `$name` as a `var`
+read keeps the condition tree JSON Logic compatible.
+
+## D29. Text arguments
+
+Text keys receive arguments: the bound parameters, plus `count` and `target` for the step being
+shown. A string may then read `Catch {n} {fish}`. OQF passes the arguments along; formatting and
+plural rules stay the game's.
+
+Reason: templated quests are unreadable without it, and the smallest thing that works is a map of
+name to value. Plural rules differ per language and per localization library, so OQF does not pick
+one.
+
 ## Open items
 
 - **One objective per step.** The reference quest wants `trade` to require both "collect five koi" and "talk to the otter". v0.1 holds one objective per step; the talk half rides on the dialogue binding and a flag. A list of objectives is a candidate for v0.2 once the runtime has shipped in Cozy Coast and the need is confirmed.
+- **Recurrence, pending confirmation.** The numbered docs already follow these three recommendations from [14-recurrence.md](14-recurrence.md): keep `cooldown` and `expire` as two fields rather than one `cycle` (folded into D25); keep `streak.<questId>` as a core variable, because deriving it in every engine would reimplement the calendar rules the runtime already owns; a streak is broken by a calendar period with no outcome or whose only outcome is `expired`, while any author-declared outcome, failed or not, keeps it alive, since the player showed up.

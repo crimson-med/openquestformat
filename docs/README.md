@@ -18,3 +18,4 @@ These documents describe what Open Quest Format is, how it is modelled, and how 
 | [11-reference-quest.md](11-reference-quest.md) | The reference quest in prose. Every feature of v1 appears in it once. |
 | [12-compact-spec.md](12-compact-spec.md) | The compact format, column order frozen for v0.1. |
 | [13-dialogue-spec.md](13-dialogue-spec.md) | The dialogue compact (`.oqd`) and JSON forms, frozen for v0.1. |
+| [14-recurrence.md](14-recurrence.md) | v0.2 recurrence: cooldowns, expiry, step deadlines, templated quests, text arguments and the calendar clock. Overview and worked example; the normative text is folded into the docs above. |

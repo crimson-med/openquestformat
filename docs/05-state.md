@@ -10,6 +10,10 @@ questState:
   questVersion: content version the state was last reconciled against
   stateVersion: schema version of this document
   status:       unseen | offered | open | closed
+  instance:     1 based ordinal of this instance for the quest
+  startedAt:    clock value when the instance became open, or null
+  outcomeAt:    clock value when the outcome was reached, or null
+  params:       map parameter name -> bound value (empty when the quest has none)
   steps:
     <stepId>:
       state:    locked | available | active | done | failed | skipped
@@ -23,7 +27,27 @@ questState:
   ext:          extension bag
 ```
 
-One document per quest instance. A `repeat` quest that is retaken gets a fresh document; the previous one is kept by the game if it wants history.
+One document per quest instance. A `repeat` quest that is retaken gets a fresh document; the previous one is kept by the game if it wants history. The fresh document's `instance` is the quest record's `runs` plus one: every earlier instance ended in an outcome (D24), so no separate counter is needed. `params` is filled by the bind hook when the instance is offered and never changes afterwards, so a reload restores the same fish and the same count.
+
+## Clock
+
+`enteredAt`, `startedAt`, `outcomeAt`, `lastOutcomeAt` and `log.at` hold the runtime clock's value. The default clock is a counter, which is enough for ordering. When any loaded quest uses `cooldown`, `expire` or `deadline`, the clock must return milliseconds since the epoch, so these fields survive a reload and compare across sessions; the runtime refuses to load such a quest on the default clock.
+
+## Quest record
+
+One record per quest id, outliving instances. It is the persistable summary that `runs.*` and `streak.*` read, so a game does not have to keep every past instance to answer "how many times" or "how many days in a row".
+
+```
+questRecord:
+  quest:         quest id
+  runs:          number, outcomes reached across every instance
+  outcomes:      map outcome name -> count
+  lastOutcome:   name or null
+  lastOutcomeAt: clock value or null
+  streak:        number
+```
+
+The runtime updates it on every outcome, `expired` included: `runs` and the outcome's count go up by one, `lastOutcome` and `lastOutcomeAt` are set. For a quest with a calendar `cooldown`, `streak` is also updated: the period of this outcome is compared with the period of the previous `lastOutcomeAt`; the period right after it adds one, the same period leaves it alone, anything else restarts it at one, and an `expired` outcome sets it to zero. Reading `streak.<questId>` returns the stored value when `lastOutcomeAt` falls in the current or the previous period and zero otherwise, so a missed period breaks a streak without the record having to be touched. The runtime saves and restores records alongside instance documents. The in-memory instance history stays as it is; games may cap or drop it.
 
 World-level state (global flags, outcomes of other quests, `var.*`) is not in this document. The runtime holds a world view it builds from the documents it has loaded plus a resolver the engine provides for `var.*`.
 

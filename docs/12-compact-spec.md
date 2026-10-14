@@ -1,6 +1,6 @@
-# Compact format, v0.1 frozen
+# Compact format, frozen column order
 
-This is the column order the parsers and serializers implement. It supersedes the sketch in [06-formats.md](06-formats.md). Columns may be appended in later minor versions, never reordered or removed.
+This is the column order the parsers and serializers implement. It supersedes the sketch in [06-formats.md](06-formats.md). v0.1 froze it; columns may be appended in later minor versions, never reordered or removed. v0.2 appends `cooldown` and `expire` to `Q`, `deadline` to `S`, and adds the `P` record; those are marked below. A v0.1 file is a v0.2 file with the new cells absent.
 
 ## Lexical rules
 
@@ -21,17 +21,20 @@ A  ref  ref  ...                       actors dictionary
 L  ref  ref  ...                       locations dictionary
 I  ref  ref  ...                       items dictionary
 T  ref  ref  ...                       tags dictionary
-Q  id  version  flags  tagRefs  unlock  title  summary
+Q  id  version  flags  tagRefs  unlock  title  summary  cooldown  expire
+P  name  type  constraint                 parameter of the quest (v0.2)
 R  id  kind  ref  amount  outcome  payload
-S  id  flags  unlock  activate  complete  fail  outcome  rewardRefs  dialogue  location  actorRefs  title  journal
+S  id  flags  unlock  activate  complete  fail  outcome  rewardRefs  dialogue  location  actorRefs  title  journal  deadline
 X  ns  key  value
 ```
+
+Counting from the first cell after the record type, `cooldown` is column 8 and `expire` column 9 of `Q`, and `deadline` is column 14 of `S`. All three are v0.2.
 
 Order rules:
 
 - `OQF1` first. Dictionaries (`A`, `L`, `I`, `T`) next, at most one line each, any order among themselves, all before the first `Q`. A missing dictionary line means empty.
-- `Q` starts a quest. `R` and `S` lines belong to the most recent `Q`. `R` lines come before `S` lines within a quest so step `rewardRefs` can be resolved on a single pass.
-- `X` attaches to the most recent `Q`, `R` or `S` line. Before any `Q` it is a document-level extension, which the model does not carry and which is therefore a parse error in v0.1.
+- `Q` starts a quest. `P`, `R` and `S` lines belong to the most recent `Q`. `P` lines come first, then `R`, then `S`, so parameters are known before the objectives that reference them and step `rewardRefs` can be resolved on a single pass.
+- `X` attaches to the most recent `Q`, `P`, `R` or `S` line. Before any `Q` it is a document-level extension, which the model does not carry and which is therefore a parse error in v0.1.
 
 ## Cell encodings
 
@@ -49,17 +52,20 @@ Order rules:
 | `amount` | number. Empty means 1. |
 | `payload` | `key=value;key=value`. Values: number if numeric, `true`/`false` as booleans, else string. Keys and values escape `;` as `\;` and `=` as `\=` in addition to the cell escapes. |
 | `dialogue` | `provider:ref`. |
+| `cooldown`, `expire` on `Q`, `deadline` on `S` | a duration: an ISO 8601 span (`PT20H`, `P3D`, `P1W`), or `day`, `week` or `month`. See [01-model.md](01-model.md). |
+| `name`, `type`, `constraint` on `P` | the parameter name, one of `item`, `actor`, `location`, `number`, `string`, and the optional constraint: a tag id, or `min..max` for `number`. |
 | `kind` on `R` | one of the reward kinds. |
 | `X` value | a scalar as for payload values, or `key=value;...` for a flat map. |
 
-Objective references inside `complete` (`collect fish.rare 5`) use ids, not dictionary indices. Dictionaries intern the columns; conditions stay readable.
+Objective references inside `complete` (`collect fish.rare 5`) use ids, not dictionary indices. Dictionaries intern the columns; conditions stay readable. A parameter reference is written `$name` in an objective and in a condition (`collect $fish $n`, `count.catch >= $n`).
 
 ## Normalization for byte-stable round trips
 
 A serializer writes:
 
 - dictionaries in first-use order as encountered when walking quests, then steps, then rewards; unreferenced entries after, in original order;
-- `R` lines in `Quest.rewards` order, `S` lines in `Quest.steps` order;
+- `P` lines in `Quest.params` order, `R` lines in `Quest.rewards` order, `S` lines in `Quest.steps` order;
+- durations in one spelling: uppercase ISO 8601 with no zero components and no leading zeros (`P1DT12H`, never `P1DT12H0M`), or the bare keyword;
 - conditions through `formatCondition`, which has one canonical spelling (lowercase keywords, single spaces, minimal parentheses, double-quoted strings);
 - no trailing empty cells;
 - `X` lines sorted by `ns` then `key`.
@@ -84,4 +90,6 @@ S	return_ledger		step.trade		talk harbormaster ines_return		returned		oqf:ines_r
 X	cozycoast	marker	pier_02
 ```
 
-Cell by cell for the `talk_ines` line: id, flags `s`, unlock (empty), activate (empty), complete, fail (empty), outcome (empty), rewardRefs (empty), dialogue, location (empty), actorRefs `0`, title. The journal cell is omitted because it is empty and trailing.
+Cell by cell for the `talk_ines` line: id, flags `s`, unlock (empty), activate (empty), complete, fail (empty), outcome (empty), rewardRefs (empty), dialogue, location (empty), actorRefs `0`, title. The journal and deadline cells are omitted because they are empty and trailing.
+
+A quest that uses every v0.2 cell, a daily request with two parameters, is written out in [14-recurrence.md](14-recurrence.md).

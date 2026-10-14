@@ -51,6 +51,22 @@ Done when a quest can be written from nothing in the editor, exported, validated
 
 Where the editor stands against that sentence: a quest can be started from a template or from nothing, its actors, locations, items and tags managed in the Dictionaries view, its steps and dependencies drawn on the graph with the field and state picked per edge, every field edited in the inspector with suggestions and live parse errors, validated on every change with one-click fixes, played through `@oqf/runtime` in the Play tab, localized in the Strings view, and exported as a single file or as a multi-file pack. Still missing: the Cozy Coast integration, so "run in Cozy Coast" is unproven.
 
+## v0.2: recurrence. Spec agreed, implementation pending.
+
+Brought forward from v2 because every game with a daily or weekly quest needs it, Cozy Coast
+included. Additive: every v0.1 file stays valid, compact columns are only appended. The proposal
+and the worked example are in [14-recurrence.md](14-recurrence.md); the normative text is in the
+numbered docs and D24 to D29.
+
+- **Timers.** `cooldown` and `expire` on quests, `deadline` on steps, a calendar-aware clock and
+  the `time.*` namespace in conditions (in place of the `var.time.*` once sketched here).
+- **Radiant and templated quests.** Parameters declared on the quest, bound by the engine when an
+  instance is offered, referenced as `$name` in objectives and conditions and as `{name}` in text.
+- **History.** A quest record per quest id, with the `runs.*` and `streak.*` namespaces reading it.
+
+Done when the daily, weekly, deadline and templated templates validate, run through the runtime
+on a fake clock across day and week boundaries, and load in the editor.
+
 ## v1.5
 
 - Engine exporters: Godot first, then Unity, then Unreal. Each with a loader on the engine side and one sample project.
@@ -61,10 +77,10 @@ Where the editor stands against that sentence: a quest can be started from a tem
 
 Planned for now so v1 files stay valid when they land.
 
-- **Timers.** A `deadline` on steps and `var.time.*` in conditions. Slots in as a new transition and a new variable namespace.
 - **Factions and reputation tracks.** Currently reputation is a reward kind with an opaque `ref`. v2 adds a faction registry and standing thresholds as variables.
-- **Radiant and templated quests.** A quest with parameters (`$target`, `$location`) instantiated at runtime. Slots in as a template header and a substitution pass before load.
 - **Tabletop and VTT.** Printable quest sheets and a Foundry export.
+
+Timers and radiant quests were listed here and moved to v0.2 above.
 
 ## Non-goals
 
