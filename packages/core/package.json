@@ -1,6 +1,6 @@
 {
   "name": "@oqf/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open Quest Format canonical model, compact and JSON parsers and serializers, condition language, Markdown export, JSON Schema and validator.",
   "keywords": [
     "quest",

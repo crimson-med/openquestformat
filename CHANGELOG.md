@@ -12,6 +12,12 @@ versions. Compact columns are append only, so a file written against `OQF1` keep
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-15
+
+Recurrence. The format is still `OQF1`: the new compact columns are appended and the `P` record
+is new, so every 0.1.0 file parses, validates and round-trips unchanged. Runtime state documents
+move to version 2 and version 1 documents still load.
+
 ### Added
 
 **The project**
@@ -149,5 +155,6 @@ First release. The format is frozen at `OQF1`, the packages are 0.x while the AP
 - A shipping game. Cozy Coast is the first target and the integration is not done, so "runs in a
   real game" is still unproven.
 
-[Unreleased]: https://github.com/crimson-med/openquestformat/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/crimson-med/openquestformat/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/crimson-med/openquestformat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/crimson-med/openquestformat/releases/tag/v0.1.0

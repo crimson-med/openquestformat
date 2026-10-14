@@ -1,6 +1,6 @@
 {
   "name": "@oqf/dialogue",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open Quest Format dialogue model, bridge interface, built-in provider, and Ink and Yarn Spinner export and import.",
   "keywords": [
     "quest",

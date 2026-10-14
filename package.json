@@ -1,6 +1,6 @@
 {
   "name": "openquestformat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open Quest Format: an open, engine neutral standard for quests. Spec, canonical model, parsers, validator, runtime, CLI and editor.",
   "private": true,
   "type": "module",

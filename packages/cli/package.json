@@ -1,6 +1,6 @@
 {
   "name": "@oqf/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The oqf command line for Open Quest Format: validate, convert, import, graph, schema, extract and inject.",
   "keywords": [
     "quest",

@@ -1,6 +1,6 @@
 {
   "name": "@oqf/examples",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Reference quests, dialogue and templates for Open Quest Format, used as fixtures by every package.",
   "keywords": [
     "quest",

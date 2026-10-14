@@ -1,6 +1,6 @@
 {
   "name": "@oqf/editor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open Quest Format web editor: step graph, inspector, live validation, dialogue editor, import and export in every format.",
   "keywords": [
     "quest",

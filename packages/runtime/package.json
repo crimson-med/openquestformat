@@ -1,6 +1,6 @@
 {
   "name": "@oqf/runtime",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open Quest Format runtime: an engine agnostic quest state machine driven by events, for browsers and Node.",
   "keywords": [
     "quest",
