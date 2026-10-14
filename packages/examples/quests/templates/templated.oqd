@@ -1,0 +1,11 @@
+OQD1
+A	monger|Fishmonger Hesper
+C	hesper_request	0	greet	Hesper names today's fish
+N	greet						Today it is a particular fish, and a particular number of them. The board behind me says which. Bring them before the market closes.
+O	why					Why that one?
+O	go					I will see what the board says.
+N	why		l	greet			Because that is what the tables want tonight. Tomorrow it will be another.
+N	go						Fresh, mind. The board does not say stale.
+C	hesper_thanks	0	count	Hesper counts the catch
+N	count			coin			All there, and still flapping. Tonight's tables will be pleased.
+N	coin						Here is your coin. Check the board again tomorrow.

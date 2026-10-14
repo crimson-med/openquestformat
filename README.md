@@ -141,7 +141,7 @@ read and write them. Everything converts to or from the model in `@oqf/core`, ne
 | [`@oqf/dialogue`](packages/dialogue/README.md) | The dialogue model, the bridge any dialogue system implements, a built-in provider, and Ink and Yarn Spinner export and import. |
 | [`@oqf/i18n`](packages/i18n/README.md) | Pull inline strings into a translation table and push them back. JSON, CSV, PO and XLIFF. |
 | [`@oqf/cli`](packages/cli/README.md) | `oqf validate`, `convert`, `import`, `graph`, `schema`, `extract`, `inject`. |
-| [`@oqf/examples`](packages/examples/README.md) | The reference quest, the minimal quest, deliberately broken fixtures and nine single-pattern templates. |
+| [`@oqf/examples`](packages/examples/README.md) | The reference quest, the minimal quest, deliberately broken fixtures and thirteen single-pattern templates. |
 | [`@oqf/editor`](packages/editor/README.md) | The web editor. `npx @oqf/editor` runs it locally, and `QuestEditor` embeds it in a React app. |
 
 Package responsibilities are in [docs/09-packages.md](docs/09-packages.md). Phasing is in

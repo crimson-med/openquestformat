@@ -1,0 +1,133 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "baker",
+        "name": "Baker Odile"
+      }
+    ],
+    "locations": [
+      {
+        "id": "bakery",
+        "name": "Harbor bakery"
+      }
+    ],
+    "items": [
+      {
+        "id": "driftwood",
+        "name": "Dry driftwood"
+      }
+    ],
+    "tags": [
+      {
+        "id": "daily"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "morning_delivery",
+      "version": 1,
+      "title": "The Morning Delivery",
+      "summary": "Odile needs dry driftwood for the oven every morning. Bring an armful before the day is out, and come back tomorrow for the next one.",
+      "tags": [
+        "daily"
+      ],
+      "repeat": true,
+      "unlock": {
+        "==": [
+          {
+            "var": "flag.bakery_open"
+          },
+          true
+        ]
+      },
+      "cooldown": "day",
+      "expire": "P1D",
+      "steps": [
+        {
+          "id": "take_order",
+          "title": "Ask Odile what the oven needs",
+          "journal": "Odile opens the bakery at dawn. The order stands until midnight, then she buys from the carter instead.",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "baker",
+            "dialogue": "odile_order"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "odile_order"
+          },
+          "location": "bakery",
+          "actors": [
+            "baker"
+          ]
+        },
+        {
+          "id": "gather_wood",
+          "title": "Gather five pieces of dry driftwood",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.take_order"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "driftwood",
+            "count": 5
+          }
+        },
+        {
+          "id": "deliver",
+          "title": "Bring the driftwood to the bakery",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.gather_wood"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "baker",
+            "dialogue": "odile_thanks"
+          },
+          "outcome": {
+            "name": "delivered",
+            "title": "Oven lit"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "odile_thanks"
+          },
+          "location": "bakery",
+          "actors": [
+            "baker"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "bread",
+          "kind": "item",
+          "ref": "bread.loaf",
+          "amount": 1,
+          "outcome": "delivered"
+        },
+        {
+          "id": "bakery_rep",
+          "kind": "reputation",
+          "ref": "bakery",
+          "amount": 1,
+          "outcome": "delivered"
+        }
+      ]
+    }
+  ]
+}

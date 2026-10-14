@@ -734,3 +734,40 @@ describe('bad usage', () => {
     expect(capture.err).toContain('holds dialogue, expected quests')
   })
 })
+
+describe('the recurrence templates', () => {
+  const TEMPLATES = ['daily', 'weekly', 'deadline', 'templated']
+
+  it('validate accepts them without a finding', async () => {
+    for (const name of TEMPLATES) {
+      const capture = createIo()
+      expect(await run(['validate', `${QUESTS}templates/${name}.oqf`], capture.io)).toBe(0)
+      expect(capture.out.trimEnd()).toBe('0 errors, 0 warnings')
+    }
+  })
+
+  it('convert carries cooldown, expire, parameters and deadline through json and markdown', async () => {
+    const json = createIo()
+    expect(
+      await run(['convert', `${QUESTS}templates/templated.oqf`, '--to', 'json'], json.io),
+    ).toBe(0)
+    const parsed = JSON.parse(json.out) as { quests: Array<Record<string, unknown>> }
+    expect(parsed.quests[0].cooldown).toBe('day')
+    expect(parsed.quests[0].expire).toBe('P1D')
+    expect(parsed.quests[0].params).toEqual([
+      { name: 'fish', type: 'item', constraint: 'fish.catchable' },
+      { name: 'n', type: 'number', constraint: '1..5' },
+    ])
+    const markdown = createIo()
+    expect(
+      await run(['convert', `${QUESTS}templates/deadline.oqf`, '--to', 'md'], markdown.io),
+    ).toBe(0)
+    expect(markdown.out).toContain('| Deadline |')
+    expect(markdown.out).toContain('| PT10M |')
+    const back = createIo()
+    expect(
+      await run(['convert', `${QUESTS}templates/templated.json`, '--to', 'oqf'], back.io),
+    ).toBe(0)
+    expect(back.out).toBe(readFileSync(`${QUESTS}templates/templated.oqf`, 'utf8'))
+  })
+})

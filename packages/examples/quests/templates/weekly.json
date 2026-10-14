@@ -1,0 +1,135 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "warden",
+        "name": "Warden Pell"
+      },
+      {
+        "id": "gull",
+        "name": "Lighthouse gull"
+      }
+    ],
+    "locations": [
+      {
+        "id": "lighthouse",
+        "name": "Old lighthouse"
+      }
+    ],
+    "items": [],
+    "tags": [
+      {
+        "id": "weekly"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "weekly_bounty",
+      "version": 1,
+      "title": "The Weekly Bounty",
+      "summary": "Pell posts one bounty a week. Clear the lighthouse of gulls and the standing bounty resets on Monday. Keep the streak and the bounty grows.",
+      "tags": [
+        "weekly"
+      ],
+      "repeat": true,
+      "unlock": {
+        "==": [
+          {
+            "var": "flag.warden_trusts_you"
+          },
+          true
+        ]
+      },
+      "cooldown": "week",
+      "steps": [
+        {
+          "id": "take_bounty",
+          "title": "Take this week's bounty from Pell",
+          "journal": "A new bounty goes up every Monday. Finish it and streak.weekly_bounty counts the weeks in a row.",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "warden",
+            "dialogue": "pell_bounty"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "pell_bounty"
+          },
+          "location": "lighthouse",
+          "actors": [
+            "warden"
+          ]
+        },
+        {
+          "id": "clear_gulls",
+          "title": "Drive eight gulls off the lighthouse",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.take_bounty"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "kill",
+            "actor": "gull",
+            "count": 8
+          },
+          "location": "lighthouse",
+          "actors": [
+            "gull"
+          ]
+        },
+        {
+          "id": "report",
+          "title": "Report back to Pell",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.clear_gulls"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "warden",
+            "dialogue": "pell_report"
+          },
+          "outcome": {
+            "name": "cleared",
+            "title": "Bounty cleared"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "pell_report"
+          },
+          "location": "lighthouse",
+          "actors": [
+            "warden"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "bounty_coins",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 40,
+          "outcome": "cleared"
+        },
+        {
+          "id": "streak_bonus",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 10,
+          "outcome": "cleared"
+        }
+      ]
+    }
+  ]
+}

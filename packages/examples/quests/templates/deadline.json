@@ -1,0 +1,132 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "skipper",
+        "name": "Skipper Brann"
+      }
+    ],
+    "locations": [
+      {
+        "id": "jetty",
+        "name": "South jetty"
+      },
+      {
+        "id": "sandbar",
+        "name": "Sandbar"
+      }
+    ],
+    "items": [],
+    "tags": [
+      {
+        "id": "timed"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "tide_race",
+      "version": 1,
+      "title": "The Tide Race",
+      "summary": "Brann left his tackle box on the sandbar and the tide is coming in. Reach it in ten minutes or watch the sea take it.",
+      "tags": [
+        "timed"
+      ],
+      "steps": [
+        {
+          "id": "hear_brann",
+          "title": "Hear Brann out on the jetty",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "skipper",
+            "dialogue": "brann_panic"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "brann_panic"
+          },
+          "location": "jetty",
+          "actors": [
+            "skipper"
+          ]
+        },
+        {
+          "id": "race_tide",
+          "title": "Reach the sandbar before the tide",
+          "journal": "Ten minutes from the moment Brann stops talking. The deadline sits in the last column of this step.",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.hear_brann"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "reach",
+            "location": "sandbar"
+          },
+          "deadline": "PT10M",
+          "location": "sandbar"
+        },
+        {
+          "id": "saved",
+          "title": "Grab the tackle box",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.race_tide"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "interact",
+            "object": "tackle_box"
+          },
+          "outcome": {
+            "name": "saved",
+            "title": "Tackle box saved"
+          },
+          "location": "sandbar"
+        },
+        {
+          "id": "drowned",
+          "title": "Watch the box go under",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.race_tide"
+              },
+              "failed"
+            ]
+          },
+          "outcome": {
+            "name": "drowned",
+            "failed": true,
+            "title": "The sea took it"
+          },
+          "location": "sandbar"
+        }
+      ],
+      "rewards": [
+        {
+          "id": "tackle_xp",
+          "kind": "xp",
+          "ref": "xp",
+          "amount": 30,
+          "outcome": "saved"
+        },
+        {
+          "id": "salt_rep",
+          "kind": "reputation",
+          "ref": "harbor",
+          "amount": -2,
+          "outcome": "drowned"
+        }
+      ]
+    }
+  ]
+}

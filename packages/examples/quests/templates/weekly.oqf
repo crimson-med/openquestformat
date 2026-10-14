@@ -1,0 +1,10 @@
+OQF1
+A	warden|Warden Pell	gull|Lighthouse gull
+L	lighthouse|Old lighthouse
+T	weekly
+Q	weekly_bounty	1	r	0	flag.warden_trusts_you	The Weekly Bounty	Pell posts one bounty a week. Clear the lighthouse of gulls and the standing bounty resets on Monday. Keep the streak and the bounty grows.	week
+R	bounty_coins	currency	coins	40	cleared
+R	streak_bonus	currency	coins	10	cleared
+S	take_bounty	s			talk warden pell_bounty				oqf:pell_bounty	0	0	Take this week's bounty from Pell	A new bounty goes up every Monday. Finish it and streak.weekly_bounty counts the weeks in a row.
+S	clear_gulls		step.take_bounty		kill gull 8					0	1	Drive eight gulls off the lighthouse
+S	report		step.clear_gulls		talk warden pell_report		cleared|Bounty cleared		oqf:pell_report	0	0	Report back to Pell

@@ -14,6 +14,10 @@ import branchingDialogue from '../../../examples/quests/templates/branching.oqd?
 import branchingQuest from '../../../examples/quests/templates/branching.oqf?raw'
 import chainDialogue from '../../../examples/quests/templates/chain.oqd?raw'
 import chainQuest from '../../../examples/quests/templates/chain.oqf?raw'
+import dailyDialogue from '../../../examples/quests/templates/daily.oqd?raw'
+import dailyQuest from '../../../examples/quests/templates/daily.oqf?raw'
+import deadlineDialogue from '../../../examples/quests/templates/deadline.oqd?raw'
+import deadlineQuest from '../../../examples/quests/templates/deadline.oqf?raw'
 import engineHooksQuest from '../../../examples/quests/templates/engine-hooks.oqf?raw'
 import failureDialogue from '../../../examples/quests/templates/failure.oqd?raw'
 import failureQuest from '../../../examples/quests/templates/failure.oqf?raw'
@@ -27,6 +31,10 @@ import recurringStepDialogue from '../../../examples/quests/templates/recurring-
 import recurringStepQuest from '../../../examples/quests/templates/recurring-step.oqf?raw'
 import repeatableDialogue from '../../../examples/quests/templates/repeatable.oqd?raw'
 import repeatableQuest from '../../../examples/quests/templates/repeatable.oqf?raw'
+import templatedDialogue from '../../../examples/quests/templates/templated.oqd?raw'
+import templatedQuest from '../../../examples/quests/templates/templated.oqf?raw'
+import weeklyDialogue from '../../../examples/quests/templates/weekly.oqd?raw'
+import weeklyQuest from '../../../examples/quests/templates/weekly.oqf?raw'
 
 export interface QuestTemplate {
   id: string
@@ -92,6 +100,34 @@ export const TEMPLATES: QuestTemplate[] = [
     description: 'Three quests unlocked by outcomes, status and steps of each other.',
     quest: chainQuest,
     dialogue: chainDialogue,
+  },
+  {
+    id: 'daily',
+    title: 'Daily quest',
+    description: 'A repeatable quest with a day cooldown that expires a day after it starts.',
+    quest: dailyQuest,
+    dialogue: dailyDialogue,
+  },
+  {
+    id: 'weekly',
+    title: 'Weekly quest',
+    description: 'A repeatable bounty with a week cooldown, so streak.* counts the weeks.',
+    quest: weeklyQuest,
+    dialogue: weeklyDialogue,
+  },
+  {
+    id: 'deadline',
+    title: 'Timed step',
+    description: 'A step with a deadline that fails on its own when time runs out.',
+    quest: deadlineQuest,
+    dialogue: deadlineDialogue,
+  },
+  {
+    id: 'templated',
+    title: 'Templated quest',
+    description: 'Parameters the game binds when the quest is offered: $fish and $n in one quest.',
+    quest: templatedQuest,
+    dialogue: templatedDialogue,
   },
   {
     id: 'engine-hooks',

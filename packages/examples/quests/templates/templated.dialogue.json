@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "monger",
+      "name": "Fishmonger Hesper"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "hesper_request",
+      "actor": "monger",
+      "title": "Hesper names today's fish",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "Today it is a particular fish, and a particular number of them. The board behind me says which. Bring them before the market closes.",
+          "choices": [
+            {
+              "text": "Why that one?",
+              "next": "why"
+            },
+            {
+              "text": "I will see what the board says.",
+              "next": "go"
+            }
+          ]
+        },
+        {
+          "id": "why",
+          "text": "Because that is what the tables want tonight. Tomorrow it will be another.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "go",
+          "text": "Fresh, mind. The board does not say stale."
+        }
+      ]
+    },
+    {
+      "id": "hesper_thanks",
+      "actor": "monger",
+      "title": "Hesper counts the catch",
+      "start": "count",
+      "nodes": [
+        {
+          "id": "count",
+          "text": "All there, and still flapping. Tonight's tables will be pleased.",
+          "next": "coin"
+        },
+        {
+          "id": "coin",
+          "text": "Here is your coin. Check the board again tomorrow."
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,7 @@
 import {
   type Condition,
   type OqfDocument,
+  type Parameter,
   type Payload,
   type Quest,
   type Scalar,
@@ -17,6 +18,8 @@ import {
   type StepState,
   conditionVariables,
   formatCompletion,
+  isParamRef,
+  paramRefName,
 } from '@oqf/core'
 import {
   type Conversation,
@@ -66,6 +69,8 @@ export interface PlaytestSnapshot {
   /** Flags the author set plus flags rewards set, as the runtime reads them. */
   flags: Record<string, Scalar>
   vars: Record<string, Scalar>
+  /** The parameter values bound on the current instance, empty for an untemplated quest. */
+  params: Record<string, string | number>
   rewards: RewardGrant[]
   error?: string
 }
@@ -137,6 +142,37 @@ export function formatPayload(payload: Payload): string {
   return Object.entries(payload)
     .map(([key, value]) => `${key}=${String(value)}`)
     .join(' ')
+}
+
+/**
+ * The playtest's stand-in for the game's bind hook: the first dictionary entry
+ * of the right kind, the lowest number the constraint allows, or the parameter
+ * name for a string, so a templated quest plays without the game.
+ */
+export function defaultBindings(
+  document: OqfDocument,
+  params: Parameter[],
+): Record<string, string | number> {
+  const bound: Record<string, string | number> = {}
+  for (const parameter of params) {
+    if (parameter.type === 'number') {
+      const low = /^(-?\d+(?:\.\d+)?)?\.\./.exec(parameter.constraint ?? '')?.[1]
+      bound[parameter.name] = low === undefined ? 1 : Number(low)
+      continue
+    }
+    if (parameter.type === 'string') {
+      bound[parameter.name] = parameter.name
+      continue
+    }
+    const pool =
+      parameter.type === 'item'
+        ? document.dictionaries.items
+        : parameter.type === 'actor'
+          ? document.dictionaries.actors
+          : document.dictionaries.locations
+    bound[parameter.name] = pool[0]?.id ?? parameter.name
+  }
+  return bound
 }
 
 export class PlaytestSession {
@@ -252,6 +288,7 @@ export class PlaytestSession {
       })),
       flags,
       vars: Object.fromEntries(this.vars),
+      params: { ...state.params },
       rewards: [...this.rewards],
       ...(this.error === undefined ? {} : { error: this.error }),
     }
@@ -261,6 +298,9 @@ export class PlaytestSession {
     const runtime = new QuestRuntime({
       documents: [this.document],
       resolveVar: (path) => this.vars.get(path.startsWith('var.') ? path.slice(4) : path),
+      // Timed quests need milliseconds since the epoch; the playtest runs on the wall clock.
+      clock: () => Date.now(),
+      bind: (_questId, _instance, params) => defaultBindings(this.document, params),
     })
     runtime.on((event) => this.record(event))
     return runtime
@@ -329,52 +369,62 @@ export class PlaytestSession {
   }
 }
 
-function suggestFor(quest: Quest, step: Step, fail: boolean): EventSuggestion[] {
+type Params = Record<string, string | number>
+
+/** The id an objective slot stands for: the bound parameter when it is a `$name`, else itself. */
+function slot(value: string, params: Params): string {
+  if (!isParamRef(value)) return value
+  const bound = params[paramRefName(value)]
+  return bound === undefined ? value : String(bound)
+}
+
+function suggestFor(quest: Quest, step: Step, fail: boolean, params: Params): EventSuggestion[] {
   const objective = fail ? step.failObjective : step.objective
   if (objective === undefined) return []
   const base = { quest: quest.id, step: step.id, stepTitle: String(step.title), fail }
   switch (objective.kind) {
-    case 'kill':
-      return [
-        {
-          ...base,
-          label: `Kill ${objective.actor}`,
-          name: 'actor.killed',
-          payload: { actor: objective.actor },
-        },
-      ]
+    case 'kill': {
+      const actor = slot(objective.actor, params)
+      return [{ ...base, label: `Kill ${actor}`, name: 'actor.killed', payload: { actor } }]
+    }
     case 'collect': {
-      // A `$name` count is bound per instance; until it is, suggest the smallest run.
-      const count = typeof objective.count === 'number' ? objective.count : 1
+      const item = slot(objective.item, params)
+      // A `$name` count reads the bound value; before binding, suggest the smallest run.
+      const bound = isParamRef(objective.count) ? params[paramRefName(objective.count)] : undefined
+      const count =
+        typeof objective.count === 'number'
+          ? objective.count
+          : typeof bound === 'number'
+            ? bound
+            : 1
       const one: EventSuggestion = {
         ...base,
-        label: `Collect 1 ${objective.item}`,
+        label: `Collect 1 ${item}`,
         name: 'item.collected',
-        payload: { item: objective.item, amount: 1 },
+        payload: { item, amount: 1 },
       }
       if (count <= 1) return [one]
       return [
         one,
         {
           ...base,
-          label: `Collect all ${count} ${objective.item}`,
+          label: `Collect all ${count} ${item}`,
           name: 'item.collected',
-          payload: { item: objective.item, amount: count },
+          payload: { item, amount: count },
         },
       ]
     }
-    case 'reach':
+    case 'reach': {
+      const location = slot(objective.location, params)
       return [
-        {
-          ...base,
-          label: `Reach ${objective.location}`,
-          name: 'location.entered',
-          payload: { location: objective.location },
-        },
+        { ...base, label: `Reach ${location}`, name: 'location.entered', payload: { location } },
       ]
+    }
     case 'talk': {
-      const payload: Payload = { actor: objective.actor }
-      const binding = objective.dialogue
+      const actor = slot(objective.actor, params)
+      const payload: Payload = { actor }
+      const binding =
+        objective.dialogue === undefined ? undefined : slot(objective.dialogue, params)
       if (binding !== undefined) {
         const hash = binding.indexOf('#')
         payload.node = hash === -1 ? binding : binding.slice(0, hash)
@@ -383,23 +433,27 @@ function suggestFor(quest: Quest, step: Step, fail: boolean): EventSuggestion[] 
       return [
         {
           ...base,
-          label: binding === undefined ? `Talk to ${objective.actor}` : `End ${binding}`,
+          label: binding === undefined ? `Talk to ${actor}` : `End ${binding}`,
           name: 'dialogue.ended',
           payload,
         },
       ]
     }
-    case 'interact':
+    case 'interact': {
+      const object = slot(objective.object, params)
       return [
         {
           ...base,
-          label: `Interact with ${objective.object}`,
+          label: `Interact with ${object}`,
           name: 'object.interacted',
-          payload: { object: objective.object },
+          payload: { object },
         },
       ]
-    case 'event':
-      return [{ ...base, label: objective.event, name: objective.event, payload: {} }]
+    }
+    case 'event': {
+      const name = slot(objective.event, params)
+      return [{ ...base, label: name, name, payload: {} }]
+    }
     case 'custom':
       return [
         {
@@ -412,11 +466,18 @@ function suggestFor(quest: Quest, step: Step, fail: boolean): EventSuggestion[] 
   }
 }
 
-/** One labelled event per objective and fail objective of every step, in step order. */
-export function suggestEvents(quest: Quest): EventSuggestion[] {
+/**
+ * One labelled event per objective and fail objective of every step, in step
+ * order. `params` are the values bound on the running instance, so a templated
+ * objective suggests the fish the game picked rather than `$fish`.
+ */
+export function suggestEvents(quest: Quest, params: Params = {}): EventSuggestion[] {
   const suggestions: EventSuggestion[] = []
   for (const step of quest.steps) {
-    suggestions.push(...suggestFor(quest, step, false), ...suggestFor(quest, step, true))
+    suggestions.push(
+      ...suggestFor(quest, step, false, params),
+      ...suggestFor(quest, step, true, params),
+    )
   }
   return suggestions
 }

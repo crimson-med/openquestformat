@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "warden",
+      "name": "Warden Pell"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "pell_bounty",
+      "actor": "warden",
+      "title": "Pell posts the weekly bounty",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "Gulls on the lighthouse again. Eight of them, by my count. Clear them off and the bounty is yours. Comes up again Monday.",
+          "choices": [
+            {
+              "text": "Same bounty every week?",
+              "next": "streak"
+            },
+            {
+              "text": "Eight gulls. Consider it done.",
+              "next": "take"
+            }
+          ]
+        },
+        {
+          "id": "streak",
+          "text": "Same gulls, same lamp. Keep at it week after week and I will see about the bonus.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "take",
+          "text": "Mind the lamp glass. The gulls do not."
+        }
+      ]
+    },
+    {
+      "id": "pell_report",
+      "actor": "warden",
+      "title": "Pell counts the gulls",
+      "start": "count",
+      "nodes": [
+        {
+          "id": "count",
+          "text": "Eight, and the lamp is clean. Good work.",
+          "next": "pay"
+        },
+        {
+          "id": "pay",
+          "text": "Here is the bounty. Monday, there will be another."
+        }
+      ]
+    }
+  ]
+}

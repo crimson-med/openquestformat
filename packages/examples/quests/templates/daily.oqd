@@ -1,0 +1,11 @@
+OQD1
+A	baker|Baker Odile
+C	odile_order	0	greet	Odile places the morning order
+N	greet						The oven is cold and the carter is late again. Five pieces of dry driftwood, before midnight, and there is a loaf in it for you.
+O	where					Where does driftwood wash up?
+O	go					Five pieces. I will be back.
+N	where		l	greet			The north beach after a blow. Dry means it snaps, not bends.
+N	go						Good. The door stays open until the stew goes on.
+C	odile_thanks	0	thanks	Odile takes the driftwood
+N	thanks			loaf			That snaps nicely. The oven will be hot within the hour.
+N	loaf						Here is your loaf, still warm from yesterday's batch. Same again tomorrow.

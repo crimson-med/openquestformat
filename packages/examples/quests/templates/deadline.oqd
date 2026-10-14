@@ -1,0 +1,8 @@
+OQD1
+A	skipper|Skipper Brann
+C	brann_panic	0	greet	Brann points at the sandbar
+N	greet						My tackle box. Out there, on the sandbar. The tide turned ten minutes ago and it is coming in fast.
+O	how					How long do I have?
+O	run					I am on it.
+N	how		l	greet			Ten minutes, maybe less. After that it is the sea's.
+N	run						Go. Run. Every second, go.

@@ -1,0 +1,43 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "skipper",
+      "name": "Skipper Brann"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "brann_panic",
+      "actor": "skipper",
+      "title": "Brann points at the sandbar",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "My tackle box. Out there, on the sandbar. The tide turned ten minutes ago and it is coming in fast.",
+          "choices": [
+            {
+              "text": "How long do I have?",
+              "next": "how"
+            },
+            {
+              "text": "I am on it.",
+              "next": "run"
+            }
+          ]
+        },
+        {
+          "id": "how",
+          "text": "Ten minutes, maybe less. After that it is the sea's.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "run",
+          "text": "Go. Run. Every second, go."
+        }
+      ]
+    }
+  ]
+}

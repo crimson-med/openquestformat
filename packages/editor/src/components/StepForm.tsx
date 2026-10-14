@@ -125,6 +125,14 @@ export function StepForm({ quest, step }: { quest: Quest; step: Step }) {
           }}
           suggest={suggestCompletion}
         />
+        <TextField
+          label="Deadline"
+          value={step.deadline}
+          mono
+          placeholder="PT10M, P1D or day"
+          hint="How long after the step is entered it fails. Works without a fail rule."
+          onChange={(value) => set('deadline', value)}
+        />
       </Section>
 
       <Section title="Outcome">

@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { type OqfDocument, parseJson } from '@oqf/core'
+import { type OqfDocument, emptyDictionaries, parseJson } from '@oqf/core'
 import { describe, expect, it } from 'vitest'
 import { I18nError } from './errors.js'
 import { extractAll, extractDialogue, extractDocument } from './extract.js'
 import { conversationDocument } from './fixtures.js'
+import { injectDocument } from './inject.js'
 import { isKey } from './keys.js'
 
 function referenceDocument(): OqfDocument {
@@ -171,5 +172,36 @@ describe('extractAll', () => {
     expect(() => extractAll({ quests: [referenceDocument(), second] })).toThrow(
       /harbormasters_ledger\.title/,
     )
+  })
+})
+
+describe('placeholders', () => {
+  it('carries {name} placeholders through extraction and injection untouched', () => {
+    const doc: OqfDocument = {
+      dictionaries: emptyDictionaries(),
+      quests: [
+        {
+          id: 'gus_daily',
+          version: 1,
+          title: 'Catch {n} {fish}',
+          summary: 'Gus wants {n} of the {fish}.',
+          tags: [],
+          params: [
+            { name: 'fish', type: 'item' },
+            { name: 'n', type: 'number' },
+          ],
+          steps: [{ id: 'catch', title: '{count} of {target} {fish}', rewards: [], actors: [] }],
+          rewards: [],
+        },
+      ],
+    }
+    const extracted = extractDocument(doc)
+    expect(extracted.table).toEqual({
+      'gus_daily.title': 'Catch {n} {fish}',
+      'gus_daily.summary': 'Gus wants {n} of the {fish}.',
+      'gus_daily.catch.title': '{count} of {target} {fish}',
+    })
+    expect(extracted.document.quests[0].params).toBe(doc.quests[0].params)
+    expect(injectDocument(extracted.document, extracted.table)).toEqual(doc)
   })
 })

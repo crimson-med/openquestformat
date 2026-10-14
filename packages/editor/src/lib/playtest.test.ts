@@ -771,3 +771,26 @@ describe('a conversation played inside a quest playtest', () => {
     expect(session.snapshot().outcome).toBeNull()
   })
 })
+
+describe('suggestEvents with bound parameters', () => {
+  it('substitutes $name slots and counts from the instance params', () => {
+    const quest = parseCompact(
+      [
+        'OQF1',
+        'Q\treq\t1\t\t\t\tRequest',
+        'P\tfish\titem',
+        'P\tn\tnumber',
+        'S\tcatch\ts\t\t\tcollect $fish $n\t\t\t\t\t\t\tCatch',
+        '',
+      ].join('\n'),
+    ).quests[0]
+    const unbound = suggestEvents(quest)
+    expect(unbound.map((entry) => entry.label)).toEqual(['Collect 1 $fish'])
+    const bound = suggestEvents(quest, { fish: 'fish.koi', n: 3 })
+    expect(bound.map((entry) => entry.label)).toEqual([
+      'Collect 1 fish.koi',
+      'Collect all 3 fish.koi',
+    ])
+    expect(bound[1].payload).toEqual({ item: 'fish.koi', amount: 3 })
+  })
+})

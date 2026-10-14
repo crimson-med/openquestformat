@@ -1,0 +1,60 @@
+{
+  "oqd": 1,
+  "speakers": [
+    {
+      "id": "baker",
+      "name": "Baker Odile"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "odile_order",
+      "actor": "baker",
+      "title": "Odile places the morning order",
+      "start": "greet",
+      "nodes": [
+        {
+          "id": "greet",
+          "text": "The oven is cold and the carter is late again. Five pieces of dry driftwood, before midnight, and there is a loaf in it for you.",
+          "choices": [
+            {
+              "text": "Where does driftwood wash up?",
+              "next": "where"
+            },
+            {
+              "text": "Five pieces. I will be back.",
+              "next": "go"
+            }
+          ]
+        },
+        {
+          "id": "where",
+          "text": "The north beach after a blow. Dry means it snaps, not bends.",
+          "next": "greet",
+          "lore": true
+        },
+        {
+          "id": "go",
+          "text": "Good. The door stays open until the stew goes on."
+        }
+      ]
+    },
+    {
+      "id": "odile_thanks",
+      "actor": "baker",
+      "title": "Odile takes the driftwood",
+      "start": "thanks",
+      "nodes": [
+        {
+          "id": "thanks",
+          "text": "That snaps nicely. The oven will be hot within the hour.",
+          "next": "loaf"
+        },
+        {
+          "id": "loaf",
+          "text": "Here is your loaf, still warm from yesterday's batch. Same again tomorrow."
+        }
+      ]
+    }
+  ]
+}

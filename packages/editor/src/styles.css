@@ -1243,6 +1243,30 @@ textarea.input {
   opacity: 1;
 }
 
+/* Quest parameters: one stacked block per parameter, with its own remove button. */
+.param-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.param-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+.param-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* Row actions: small text buttons that sit inside a list row. */
 .icon {
   font-size: 12px;

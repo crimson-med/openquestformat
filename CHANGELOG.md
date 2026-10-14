@@ -21,7 +21,37 @@ versions. Compact columns are append only, so a file written against `OQF1` keep
   record, and the `param`, `time`, `runs` and `streak` condition namespaces. Proposed in
   `docs/14-recurrence.md`, decided as D24 to D30 and folded into the model, condition, state,
   i18n, validation and compact format docs. Every v0.1 file stays valid; compact columns are
-  appended only. Implementation across the packages follows.
+  appended only.
+
+**`@oqf/core`**
+
+- `cooldown`, `expire` and `params` on quests, `deadline` on steps, the reserved `expired`
+  outcome, `$name` parameter references in objectives and conditions, the `param`, `time`, `runs`
+  and `streak` namespaces, duration parsing and the canonical duration spelling, the `P` record
+  and the appended compact columns, the JSON fields and schema entries, the markdown export, and
+  eleven validation rules with a broken fixture each.
+
+**`@oqf/runtime`**
+
+- A calendar (`timeZone`, `weekStart`, `dayStartsAt`), `tick()`, cooldown gating with the
+  clock-jump guard, expiry to the `expired` outcome, step deadlines, a `bind` hook for templated
+  quests, `textArgs()`, quest records with `saveRecords()` and `load(states, records)`, and state
+  document version 2 (`instance`, `startedAt`, `outcomeAt`, `params`). The clock is read once per
+  input, and a quest that uses any timing feature refuses the default counter clock.
+
+**`@oqf/i18n`**
+
+- Resolvers take text arguments and fill `{name}` placeholders; `formatText` and
+  `textPlaceholders` are exported. Placeholders pass through extraction and injection untouched.
+
+**`@oqf/editor`**
+
+- Inspector fields for cooldown, expire, deadline and parameters; the playtest runs on the wall
+  clock and binds parameters from the dictionaries.
+
+**`@oqf/examples`**
+
+- Four templates: `daily`, `weekly`, `deadline` and `templated`, each with dialogue.
 
 ## [0.1.0] - 2026-09-16
 

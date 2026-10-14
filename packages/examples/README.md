@@ -28,6 +28,10 @@ later step. The editor offers them under "New from template".
 | `failure` | An `activate` gate, fail objectives on the road and on a timer, and three failed outcomes. | Tobin's offer sets `escort_accepted` or `escort_declined` from a choice, so the gate and the refusal come from the dialogue alone; Lysa closes the sale. |
 | `chain` | Three quests in one file: unlocked by another quest's outcome, by its status, and a step reading a step of another quest. | Rosa asks about the voyage, then signs the log. |
 | `engine-hooks` | What the engine owns: `var.*` reads, a `custom` objective, `unlock`, `flag`, `event` and `custom` rewards, payloads and extension keys. | None, there is no talk step. |
+| `daily` | A repeatable quest with `cooldown` `day` and `expire` `P1D` in the last two `Q` columns: offered once a day, gone a day after it starts. | Odile places the morning order, then takes the driftwood. |
+| `weekly` | A repeatable bounty with `cooldown` `week`, so `streak.weekly_bounty` counts the weeks in a row. | Pell posts the bounty, then counts the gulls. |
+| `deadline` | A step with a `deadline` in `S` column 14 that fails on its own after ten minutes, with a failed outcome on the other side. | Brann points at the sandbar. |
+| `templated` | Two `P` parameters, `$fish` and `$n`, bound by the game when the quest is offered, used in `collect $fish $n` and as `{n}` and `{fish}` in text. | Hesper names the fish, then counts the catch. |
 
 To add a fixture, write the file into `quests/` (or `quests/broken/` for an invalid one), then add an
 entry to `EXAMPLES` in `src/index.ts` so tests can reach it by name. Use real TAB characters between

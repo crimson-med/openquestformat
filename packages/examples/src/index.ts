@@ -63,6 +63,22 @@ export const EXAMPLES = {
   'templates/chain.dialogue.json': at('templates/chain.dialogue.json'),
   'templates/engine-hooks.oqf': at('templates/engine-hooks.oqf'),
   'templates/engine-hooks.json': at('templates/engine-hooks.json'),
+  'templates/daily.oqf': at('templates/daily.oqf'),
+  'templates/daily.json': at('templates/daily.json'),
+  'templates/daily.oqd': at('templates/daily.oqd'),
+  'templates/daily.dialogue.json': at('templates/daily.dialogue.json'),
+  'templates/weekly.oqf': at('templates/weekly.oqf'),
+  'templates/weekly.json': at('templates/weekly.json'),
+  'templates/weekly.oqd': at('templates/weekly.oqd'),
+  'templates/weekly.dialogue.json': at('templates/weekly.dialogue.json'),
+  'templates/deadline.oqf': at('templates/deadline.oqf'),
+  'templates/deadline.json': at('templates/deadline.json'),
+  'templates/deadline.oqd': at('templates/deadline.oqd'),
+  'templates/deadline.dialogue.json': at('templates/deadline.dialogue.json'),
+  'templates/templated.oqf': at('templates/templated.oqf'),
+  'templates/templated.json': at('templates/templated.json'),
+  'templates/templated.oqd': at('templates/templated.oqd'),
+  'templates/templated.dialogue.json': at('templates/templated.dialogue.json'),
 } as const satisfies Record<string, string>
 
 export type ExampleName = keyof typeof EXAMPLES

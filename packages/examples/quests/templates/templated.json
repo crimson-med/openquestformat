@@ -1,0 +1,150 @@
+{
+  "oqf": 1,
+  "dictionaries": {
+    "actors": [
+      {
+        "id": "monger",
+        "name": "Fishmonger Hesper"
+      }
+    ],
+    "locations": [
+      {
+        "id": "market",
+        "name": "Fish market"
+      }
+    ],
+    "items": [
+      {
+        "id": "fish.sardine",
+        "name": "Harbor sardine"
+      },
+      {
+        "id": "fish.koi",
+        "name": "Silver koi"
+      },
+      {
+        "id": "fish.bass",
+        "name": "Reef bass"
+      }
+    ],
+    "tags": [
+      {
+        "id": "request"
+      },
+      {
+        "id": "fish.catchable"
+      }
+    ]
+  },
+  "quests": [
+    {
+      "id": "fishmongers_request",
+      "version": 1,
+      "title": "Hesper's Request: {n} {fish}",
+      "summary": "Hesper names a fish and a number every day. The game binds $fish and $n when the request is offered, so one quest covers every catch.",
+      "tags": [
+        "request"
+      ],
+      "repeat": true,
+      "unlock": {
+        "==": [
+          {
+            "var": "flag.market_open"
+          },
+          true
+        ]
+      },
+      "cooldown": "day",
+      "expire": "P1D",
+      "params": [
+        {
+          "name": "fish",
+          "type": "item",
+          "constraint": "fish.catchable"
+        },
+        {
+          "name": "n",
+          "type": "number",
+          "constraint": "1..5"
+        }
+      ],
+      "steps": [
+        {
+          "id": "hear_request",
+          "title": "Hear today's request from Hesper",
+          "journal": "Hesper wants {n} {fish}. The title above is a text key argument: the runtime hands {n} and {fish} along with the string.",
+          "start": true,
+          "objective": {
+            "kind": "talk",
+            "actor": "monger",
+            "dialogue": "hesper_request"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "hesper_request"
+          },
+          "location": "market",
+          "actors": [
+            "monger"
+          ]
+        },
+        {
+          "id": "catch_fish",
+          "title": "Catch {n} {fish}",
+          "journal": "{count} of {target} caught so far.",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.hear_request"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "collect",
+            "item": "$fish",
+            "count": "$n"
+          }
+        },
+        {
+          "id": "deliver",
+          "title": "Deliver the catch to Hesper",
+          "unlock": {
+            "==": [
+              {
+                "var": "step.catch_fish"
+              },
+              "done"
+            ]
+          },
+          "objective": {
+            "kind": "talk",
+            "actor": "monger",
+            "dialogue": "hesper_thanks"
+          },
+          "outcome": {
+            "name": "filled",
+            "title": "Request filled"
+          },
+          "dialogue": {
+            "provider": "oqf",
+            "ref": "hesper_thanks"
+          },
+          "location": "market",
+          "actors": [
+            "monger"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "id": "market_coins",
+          "kind": "currency",
+          "ref": "coins",
+          "amount": 15,
+          "outcome": "filled"
+        }
+      ]
+    }
+  ]
+}

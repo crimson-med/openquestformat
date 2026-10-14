@@ -1,0 +1,11 @@
+OQD1
+A	warden|Warden Pell
+C	pell_bounty	0	greet	Pell posts the weekly bounty
+N	greet						Gulls on the lighthouse again. Eight of them, by my count. Clear them off and the bounty is yours. Comes up again Monday.
+O	streak					Same bounty every week?
+O	take					Eight gulls. Consider it done.
+N	streak		l	greet			Same gulls, same lamp. Keep at it week after week and I will see about the bonus.
+N	take						Mind the lamp glass. The gulls do not.
+C	pell_report	0	count	Pell counts the gulls
+N	count			pay			Eight, and the lamp is clean. Good work.
+N	pay						Here is the bounty. Monday, there will be another.

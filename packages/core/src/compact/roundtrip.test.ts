@@ -16,6 +16,10 @@ const FIXTURES = [
   'templates/failure',
   'templates/chain',
   'templates/engine-hooks',
+  'templates/daily',
+  'templates/weekly',
+  'templates/deadline',
+  'templates/templated',
 ] as const
 
 function read(name: string): string {

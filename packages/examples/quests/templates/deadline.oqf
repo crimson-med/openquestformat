@@ -1,0 +1,11 @@
+OQF1
+A	skipper|Skipper Brann
+L	jetty|South jetty	sandbar|Sandbar
+T	timed
+Q	tide_race	1		0		The Tide Race	Brann left his tackle box on the sandbar and the tide is coming in. Reach it in ten minutes or watch the sea take it.
+R	tackle_xp	xp	xp	30	saved
+R	salt_rep	reputation	harbor	-2	drowned
+S	hear_brann	s			talk skipper brann_panic				oqf:brann_panic	0	0	Hear Brann out on the jetty
+S	race_tide		step.hear_brann		reach sandbar					1		Reach the sandbar before the tide	Ten minutes from the moment Brann stops talking. The deadline sits in the last column of this step.	PT10M
+S	saved		step.race_tide		interact tackle_box		saved|Tackle box saved			1		Grab the tackle box
+S	drowned		step.race_tide == "failed"				!drowned|The sea took it			1		Watch the box go under

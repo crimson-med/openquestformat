@@ -1,0 +1,11 @@
+OQF1
+A	baker|Baker Odile
+L	bakery|Harbor bakery
+I	driftwood|Dry driftwood
+T	daily
+Q	morning_delivery	1	r	0	flag.bakery_open	The Morning Delivery	Odile needs dry driftwood for the oven every morning. Bring an armful before the day is out, and come back tomorrow for the next one.	day	P1D
+R	bread	item	bread.loaf	1	delivered
+R	bakery_rep	reputation	bakery	1	delivered
+S	take_order	s			talk baker odile_order				oqf:odile_order	0	0	Ask Odile what the oven needs	Odile opens the bakery at dawn. The order stands until midnight, then she buys from the carter instead.
+S	gather_wood		step.take_order		collect driftwood 5							Gather five pieces of dry driftwood
+S	deliver		step.gather_wood		talk baker odile_thanks		delivered|Oven lit		oqf:odile_thanks	0	0	Bring the driftwood to the bakery

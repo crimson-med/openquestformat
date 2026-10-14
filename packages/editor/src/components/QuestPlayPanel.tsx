@@ -207,7 +207,11 @@ export function QuestPlayPanel() {
     [session, running, playtest.version],
   )
   const transcript = running ? session.transcript : []
-  const suggestions = useMemo(() => (quest === undefined ? [] : suggestEvents(quest)), [quest])
+  const params = snapshot?.params
+  const suggestions = useMemo(
+    () => (quest === undefined ? [] : suggestEvents(quest, params)),
+    [quest, params],
+  )
   const split = useMemo(
     () => (quest === undefined ? { now: [], later: [] } : nextEvents(quest, snapshot, suggestions)),
     [quest, snapshot, suggestions],

@@ -1,0 +1,12 @@
+OQF1
+A	monger|Fishmonger Hesper
+L	market|Fish market
+I	fish.sardine|Harbor sardine	fish.koi|Silver koi	fish.bass|Reef bass
+T	request	fish.catchable
+Q	fishmongers_request	1	r	0	flag.market_open	Hesper's Request: {n} {fish}	Hesper names a fish and a number every day. The game binds $fish and $n when the request is offered, so one quest covers every catch.	day	P1D
+P	fish	item	fish.catchable
+P	n	number	1..5
+R	market_coins	currency	coins	15	filled
+S	hear_request	s			talk monger hesper_request				oqf:hesper_request	0	0	Hear today's request from Hesper	Hesper wants {n} {fish}. The title above is a text key argument: the runtime hands {n} and {fish} along with the string.
+S	catch_fish		step.hear_request		collect $fish $n							Catch {n} {fish}	{count} of {target} caught so far.
+S	deliver		step.catch_fish		talk monger hesper_thanks		filled|Request filled		oqf:hesper_thanks	0	0	Deliver the catch to Hesper
